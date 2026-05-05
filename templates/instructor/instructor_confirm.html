@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Praxistutor bestätigen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'instructor:instructor_list' %}">Praxistutoren</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'instructor:instructor_detail' instructor.public_id %}">{{ instructor }}</a></li>
+        <li class="breadcrumb-item active">Bestätigen</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-check-circle me-1"></i> Praxistutor bestätigen</h5>
+            </div>
+            <div class="card-body">
+                <p>Soll <strong>{{ instructor }}</strong> als Praxistutor bestätigt werden?</p>
+                <dl class="row">
+                    <dt class="col-sm-4">E-Mail</dt>
+                    <dd class="col-sm-8"><a href="mailto:{{ instructor.email }}">{{ instructor.email }}</a></dd>
+                    <dt class="col-sm-4">Organisationseinheit</dt>
+                    <dd class="col-sm-8">{{ instructor.unit|default:"–" }}</dd>
+                    <dt class="col-sm-4">Berufsbilder</dt>
+                    <dd class="col-sm-8">
+                        {% for jp in instructor.job_profiles.all %}{{ jp }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}
+                    </dd>
+                </dl>
+                <p class="text-muted small">Mit der Bestätigung wird ein Bestellungsschreiben an den Praxistutor sowie die zuständige Ausbildungskoordination versendet.</p>
+                <form method="post" class="d-flex gap-2 mt-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i> Ja, bestätigen &amp; E-Mail senden
+                    </button>
+                    <a href="{% url 'instructor:instructor_detail' instructor.public_id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Abbrechen
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

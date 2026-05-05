@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Mein Portal{% endblock %}
+
+{% block content %}
+<div class="py-4">
+
+
+{# ── Ankündigungen-Banner ──────────────────────────────────────────────────────── #}
+{% if unread_announcements %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <a href="{% url 'portal:announcement_list' %}" class="text-decoration-none">
+            <div class="alert alert-primary d-flex align-items-center gap-3 mb-0">
+                <i class="bi bi-megaphone fs-4 flex-shrink-0 me-1"></i>
+                <div>
+                    <strong>{{ unread_announcements }} neue Ankündigung{{ unread_announcements|pluralize:"en" }}</strong> –
+                    Du hast ungelesene Mitteilungen.
+                </div>
+                <span class="badge bg-primary ms-auto">Jetzt lesen <i class="bi bi-chevron-right ms-1"></i></span>
+            </div>
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{# ── Selbstbeurteilung-Hinweis ────────────────────────────────────────────────── #}
+{% if pending_self_assessments %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning d-flex align-items-center gap-3 mb-0">
+            <i class="bi bi-clipboard-check fs-4 flex-shrink-0 me-1"></i>
+            <div>
+                <strong>Selbstbeurteilung ausstehend</strong> –
+                Du hast noch
+                {% if pending_self_assessments|length == 1 %}einen Praxisabschnitt{% else %}{{ pending_self_assessments|length }} Praxisabschnitte{% endif %}
+                ohne eingereichte Selbstbeurteilung.
+                {% for assignment in pending_self_assessments %}
+                <a href="{% url 'portal:beurteilung_self' assignment.pk %}" class="alert-link ms-1">
+                    {{ assignment.unit }} ({{ assignment.end_date|date:"d.m.Y" }})
+                </a>{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ── Widget-Zeile ────────────────────────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+
+    {# Aktueller Einsatz #}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex align-items-center gap-2 py-2">
+                <i class="bi bi-geo-alt text-muted me-1"></i>
+                <span class="fw-semibold small">Aktueller Einsatz</span>
+                {% if current_assignment %}
+                <span class="badge bg-success ms-auto">aktiv</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if current_assignment %}
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Einheit</div>
+                        <div class="fw-semibold small">{{ current_assignment.unit }}</div>
+                    </li>
+                    {% if current_assignment.location %}
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Standort</div>
+                        <div class="small">{{ current_assignment.location }}</div>
+                    </li>
+                    {% endif %}
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Zeitraum</div>
+                        <div class="small">{{ current_assignment.start_date|date:"d.m.Y" }} – {{ current_assignment.end_date|date:"d.m.Y" }}</div>
+                    </li>
+                    {% if current_assignment.instructor %}
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Praxistutor</div>
+                        <div class="small">{{ current_assignment.instructor.first_name }} {{ current_assignment.instructor.last_name }}</div>
+                        {% if current_assignment.instructor.email %}
+                        <a href="mailto:{{ current_assignment.instructor.email }}" class="text-muted text-decoration-none" style="font-size:.75rem;">
+                            <i class="bi bi-envelope me-1"></i> {{ current_assignment.instructor.email }}
+                        </a>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                </ul>
+                {% else %}
+                <p class="text-muted small p-3 mb-0">Kein aktiver Einsatz heute.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Nächster Einsatz #}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex align-items-center gap-2 py-2">
+                <i class="bi bi-calendar-arrow-up text-muted me-1"></i>
+                <span class="fw-semibold small">Nächster Einsatz</span>
+            </div>
+            <div class="card-body p-0">
+                {% if next_assignment %}
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Einheit</div>
+                        <div class="fw-semibold small">{{ next_assignment.unit }}</div>
+                    </li>
+                    {% if next_assignment.location %}
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Standort</div>
+                        <div class="small">{{ next_assignment.location }}</div>
+                    </li>
+                    {% endif %}
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Zeitraum</div>
+                        <div class="small">{{ next_assignment.start_date|date:"d.m.Y" }} – {{ next_assignment.end_date|date:"d.m.Y" }}</div>
+                    </li>
+                </ul>
+                {% else %}
+                <p class="text-muted small p-3 mb-0">Keine weiteren Einsätze geplant.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Ausbildungsnachweise oder Noten #}
+    <div class="col-12 col-md-6 col-lg-4">
+        {% if requires_proof %}
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex align-items-center gap-2 py-2">
+                <i class="bi bi-journal-text text-muted me-1"></i>
+                <span class="fw-semibold small">Ausbildungsnachweise</span>
+                <a href="{% url 'proofoftraining:record_list' %}" class="ms-auto text-muted small text-decoration-none">
+                    Alle <i class="bi bi-chevron-right me-1"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if nachweis_open %}
+                <div class="px-3 pt-2 pb-1">
+                    <div class="alert alert-warning py-2 px-3 small mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        {% if nachweis_open.status == 'rejected' %}KW {{ nachweis_open.calendar_week }} – Korrekturbedarf.
+                        {% else %}KW {{ nachweis_open.calendar_week }} – nicht eingereicht.{% endif %}
+                        <a href="{% url 'proofoftraining:record_edit' nachweis_open.public_id %}" class="alert-link ms-1">Bearbeiten</a>
+                    </div>
+                </div>
+                {% endif %}
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small text-muted">Angenommen</span>
+                        <span class="badge bg-success rounded-pill">{{ nachweis_counts.approved }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small text-muted">Eingereicht</span>
+                        <span class="badge bg-primary rounded-pill">{{ nachweis_counts.submitted }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small text-muted">Korrekturbedarf</span>
+                        <span class="badge bg-warning text-dark rounded-pill">{{ nachweis_counts.rejected }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small text-muted">Entwurf</span>
+                        <span class="badge bg-secondary rounded-pill">{{ nachweis_counts.draft }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {% else %}
+        {% include "portal/_noten_widget.html" %}
+        {% endif %}
+    </div>
+
+</div>
+
+{# ── Ausbildungsfortschritt ──────────────────────────────────────────────────── #}
+{% if curriculum_progress %}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex align-items-center gap-2 py-2">
+                <i class="bi bi-list-check text-muted me-1"></i>
+                <span class="fw-semibold small">Ausbildungsfortschritt</span>
+                <a href="{% url 'portal:ausbildungsplan' %}" class="ms-auto text-muted small text-decoration-none">
+                    Details <i class="bi bi-chevron-right me-1"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small text-muted">{{ curriculum_progress.done }} von {{ curriculum_progress.total }} Pflichtstationen absolviert</span>
+                    <span class="fw-semibold small">{{ curriculum_progress.pct }}%</span>
+                </div>
+                <div class="progress" style="height:8px;">
+                    <div class="progress-bar {% if curriculum_progress.pct == 100 %}bg-success{% elif curriculum_progress.pct > 0 %}bg-primary{% else %}bg-secondary{% endif %}"
+                         style="width:{{ curriculum_progress.pct }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ── Kalender-Vorschau ────────────────────────────────────────────────────────── #}
+{% if calendar_preview %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center gap-2 py-2">
+                <i class="bi bi-calendar3 text-muted me-1"></i>
+                <span class="fw-semibold small">Mein Kalender {{ calendar_preview.year }}</span>
+                <a href="{% url 'portal:kalender' %}" class="ms-auto text-muted small text-decoration-none">
+                    Vollansicht <i class="bi bi-chevron-right me-1"></i>
+                </a>
+            </div>
+            <div class="card-body pb-2">
+                {% include "_calendar_gantt.html" with cal=calendar_preview year_url_base="/portal/?cal_year=" %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

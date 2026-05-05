@@ -1,0 +1,126 @@
+{% extends "_public_base.html" %}
+
+{% block title %}Urlaubsanträge bearbeiten{% endblock %}
+{% block navbar_label %}Urlaubsantragsportal{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-inbox me-2"></i>Urlaubsanträge zur Bearbeitung</h2>
+        <p class="text-muted mb-0">
+            Paket erstellt am {{ batch.sent_at|date:"d.m.Y H:i" }}
+            &nbsp;·&nbsp; {{ requests|length }} Antrag{{ requests|length|pluralize:"e,en" }}
+        </p>
+    </div>
+</div>
+
+<div class="kern-alert kern-alert--info mb-4" role="alert">
+    <div class="kern-alert__header" style="align-items: flex-start;">
+        <span class="kern-icon kern-icon--info" aria-hidden="true"></span>
+        <div class="kern-title">
+            <div><strong>So geht es weiter</strong></div>
+            <div class="mt-1" style="font-weight: 400;">
+                Bitte prüfen Sie je Antrag die Arbeitstage (vorausgefüllt mit der berechneten Anzahl) und
+                tragen Sie den verbleibenden Urlaub ein. Mit Klick auf
+                <strong>„Bearbeitung abschließen"</strong> werden die Nachwuchskräfte automatisch
+                per E-Mail benachrichtigt – der Aufruflink wird danach ungültig.
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="kern-form-input">
+                <label class="kern-label" for="processed_by_name">
+                    Bearbeitet von (Ihr Name) <span class="text-danger">*</span>
+                </label>
+                <input type="text" id="processed_by_name" name="processed_by_name"
+                       class="kern-form-input__input" placeholder="Vor- und Nachname" required>
+            </div>
+        </div>
+    </div>
+
+    {% for vr in requests %}
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <strong>{{ vr.student.last_name }}, {{ vr.student.first_name }}</strong>
+                {% if vr.student.course %}
+                <span class="text-muted ms-2">– {{ vr.student.course }}</span>
+                {% endif %}
+            </div>
+            <span class="badge {% if vr.is_cancellation %}bg-dark{% else %}bg-info text-dark{% endif %}">
+                {% if vr.is_cancellation %}Stornierung{% else %}Urlaub{% endif %}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-start">
+                <div class="col-md-3">
+                    <div class="text-muted small mb-1">Zeitraum</div>
+                    <div>{{ vr.start_date|date:"d.m.Y" }} – {{ vr.end_date|date:"d.m.Y" }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kern-form-input mb-0">
+                        <label class="kern-label" for="working_days_{{ vr.pk }}">
+                            Arbeitstage <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" id="working_days_{{ vr.pk }}"
+                               name="working_days_{{ vr.pk }}"
+                               class="kern-form-input__input"
+                               min="0" required
+                               value="{{ vr.duration_working_days }}">
+                        <span class="kern-hint">Berechnet: {{ vr.duration_working_days }}</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kern-form-input mb-0">
+                        <label class="kern-label" for="remaining_current_{{ vr.pk }}">
+                            Resturlaub aktuell <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" id="remaining_current_{{ vr.pk }}"
+                               name="remaining_current_{{ vr.pk }}"
+                               class="kern-form-input__input"
+                               min="0" placeholder="z. B. 12" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kern-form-input mb-0">
+                        <label class="kern-label" for="remaining_previous_{{ vr.pk }}">
+                            Resturlaub Vorjahr <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" id="remaining_previous_{{ vr.pk }}"
+                               name="remaining_previous_{{ vr.pk }}"
+                               class="kern-form-input__input"
+                               min="0" placeholder="z. B. 3" required>
+                    </div>
+                </div>
+            </div>
+            {% if vr.notes %}
+            <div class="mt-3 p-2 rounded bg-light text-muted small">
+                <i class="bi bi-chat-left-text me-1"></i> {{ vr.notes }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-calendar-check" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Keine Anträge in diesem Paket.</p>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if requests %}
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-circle me-1"></i> Bearbeitung abschließen
+        </button>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

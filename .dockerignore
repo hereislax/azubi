@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Env
+.env
+.env.example
+.env.local
+.env.*.local
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.venv
+venv
+
+# Tests / Coverage / Linter-Caches
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.coveragerc
+.pytest_cache
+.tox
+.nox
+.mypy_cache
+.ruff_cache
+pytest.ini
+conftest.py
+
+# Django Runtime / User Data
+media
+staticfiles
+*.sqlite3
+backups/
+
+# Logs
+*.log
+logs/
+
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+
+# Docker selbst (Build-Files nicht ins Image)
+Dockerfile*
+docker-compose*.yml
+docker/
+.dockerignore
+
+# Docs / Handbuch
+*.md
+*.docx
+docs/
+docs/generate_handbuch.py
+
+# Frontend
+node_modules/

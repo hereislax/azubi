@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ doc.title }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:kb_list' %}">Wissensdatenbank</a></li>
+        <li class="breadcrumb-item active">{{ doc.title }}</li>
+    </ol>
+</nav>
+
+<h2 class="mb-1"><i class="bi {{ doc.category.icon }} me-1"></i> {{ doc.title }}</h2>
+{% if doc.description %}<p class="text-muted mb-3">{{ doc.description }}</p>{% endif %}
+
+{% if doc.content %}
+<div class="card shadow-sm mb-3">
+    <div class="card-header py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-file-text text-primary me-1"></i>
+        <span class="fw-semibold">Inhalt</span>
+    </div>
+    <div class="card-body" style="white-space:pre-wrap;">{{ doc.content }}</div>
+</div>
+{% endif %}
+
+{% if doc.has_attachment %}
+<div class="card shadow-sm mb-3">
+    <div class="card-header py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-paperclip text-primary me-1"></i>
+        <span class="fw-semibold">Anhänge</span>
+    </div>
+    <div class="card-body d-flex flex-wrap gap-2">
+        {% if doc.file %}
+        <a href="{{ doc.file.url }}" class="btn btn-outline-primary btn-sm" download>
+            <i class="bi bi-download me-1"></i>{{ doc.filename }}
+        </a>
+        {% endif %}
+        {% if doc.external_url %}
+        <a href="{{ doc.external_url }}" class="btn btn-outline-info btn-sm"
+           target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Externen Link öffnen
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<a href="{% url 'portal:kb_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Zurück zur Wissensdatenbank
+</a>
+{% endblock %}

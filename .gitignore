@@ -1,0 +1,54 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+docker/restic-secrets/*
+!docker/restic-secrets/.gitkeep
+!docker/restic-secrets/README.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+local_settings.py
+
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+
+# Tests & Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
+# Linter- & Type-Caches
+.mypy_cache/
+.ruff_cache/
+
+# Logs & Backups
+*.log
+logs/
+backups/
+
+# Frontend
+node_modules/
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store

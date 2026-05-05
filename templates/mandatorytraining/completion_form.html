@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load kern %}
+
+{% block title %}Teilnahme {{ action }} – {{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'mandatorytraining:overview' %}">Pflichtschulungen</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'mandatorytraining:student_detail' student.pk %}">{{ student.first_name }} {{ student.last_name }}</a></li>
+        <li class="breadcrumb-item active">Teilnahme {{ action }}</li>
+    </ol>
+</nav>
+<h2 class="mb-3"><i class="bi bi-check2-circle me-1"></i> Teilnahme {{ action }}</h2>
+
+<div class="card"><div class="card-body">
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+            {% kern_field field %}
+        {% endfor %}
+
+        <div class="kern-form-input mb-3">
+            <label class="kern-label" for="id-certificate">Zertifikat (PDF, optional)</label>
+            <input type="file" id="id-certificate" name="certificate" class="kern-form-input__input" accept=".pdf,.png,.jpg,.jpeg">
+            <span class="kern-hint">Wird in Paperless als „Schulungszertifikat" abgelegt und mit der Akte der Nachwuchskraft verknüpft.</span>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'mandatorytraining:student_detail' student.pk %}" class="btn btn-outline-secondary">Abbrechen</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Speichern</button>
+        </div>
+    </form>
+</div></div>
+{% endblock %}

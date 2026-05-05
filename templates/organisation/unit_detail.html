@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}{{ unit.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        {% if is_training_coordinator %}
+            {% if chief_instructor_profile %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'instructor:chief_instructor_detail' chief_instructor_profile.public_id %}">Mein Bereich</a>
+            </li>
+            {% endif %}
+            {% for ancestor in ancestors %}
+            <li class="breadcrumb-item">
+                {% if ancestor.pk in coordinator_area_pks %}
+                    <a href="{% url 'organisation:unit_detail' ancestor.public_id %}">{{ ancestor.name }}</a>
+                {% else %}
+                    {{ ancestor.name }}
+                {% endif %}
+            </li>
+            {% endfor %}
+        {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'organisation:unit_list' %}">Organisationsstruktur</a></li>
+            {% for ancestor in ancestors %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'organisation:unit_detail' ancestor.public_id %}">{{ ancestor.name }}</a>
+            </li>
+            {% endfor %}
+        {% endif %}
+        <li class="breadcrumb-item active">{{ unit.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0">
+            {% if unit.unit_type == "authority" %}<i class="bi bi-bank me-1"></i>
+            {% elif unit.unit_type == "department" %}<i class="bi bi-building me-1"></i>
+            {% elif unit.unit_type == "division_group" %}<i class="bi bi-folder2 me-1"></i>
+            {% else %}<i class="bi bi-file-text me-1"></i>
+            {% endif %}
+            {{ unit.name }}
+            {% if unit.label %}
+                <small class="text-muted fs-5">({{ unit.label }})</small>
+            {% endif %}
+        </h2>
+        <span class="badge bg-secondary mt-1">{{ unit.get_unit_type_display }}</span>
+        {% if not unit.is_active %}
+            <span class="badge bg-warning text-dark mt-1">Inaktiv</span>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if not is_training_coordinator %}
+        <a href="{% url 'organisation:unit_create' %}?parent={{ unit.pk }}"
+           class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Untereinheit hinzufügen
+        </a>
+        {% endif %}
+        <a href="{% url 'organisation:unit_edit' unit.public_id %}"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i> Bearbeiten
+        </a>
+        {% if not is_training_coordinator %}
+        <a href="{% url 'organisation:unit_delete' unit.public_id %}"
+           class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash me-1"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if unit.notes %}
+<p class="text-muted">{{ unit.notes }}</p>
+{% endif %}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-info-circle me-1"></i> Details
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            {% if unit.parent %}
+            <dt class="col-sm-3">Übergeordnete Einheit</dt>
+            <dd class="col-sm-9">
+                <a href="{% url 'organisation:unit_detail' unit.parent.public_id %}">{{ unit.parent }}</a>
+            </dd>
+            {% endif %}
+            <dt class="col-sm-3">Vollständiger Pfad</dt>
+            <dd class="col-sm-9 text-muted">{{ unit.get_full_path }}</dd>
+
+            {% if unit_total_max %}
+            <dt class="col-sm-3">Kapazität (gesamt)</dt>
+            <dd class="col-sm-9">
+                <div class="d-flex align-items-center gap-2" style="max-width: 300px;">
+                    <div class="progress flex-grow-1" style="height: 10px;">
+                        <div class="progress-bar {% if unit_used >= unit_total_max %}bg-danger{% else %}bg-success{% endif %}"
+                             style="width: {% widthratio unit_used unit_total_max 100 %}%;">
+                        </div>
+                    </div>
+                    <span class="text-muted small">{{ unit_used }}/{{ unit_total_max }} Nachwuchskräfte</span>
+                </div>
+                {% if unit.max_capacity %}
+                <div class="text-muted small mt-1">
+                    Eigenes Limit: {{ unit.max_capacity }}
+                </div>
+                {% endif %}
+            </dd>
+            {% elif unit_used %}
+            <dt class="col-sm-3">Aktuell zugewiesen</dt>
+            <dd class="col-sm-9 text-muted small">{{ unit_used }} Nachwuchskraft/Nachwuchskräfte (kein Limit gesetzt)</dd>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+
+{% if children %}
+<h5 class="mt-4 mb-3">Untergeordnete Einheiten</h5>
+<div class="list-group">
+    {% for child, child_used, child_max in children_with_capacity %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="{% url 'organisation:unit_detail' child.public_id %}" class="text-decoration-none text-dark flex-grow-1">
+            {% if child.unit_type == "authority" %}<i class="bi bi-bank me-1"></i>
+            {% elif child.unit_type == "department" %}<i class="bi bi-building me-1"></i>
+            {% elif child.unit_type == "division_group" %}<i class="bi bi-folder2 me-1"></i>
+            {% else %}<i class="bi bi-file-text me-1"></i>
+            {% endif %}
+            <span class="fw-semibold ms-1">{{ child.name }}</span>
+            {% if child.label %}<span class="text-muted ms-1">({{ child.label }})</span>{% endif %}
+            {% if not child.is_active %}<span class="badge bg-secondary ms-1">inaktiv</span>{% endif %}
+        </a>
+        <div class="d-flex align-items-center gap-2">
+            {% if child_max %}
+            <div class="d-flex align-items-center gap-1" style="min-width: 120px;">
+                <div class="progress flex-grow-1" style="height: 7px; min-width: 60px;">
+                    <div class="progress-bar {% if child_used >= child_max %}bg-danger{% else %}bg-success{% endif %}"
+                         style="width: {% widthratio child_used child_max 100 %}%;"></div>
+                </div>
+                <span class="text-muted" style="font-size:0.72rem;">{{ child_used }}/{{ child_max }}</span>
+            </div>
+            {% elif child_used %}
+            <span class="text-muted" style="font-size:0.72rem;">{{ child_used }} zugewiesen</span>
+            {% endif %}
+            <span class="badge bg-light text-dark border">{{ child.get_unit_type_display }}</span>
+            <a href="{% url 'organisation:unit_edit' child.public_id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-pencil me-1"></i>
+            </a>
+            <a href="{% url 'organisation:unit_delete' child.public_id %}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash me-1"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% with competences=unit.competences.all %}
+{% if competences %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h5 class="mb-0"><i class="bi bi-stars me-1"></i> Kompetenzen</h5>
+    {% if not is_training_coordinator %}
+    <a href="{% url 'organisation:unit_edit' unit.public_id %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Kompetenzen zuweisen
+    </a>
+    {% endif %}
+</div>
+<div class="d-flex flex-wrap gap-2 mb-4">
+    {% for c in competences %}
+    <span class="badge bg-info bg-opacity-25 text-dark border border-info"
+          {% if c.description %}title="{{ c.description }}"{% endif %}
+          style="font-size:.85rem; padding:.4em .75em;">
+        <i class="bi bi-stars me-1"></i>{{ c.name }}
+    </span>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+{% if own_locations or inherited_locations %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h5 class="mb-0"><i class="bi bi-geo-alt me-1"></i> Standorte</h5>
+    {% if not is_training_coordinator %}
+    <a href="{% url 'organisation:unit_edit' unit.public_id %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Standorte zuweisen
+    </a>
+    {% endif %}
+</div>
+<div class="row g-2 mb-4">
+    {% for loc in own_locations %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card border-primary h-100">
+            <div class="card-body py-2 px-3">
+                <div class="fw-semibold">{{ loc.name }}</div>
+                <div class="text-muted small">{% if loc.address %}{{ loc.address }}{% else %}–{% endif %}</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% for loc in inherited_locations %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card border-secondary h-100">
+            <div class="card-body py-2 px-3">
+                <div class="fw-semibold text-secondary">{{ loc.name }}</div>
+                <div class="text-muted small">{% if loc.address %}{{ loc.address }}{% else %}–{% endif %}</div>
+                <span class="badge bg-secondary bg-opacity-25 text-secondary mt-1" style="font-size:0.7rem;">von Untereinheit</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="tabs-scroll-wrapper">
+    <button class="tabs-scroll-btn tabs-scroll-btn--left" aria-label="Tabs nach links scrollen" hidden>
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <button class="tabs-scroll-btn tabs-scroll-btn--right" aria-label="Tabs nach rechts scrollen" hidden>
+        <i class="bi bi-chevron-right"></i>
+    </button>
+    <ul class="nav nav-tabs mt-4" id="assignmentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab">
+                Aktuell
+                {% if current_assignments %}<span class="badge bg-primary ms-1">{{ current_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="future-tab" data-bs-toggle="tab" data-bs-target="#future" type="button" role="tab">
+                Künftig
+                {% if future_assignments %}<span class="badge bg-secondary ms-1">{{ future_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">
+                Vergangen
+                {% if past_assignments %}<span class="badge bg-secondary ms-1">{{ past_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        {% if effective_max or capacity_weeks %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar" type="button" role="tab">
+                <i class="bi bi-calendar3 me-1"></i>Auslastungskalender
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+<div class="tab-content border border-top-0 rounded-bottom p-4 mb-4" id="assignmentTabContent">
+    <div class="tab-pane fade show active" id="current" role="tabpanel">
+        {% if current_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-current" style="width:100%">
+            <thead class="table-light">
+                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th></tr>
+            </thead>
+            <tbody>
+            {% for a in current_assignments %}
+            <tr>
+                <td><a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a></td>
+                <td>{{ a.unit.name }}{% if a.unit.label %} <span class="text-muted">({{ a.unit.label }})</span>{% endif %}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine aktuellen Einsätze.</p>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="future" role="tabpanel">
+        {% if future_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-future" style="width:100%">
+            <thead class="table-light">
+                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th></tr>
+            </thead>
+            <tbody>
+            {% for a in future_assignments %}
+            <tr>
+                <td><a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a></td>
+                <td>{{ a.unit.name }}{% if a.unit.label %} <span class="text-muted">({{ a.unit.label }})</span>{% endif %}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine künftigen Einsätze.</p>
+        {% endif %}
+    </div>
+
+    {% if effective_max or capacity_weeks %}
+    <div class="tab-pane fade" id="calendar" role="tabpanel">
+        <p class="text-muted small mb-3">
+            Wochenweise Auslastung der nächsten 26 Wochen (inkl. aller untergeordneten Einheiten).
+            {% if effective_max %}Kapazitätsgrenze: <strong>{{ effective_max }}</strong>{% else %}Kein Kapazitätslimit gesetzt.{% endif %}
+        </p>
+        <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle mb-0" style="min-width:420px;">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width:110px;">Woche</th>
+                    <th style="min-width:90px;">Auslastung</th>
+                    {% if effective_max %}<th style="min-width:160px;">Kapazitätsbalken</th>{% endif %}
+                    <th>Nachwuchskräfte</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for week in capacity_weeks %}
+            {% if week.count > 0 or week.status != 'free' or forloop.first %}
+            <tr {% if week.status == 'danger' %}class="table-danger"{% elif week.status == 'warning' %}class="table-warning"{% endif %}>
+                <td class="small text-nowrap">
+                    <span class="fw-semibold">KW {{ week.week_start|date:"W" }}</span>
+                    <div class="text-muted" style="font-size:.7rem;">{{ week.week_start|date:"d.m." }} – {{ week.week_end|date:"d.m.Y" }}</div>
+                </td>
+                <td class="text-center">
+                    {% if effective_max %}
+                        <span class="fw-semibold {% if week.status == 'danger' %}text-danger{% elif week.status == 'warning' %}text-warning{% elif week.status == 'success' %}text-success{% else %}text-muted{% endif %}">
+                            {{ week.count }}/{{ week.max }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">{{ week.count }}</span>
+                    {% endif %}
+                </td>
+                {% if effective_max %}
+                <td>
+                    {% if week.pct is not None %}
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height:8px;">
+                            <div class="progress-bar {% if week.status == 'danger' %}bg-danger{% elif week.status == 'warning' %}bg-warning{% else %}bg-success{% endif %}"
+                                 style="width:{{ week.pct }}%;"></div>
+                        </div>
+                        <span class="text-muted" style="font-size:.72rem; min-width:2.5rem;">{{ week.pct }}&thinsp;%</span>
+                    </div>
+                    {% else %}
+                    <span class="text-muted small">–</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                <td class="small">
+                    {% for a in week.assignments %}
+                    <a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none me-2 text-nowrap">
+                        {{ a.student.first_name }} {{ a.student.last_name }}
+                    </a>
+                    {% empty %}
+                    <span class="text-muted">–</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="tab-pane fade" id="past" role="tabpanel">
+        {% if past_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-past" style="width:100%">
+            <thead class="table-light">
+                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th></tr>
+            </thead>
+            <tbody>
+            {% for a in past_assignments %}
+            <tr>
+                <td><a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a></td>
+                <td>{{ a.unit.name }}{% if a.unit.label %} <span class="text-muted">({{ a.unit.label }})</span>{% endif %}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine vergangenen Einsätze.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+$(document).ready(function () {
+    const dtOptions = {
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+    };
+    // Initialize tables only when their tab is shown (DataTables needs visible element)
+    {% if current_assignments %}$('#table-current').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));{% endif %}
+
+    {% if future_assignments %}
+    $('#future-tab').one('shown.bs.tab', function () {
+        $('#table-future').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));
+    });
+    {% endif %}
+
+    {% if past_assignments %}
+    $('#past-tab').one('shown.bs.tab', function () {
+        $('#table-past').DataTable($.extend({}, dtOptions, { order: [[3, 'desc']] }));
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

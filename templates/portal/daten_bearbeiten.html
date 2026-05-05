@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Daten bearbeiten{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Portal</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'portal:daten' %}">Meine Daten</a></li>
+        <li class="breadcrumb-item active">Bearbeiten</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-4 gap-2">
+    <h2 class="mb-0"><i class="bi bi-pencil me-1"></i> Daten bearbeiten</h2>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <form method="post">
+            {% csrf_token %}
+
+            {# ── Telefon ─────────────────────────────────────────────────────── #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-telephone text-muted me-1"></i>
+                    <span class="fw-semibold small">Kontakt</span>
+                </div>
+                <div class="card-body">
+                    <div class="kern-form-input">
+                        <label for="id_phone_number" class="kern-label">Telefonnummer</label>
+                        <input id="id_phone_number" type="text" name="phone_number"
+                               class="kern-form-input__input"
+                               value="{{ form.phone_number.value|default:'' }}"
+                               placeholder="z. B. 0151 12345678">
+                    </div>
+                </div>
+            </div>
+
+            {# ── Adresse ─────────────────────────────────────────────────────── #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-house text-muted me-1"></i>
+                    <span class="fw-semibold small">Adresse</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <div class="kern-form-input mb-3">
+                                <label for="id_street" class="kern-label">Straße</label>
+                                <input id="id_street" type="text" name="street"
+                                       class="kern-form-input__input"
+                                       value="{{ form.street.value|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="kern-form-input mb-3">
+                                <label for="id_house_number" class="kern-label">Nr.</label>
+                                <input id="id_house_number" type="text" name="house_number"
+                                       class="kern-form-input__input"
+                                       value="{{ form.house_number.value|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="kern-form-input mb-3">
+                                <label for="id_zip_code" class="kern-label">PLZ</label>
+                                <input id="id_zip_code" type="text" name="zip_code"
+                                       class="kern-form-input__input"
+                                       value="{{ form.zip_code.value|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-8">
+                            <div class="kern-form-input mb-3">
+                                <label for="id_city" class="kern-label">Ort</label>
+                                <input id="id_city" type="text" name="city"
+                                       class="kern-form-input__input"
+                                       value="{{ form.city.value|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <a href="{% url 'portal:daten' %}" class="btn btn-outline-secondary">Abbrechen</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Speichern
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

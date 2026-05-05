@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Kontoverwaltung{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Kontoverwaltung</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h2 class="mb-0"><i class="bi bi-people-fill me-1"></i> Kontoverwaltung</h2>
+</div>
+<p class="text-muted small mb-3">Rollen und Zugriffsrechte aller Benutzerkonten verwalten.</p>
+
+{# ── Tabelle ───────────────────────────────────────────────────────────────── #}
+<div class="table-responsive">
+<table class="table table-hover table-bordered align-middle" id="accountTable">
+    <thead class="table-light">
+        <tr>
+            <th>Benutzername</th>
+            <th>Name</th>
+            <th>E-Mail</th>
+            <th>Rolle</th>
+            <th>Zugewiesen</th>
+            <th>Status</th>
+            <th class="text-end" style="width:160px;">Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in users_data %}
+        {% with user=entry.user %}
+        <tr class="{% if not user.is_active %}text-muted{% endif %}">
+            <td class="fw-semibold small">
+                {{ user.username }}
+                {% if user.is_superuser %}
+                <span class="badge bg-dark ms-1" style="font-size:.65rem;">Super</span>
+                {% endif %}
+            </td>
+            <td class="small">{{ user.get_full_name|default:"–" }}</td>
+            <td class="text-muted small">{{ user.email|default:"–" }}</td>
+            <td>
+                {% if entry.role %}
+                <span class="badge bg-{{ entry.role_color }} {% if entry.role_color == 'warning' or entry.role_color == 'light' %}text-dark{% endif %}">
+                    {{ entry.role_label }}
+                </span>
+                {% else %}
+                <span class="badge bg-light text-muted border">Keine Rolle</span>
+                {% endif %}
+            </td>
+            <td class="small text-muted">
+                {% if entry.role == 'hausverwaltung' and entry.hv_dormitory %}
+                    <i class="bi bi-building me-1"></i> {{ entry.hv_dormitory.name }}
+                {% elif entry.role == 'ausbildungsverantwortliche' %}
+                    <i class="bi bi-people me-1"></i>
+                    {% if entry.ps_student_count == 1 %}1 NK{% else %}{{ entry.ps_student_count }} NKs{% endif %}
+                {% else %}
+                    –
+                {% endif %}
+            </td>
+            <td>
+                {% if user.is_active %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Aktiv</span>
+                {% else %}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Gesperrt</span>
+                {% endif %}
+            </td>
+            <td class="text-end">
+                <div class="d-flex gap-1 justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-edit"
+                            data-user-pk="{{ user.pk }}"
+                            data-username="{{ user.username }}"
+                            data-fullname="{{ user.get_full_name }}"
+                            data-role="{{ entry.role }}"
+                            data-dormitory-pk="{{ entry.hv_dormitory_pk }}"
+                            data-students='{{ entry.ps_student_pks_json }}'
+                            data-referat-jp='{{ entry.training_office_jp_pks_json }}'
+                            data-referat-dormitory="{{ entry.training_office_profile.can_manage_dormitory|yesno:'true,false' }}"
+                            data-referat-inventory="{{ entry.training_office_profile.can_manage_inventory|yesno:'true,false' }}"
+                            data-referat-absences="{{ entry.training_office_profile.can_manage_absences|yesno:'true,false' }}"
+                            data-referat-vacation="{{ entry.training_office_profile.can_approve_vacation|yesno:'true,false' }}"
+                            data-referat-study-days="{{ entry.training_office_profile.can_approve_study_days|yesno:'true,false' }}"
+                            data-referat-announcements="{{ entry.training_office_profile.can_manage_announcements|yesno:'true,false' }}"
+                            data-referat-interventions="{{ entry.training_office_profile.can_manage_interventions|yesno:'true,false' }}"
+                            title="Bearbeiten">
+                        <i class="bi bi-pencil me-1"></i>
+                    </button>
+                    {% if not user.is_superuser and user != request.user %}
+                    <form method="post" action="{% url 'services:account_toggle_active' user.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-sm {% if user.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                onclick="return confirm('{% if user.is_active %}Konto wirklich sperren?{% else %}Konto wirklich entsperren?{% endif %}')"
+                                title="{% if user.is_active %}Sperren{% else %}Entsperren{% endif %}">
+                            <i class="bi {% if user.is_active %}bi-lock{% else %}bi-unlock{% endif %}"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{# ── Edit Dialog ───────────────────────────────────────────────────────────── #}
+<dialog class="kern-dialog kern-dialog--lg" id="editModal"
+        aria-labelledby="editModalLabel">
+    <form id="editForm" method="post" action="" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <div>
+                <h2 class="kern-title kern-title--large" id="editModalLabel">
+                    <i class="bi bi-person-gear me-1"></i> Konto bearbeiten
+                </h2>
+                <div class="text-muted small" id="modalUsername"></div>
+            </div>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+
+            {# ── Rolle ─────────────────────────────────────────── #}
+            <div class="mb-4">
+                <label class="fw-semibold d-block mb-2"><i class="bi bi-shield-lock me-1"></i> Rolle</label>
+                <div class="d-flex flex-wrap gap-2" id="roleButtons">
+                    {% for value, label in all_roles %}
+                    <div class="form-check form-check-inline m-0">
+                        <input class="form-check-input visually-hidden" type="radio" name="rolle"
+                               id="role_{{ value|default:'none' }}" value="{{ value }}">
+                        <label class="btn btn-sm btn-outline-secondary role-btn" for="role_{{ value|default:'none' }}">
+                            {{ label }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="kern-hint mt-2 fst-italic" id="roleHint"></div>
+            </div>
+
+            {# ── Wohnheim (nur Hausverwaltung) ─────────────────── #}
+            <div id="section-wohnheim" class="mb-4 d-none">
+                <div class="kern-form-input">
+                    <label class="kern-label" for="selectWohnheim">
+                        <i class="bi bi-building me-1"></i> Zugewiesenes Wohnheim
+                    </label>
+                    <select name="wohnheim" id="selectWohnheim" class="kern-form-input__input">
+                        <option value="">– Bitte Wohnheim wählen –</option>
+                        {% for dorm in dormitories %}
+                        <option value="{{ dorm.pk }}">{{ dorm.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="kern-hint">Die Hausverwaltung kann nur den Belegungsplan dieses Wohnheims einsehen.</span>
+                </div>
+            </div>
+
+            {# ── Ausbildungsreferat: Berufsbilder und Einzelberechtigungen ── #}
+            <div id="section-ausbildungsreferat" class="mb-4 d-none">
+                <label class="fw-semibold d-block mb-2"><i class="bi bi-briefcase me-1"></i> Zuständige Berufsbilder</label>
+                <div class="border rounded p-2 mb-2" style="max-height:200px; overflow-y:auto;" id="jobProfileList">
+                    {% for jp in job_profiles %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               name="referat_job_profiles" value="{{ jp.pk }}"
+                               id="jp_{{ jp.pk }}">
+                        <label class="form-check-label small" for="jp_{{ jp.pk }}">
+                            {{ jp.description }}{% if jp.job_profile %} <span class="text-muted">({{ jp.job_profile }})</span>{% endif %}
+                        </label>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small mb-0">Keine Berufsbilder vorhanden.</p>
+                    {% endfor %}
+                </div>
+                <span class="kern-hint d-block mb-3">Nur Nachwuchskräfte dieser Berufsbilder werden standardmäßig angezeigt. Ohne Auswahl werden alle angezeigt.</span>
+
+                <label class="fw-semibold d-block mb-2"><i class="bi bi-shield-check me-1"></i> Einzelberechtigungen</label>
+                <div class="d-flex flex-column gap-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="can_manage_dormitory" id="perm_dormitory">
+                        <label class="form-check-label small" for="perm_dormitory">
+                            <i class="bi bi-building me-1 text-muted"></i> Wohnheimverwaltung
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="can_manage_inventory" id="perm_inventory">
+                        <label class="form-check-label small" for="perm_inventory">
+                            <i class="bi bi-archive me-1 text-muted"></i> Inventarverwaltung
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="can_manage_absences" id="perm_absences">
+                        <label class="form-check-label small" for="perm_absences">
+                            <i class="bi bi-calendar-x me-1 text-muted"></i> Abwesenheitsverwaltung (Übersichtslisten)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="can_approve_vacation" id="perm_vacation">
+                        <label class="form-check-label small" for="perm_vacation">
+                            <i class="bi bi-sun me-1 text-muted"></i> Urlaubsgenehmigung
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="can_manage_announcements" id="perm_announcements">
+                        <label class="form-check-label small" for="perm_announcements">
+                            <i class="bi bi-megaphone me-1 text-muted"></i> Ankündigungen verwalten
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="can_manage_interventions" id="perm_interventions">
+                        <label class="form-check-label small" for="perm_interventions">
+                            <i class="bi bi-exclamation-triangle me-1 text-muted"></i> Maßnahmen verwalten
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="can_approve_study_days" id="perm_study_days">
+                        <label class="form-check-label small" for="perm_study_days">
+                            <i class="bi bi-book me-1 text-muted"></i> Lerntage-Genehmigung
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {# ── Nachwuchskräfte (nur Ausbildungsverantwortliche) ── #}
+            <div id="section-ausbildungsverantwortliche" class="mb-4 d-none">
+                <label class="fw-semibold d-block mb-2"><i class="bi bi-people me-1"></i> Zugewiesene Nachwuchskräfte</label>
+                <div class="kern-form-input">
+                    <input type="text" id="studentSearch" class="kern-form-input__input"
+                           placeholder="Nachwuchskraft suchen …" autocomplete="off">
+                </div>
+                <div class="border rounded p-2" style="max-height:280px; overflow-y:auto;" id="studentList">
+                    {% for student in students %}
+                    <div class="form-check student-item" data-name="{{ student.first_name|lower }} {{ student.last_name|lower }}">
+                        <input class="form-check-input" type="checkbox"
+                               name="nachwuchskraefte" value="{{ student.pk }}"
+                               id="student_{{ student.pk }}">
+                        <label class="form-check-label small" for="student_{{ student.pk }}">
+                            {{ student.last_name }}, {{ student.first_name }}
+                            {% if student.course %}<span class="text-muted ms-1">{{ student.course }}</span>{% endif %}
+                        </label>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small mb-0">Keine Nachwuchskräfte vorhanden.</p>
+                    {% endfor %}
+                </div>
+                <div class="d-flex gap-2 mt-2 align-items-center">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelectAll">Alle auswählen</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselectAll">Alle abwählen</button>
+                    <span class="ms-auto text-muted small" id="selectedCount"></span>
+                </div>
+                <span class="kern-hint d-block mt-1">Nur diese Nachwuchskräfte sind für die Ausbildungsverantwortliche sichtbar.</span>
+            </div>
+
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Speichern</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+<script>
+(function () {
+    const ROLE_HINTS = {
+        '':                                         '',
+        'ausbildungsleitung':                       'Vollzugriff auf alle Bereiche inkl. Bestätigungen.',
+        'ausbildungsreferat':                       'Zugriff auf Nachwuchskräfte nach Berufsbild. Einzelne Funktionen werden separat freigegeben.',
+        'ausbildungskoordination':                  'Zugriff auf eigene Nachwuchskräfte und Praxistutoren.',
+        'koordination_ausbildungsverantwortliche':  'Kombinierte Rolle: Koordination + Ausbildungsverantwortliche.',
+        'hausverwaltung':                           'Nur Belegungsplan des zugewiesenen Wohnheims.',
+        'reisekostenstelle':                        'Lesezugriff auf Nachwuchskräfte, Wohnheim und Kurse.',
+        'ausbildungsverantwortliche':               'Vollständiger Lesezugriff auf die zugewiesenen Nachwuchskräfte.',
+    };
+
+    const ROLE_COLORS = {
+        '':                                         'outline-secondary',
+        'ausbildungsleitung':                       'outline-danger',
+        'ausbildungsreferat':                       'outline-warning',
+        'ausbildungskoordination':                  'outline-info',
+        'koordination_ausbildungsverantwortliche':  'outline-info',
+        'hausverwaltung':                           'outline-primary',
+        'reisekostenstelle':                        'outline-secondary',
+        'ausbildungsverantwortliche':               'outline-success',
+    };
+
+    const editModal = document.getElementById('editModal');
+    const editForm  = document.getElementById('editForm');
+
+    // Farbe der Rollen-Buttons initial setzen
+    document.querySelectorAll('.role-btn').forEach(label => {
+        const radio = document.getElementById(label.getAttribute('for'));
+        const color = ROLE_COLORS[radio ? radio.value : ''] || 'outline-secondary';
+        label.classList.replace('btn-outline-secondary', 'btn-' + color);
+    });
+
+    // Dialog öffnen und mit Nutzerdaten befüllen
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pk         = btn.dataset.userPk;
+            const username   = btn.dataset.username;
+            const fullname   = btn.dataset.fullname;
+            const role       = btn.dataset.role;
+            const dormPk     = btn.dataset.dormitoryPk;
+            const studentPks = JSON.parse(btn.dataset.students || '[]');
+            const referatJpPks = JSON.parse(btn.dataset.referatJp || '[]');
+
+            document.getElementById('modalUsername').textContent =
+                fullname ? `${fullname} (${username})` : username;
+
+            editForm.action = `/konten/${pk}/bearbeiten/`;
+
+            document.querySelectorAll('input[name="rolle"]').forEach(r => {
+                r.checked = (r.value === role);
+            });
+            document.getElementById('selectWohnheim').value = dormPk || '';
+            document.querySelectorAll('input[name="nachwuchskraefte"]').forEach(cb => {
+                cb.checked = studentPks.includes(cb.value);
+            });
+            document.getElementById('studentSearch').value = '';
+            filterStudents('');
+
+            // Referat-Profil
+            document.querySelectorAll('input[name="referat_job_profiles"]').forEach(cb => {
+                cb.checked = referatJpPks.includes(cb.value);
+            });
+            document.getElementById('perm_dormitory').checked      = btn.dataset.referatDormitory     === 'true';
+            document.getElementById('perm_inventory').checked      = btn.dataset.referatInventory     === 'true';
+            document.getElementById('perm_absences').checked       = btn.dataset.referatAbsences      === 'true';
+            document.getElementById('perm_vacation').checked       = btn.dataset.referatVacation      === 'true';
+            document.getElementById('perm_study_days').checked     = btn.dataset.referatStudyDays     === 'true';
+            document.getElementById('perm_announcements').checked  = btn.dataset.referatAnnouncements === 'true';
+            document.getElementById('perm_interventions').checked  = btn.dataset.referatInterventions === 'true';
+
+            updateUI(role);
+            updateSelectedCount();
+            editModal.showModal();
+        });
+    });
+
+    document.querySelectorAll('input[name="rolle"]').forEach(radio => {
+        radio.addEventListener('change', () => updateUI(radio.value));
+    });
+
+    function updateUI(role) {
+        document.querySelectorAll('input[name="rolle"]').forEach(r => {
+            const lbl = document.querySelector(`label[for="${r.id}"]`);
+            if (!lbl) return;
+            const base = ROLE_COLORS[r.value] || 'outline-secondary';
+            lbl.className = `btn btn-sm btn-${base} role-btn`;
+            if (r.checked) {
+                lbl.classList.replace(`btn-${base}`, `btn-${base.replace('outline-', '')}`);
+            }
+        });
+        document.getElementById('roleHint').textContent = ROLE_HINTS[role] || '';
+        document.getElementById('section-wohnheim').classList.toggle('d-none', role !== 'hausverwaltung');
+        document.getElementById('section-ausbildungsreferat').classList.toggle('d-none', role !== 'ausbildungsreferat');
+        document.getElementById('section-ausbildungsverantwortliche').classList.toggle(
+            'd-none',
+            role !== 'ausbildungsverantwortliche' && role !== 'koordination_ausbildungsverantwortliche'
+        );
+    }
+
+    document.getElementById('studentSearch').addEventListener('input', e => {
+        filterStudents(e.target.value.toLowerCase().trim());
+    });
+
+    function filterStudents(query) {
+        document.querySelectorAll('.student-item').forEach(item => {
+            item.classList.toggle('d-none', query.length > 0 && !item.dataset.name.includes(query));
+        });
+    }
+
+    document.getElementById('btnSelectAll').addEventListener('click', () => {
+        document.querySelectorAll('.student-item:not(.d-none) input[type="checkbox"]').forEach(cb => cb.checked = true);
+        updateSelectedCount();
+    });
+    document.getElementById('btnDeselectAll').addEventListener('click', () => {
+        document.querySelectorAll('input[name="nachwuchskraefte"]').forEach(cb => cb.checked = false);
+        updateSelectedCount();
+    });
+    document.getElementById('studentList').addEventListener('change', updateSelectedCount);
+
+    function updateSelectedCount() {
+        const n = document.querySelectorAll('input[name="nachwuchskraefte"]:checked').length;
+        document.getElementById('selectedCount').textContent = n > 0 ? `${n} ausgewählt` : '';
+    }
+
+    $('#accountTable').DataTable({
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+        order: [[1, 'asc']],
+        columnDefs: [{ orderable: false, targets: [6] }],
+    });
+})();
+</script>
+{% endblock %}

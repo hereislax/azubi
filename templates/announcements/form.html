@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}{% if announcement %}Ankündigung bearbeiten{% else %}Neue Ankündigung{% endif %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'announcements:list' %}">Ankündigungen</a></li>
+        {% if announcement %}
+        <li class="breadcrumb-item"><a href="{% url 'announcements:detail' announcement.public_id %}">{{ announcement.title }}</a></li>
+        <li class="breadcrumb-item active">Bearbeiten</li>
+        {% else %}
+        <li class="breadcrumb-item active">Neue Ankündigung</li>
+        {% endif %}
+    </ol>
+</nav>
+
+<h2 class="mb-3">
+    <i class="bi bi-megaphone me-1"></i>
+    {% if announcement %}Ankündigung bearbeiten{% else %}Neue Ankündigung{% endif %}
+</h2>
+
+<form method="post" enctype="multipart/form-data" id="announcement-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" id="action-input" value="save">
+
+    <div class="row g-4">
+        {# ── Linke Spalte: Inhalt ──────────────────────────────────────────── #}
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="kern-form-input mb-3">
+                        <label for="title-input" class="kern-label fw-semibold">Titel <span class="text-danger">*</span></label>
+                        <input type="text" id="title-input" name="title" class="kern-form-input__input"
+                               value="{{ announcement.title|default:'' }}" required maxlength="200"
+                               placeholder="Betreff / Titel der Ankündigung">
+                    </div>
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label fw-semibold" for="body-textarea">Inhalt <span class="text-danger">*</span></label>
+                        <textarea name="body" id="body-textarea" class="kern-form-input__input" rows="14"
+                                  placeholder="Inhalt der Ankündigung…">{{ announcement.body|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            {# Anhänge #}
+            <div class="card shadow-sm">
+                <div class="card-header py-2">
+                    <span class="fw-semibold small"><i class="bi bi-paperclip me-1"></i>Anhänge</span>
+                </div>
+                <div class="card-body">
+                    {% if announcement and announcement.attachments.all %}
+                    <div class="mb-3">
+                        <div class="text-muted small mb-2">Vorhandene Anhänge</div>
+                        <div class="d-flex flex-wrap gap-2">
+                        {% for att in announcement.attachments.all %}
+                            <div class="d-flex align-items-center gap-2 border rounded px-2 py-1 small">
+                                <i class="bi bi-file-earmark"></i>
+                                <a href="{{ att.file.url }}" class="text-decoration-none" target="_blank">{{ att.filename }}</a>
+                                <div class="kern-form-check mb-0 ms-2">
+                                    <input class="kern-form-check__checkbox" type="checkbox"
+                                           name="delete_attachment" value="{{ att.pk }}"
+                                           id="del-att-{{ att.pk }}">
+                                    <label class="kern-label text-danger" for="del-att-{{ att.pk }}">
+                                        <i class="bi bi-trash"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="attachments">Neue Dateien hinzufügen<span class="kern-label__optional"> – Optional</span></label>
+                        <div class="kern-hint" id="attachments-hint">Mehrere Dateien gleichzeitig wählbar.</div>
+                        <input type="file" name="attachments" id="attachments" class="kern-form-input__input" multiple aria-describedby="attachments-hint">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── Rechte Spalte: Einstellungen ──────────────────────────────────── #}
+        <div class="col-12 col-lg-4">
+
+            {# Zielgruppe #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header py-2">
+                    <span class="fw-semibold small">Zielgruppe</span>
+                </div>
+                <div class="card-body">
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label small" for="target-type">Empfänger</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select name="target_type" id="target-type" class="kern-form-input__select" onchange="toggleTargetGroup(this.value)">
+                                {% for value, label in target_choices %}
+                                <option value="{{ value }}"
+                                    {% if announcement and announcement.target_type == value %}selected
+                                    {% elif not announcement and value == TARGET_ALL_STUDENTS %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Kurs #}
+                    <div id="group-course" class="kern-form-input mb-3 target-subgroup" style="display:none;">
+                        <label class="kern-label small" for="target-course">Kurs</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select name="target_course" id="target-course" class="kern-form-input__select">
+                                <option value="">– Bitte wählen –</option>
+                                {% for c in courses %}
+                                <option value="{{ c.pk }}"
+                                    {% if announcement and announcement.target_course_id == c.pk %}selected{% endif %}>
+                                    {{ c }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Berufsbild #}
+                    <div id="group-job_profile" class="kern-form-input mb-3 target-subgroup" style="display:none;">
+                        <label class="kern-label small" for="target-job-profile">Berufsbild</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select name="target_job_profile" id="target-job-profile" class="kern-form-input__select">
+                                <option value="">– Bitte wählen –</option>
+                                {% for jp in job_profiles %}
+                                <option value="{{ jp.pk }}"
+                                    {% if announcement and announcement.target_job_profile_id == jp.pk %}selected{% endif %}>
+                                    {{ jp.job_profile }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Koordination #}
+                    <div id="group-koordination" class="kern-form-input mb-3 target-subgroup" style="display:none;">
+                        <label class="kern-label small" for="target-coordination">Koordination</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select name="target_coordination" id="target-coordination" class="kern-form-input__select">
+                                <option value="">– Bitte wählen –</option>
+                                {% for k in training_coordinations %}
+                                <option value="{{ k.pk }}"
+                                    {% if announcement and announcement.target_coordination_id == k.pk %}selected{% endif %}>
+                                    {{ k.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Laufbahn #}
+                    <div id="group-career" class="kern-form-input mb-3 target-subgroup" style="display:none;">
+                        <label class="kern-label small" for="target-career">Laufbahn</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select name="target_career" id="target-career" class="kern-form-input__select">
+                                <option value="">– Bitte wählen –</option>
+                                {% for c in careers %}
+                                <option value="{{ c.pk }}"
+                                    {% if announcement and announcement.target_career_id == c.pk %}selected{% endif %}>
+                                    {{ c.description }} ({{ c.abbreviation }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Einzelne NKs #}
+                    <div id="group-individual" class="target-subgroup" style="display:none;">
+                        <div class="kern-form-input">
+                            <label class="kern-label small" for="student-search">Nachwuchskräfte auswählen</label>
+                            <input type="text" id="student-search" class="kern-form-input__input mb-2"
+                                   placeholder="Suchen…" autocomplete="off">
+                        </div>
+                        <div class="border rounded" style="max-height:220px;overflow-y:auto;">
+                        {% for s in all_students %}
+                            <div class="student-row kern-form-check d-flex align-items-center gap-2 px-2 py-1 border-bottom"
+                                 data-name="{{ s.first_name|lower }} {{ s.last_name|lower }}">
+                                <input class="kern-form-check__checkbox mt-0 flex-shrink-0" type="checkbox"
+                                       name="target_student_pks" value="{{ s.pk }}"
+                                       id="st-{{ s.pk }}"
+                                       {% if s.pk in selected_student_pks %}checked{% endif %}>
+                                <label class="kern-label small mb-0 flex-grow-1" for="st-{{ s.pk }}">
+                                    {{ s.last_name }}, {{ s.first_name }}
+                                    {% if s.course %}<span class="text-muted ms-1">({{ s.course }})</span>{% endif %}
+                                </label>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted small p-2 mb-0">Keine aktiven Nachwuchskräfte.</p>
+                        {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Optionen #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header py-2">
+                    <span class="fw-semibold small">Optionen</span>
+                </div>
+                <div class="card-body">
+                    <div class="kern-form-check mb-2">
+                        <input class="kern-form-check__checkbox" type="checkbox" name="send_email" value="1"
+                               id="send-email" {% if not announcement or announcement.send_email %}checked{% endif %}>
+                        <label class="kern-label small" for="send-email">
+                            <i class="bi bi-envelope me-1"></i> Per E-Mail versenden
+                        </label>
+                    </div>
+                    <div class="kern-form-check">
+                        <input class="kern-form-check__checkbox" type="checkbox" name="requires_acknowledgement" value="1"
+                               id="req-ack" {% if announcement and announcement.requires_acknowledgement %}checked{% endif %}>
+                        <label class="kern-label small" for="req-ack">
+                            <i class="bi bi-check2-square me-1"></i> Bestätigung durch NK erforderlich
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column gap-2">
+                <button type="submit" class="btn btn-outline-secondary"
+                        onclick="document.getElementById('action-input').value='save'">
+                    <i class="bi bi-floppy me-1"></i> Als Entwurf speichern
+                </button>
+                <button type="button" class="btn btn-success"
+                        onclick="kernDialogOpen('publishModal')">
+                    <i class="bi bi-send me-1"></i> Veröffentlichen &amp; Versenden
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+{# ── Bestätigungs-Dialog ─────────────────────────────────────────────────── #}
+<dialog id="publishModal" class="kern-dialog">
+    <div class="kern-dialog__header">
+        <h5 id="publishModalLabel">
+            <i class="bi bi-send me-2"></i>Ankündigung veröffentlichen
+        </h5>
+        <button type="button" class="btn-close" onclick="kernDialogClose(this)" aria-label="Schließen"></button>
+    </div>
+    <div class="kern-dialog__body">
+        <p class="mb-1">Die Ankündigung wird jetzt veröffentlicht und an alle Empfänger versendet.</p>
+        {% if announcement and announcement.send_email %}
+        <p class="text-muted small mb-0">
+            <i class="bi bi-envelope me-1"></i>
+            Es wird eine E-Mail an alle Empfänger der gewählten Zielgruppe gesendet.
+        </p>
+        {% endif %}
+    </div>
+    <div class="kern-dialog__footer">
+        <button type="button" class="btn btn-outline-secondary" onclick="kernDialogClose(this)">
+            Abbrechen
+        </button>
+        <button type="button" class="btn btn-success" id="confirmPublishBtn">
+            <i class="bi bi-send me-1"></i> Jetzt veröffentlichen
+        </button>
+    </div>
+</dialog>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleTargetGroup(val) {
+    document.querySelectorAll('.target-subgroup').forEach(function (el) {
+        el.style.display = (el.id === 'group-' + val) ? 'block' : 'none';
+    });
+}
+
+// Run on page load to show the correct sub-group for existing values
+toggleTargetGroup(document.getElementById('target-type').value);
+
+document.getElementById('confirmPublishBtn').addEventListener('click', function () {
+    document.getElementById('action-input').value = 'publish';
+    document.getElementById('announcement-form').submit();
+});
+
+document.getElementById('student-search') && document.getElementById('student-search').addEventListener('input', function () {
+    var q = this.value.toLowerCase();
+    document.querySelectorAll('.student-row').forEach(function (row) {
+        row.style.display = row.dataset.name.includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

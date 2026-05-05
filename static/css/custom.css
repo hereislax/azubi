@@ -1,0 +1,1389 @@
+/*
+ * Azubi Portal – Design Bridge
+ * KERN UX Design System (kern-ux.de) × Bootstrap 5
+ *
+ * Ladereihenfolge: fira-sans.css → kern.min.css → bootstrap.min.css → theme.css → diese Datei
+ * Bootstrap überschreibt KERNs Basis-Reset; KERN-Komponenten (.kern-*) und CSS-Variablen bleiben.
+ * Diese Datei verbindet Bootstrap-Klassen mit KERN-Tokens und normalisiert die App-Optik.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   1. TYPOGRAFIE & BASIS  –  nach KERN UX-Spezifikation
+      https://www.kern-ux.de/design-system/foundations/typografie
+   ═══════════════════════════════════════════════════════════════════════════════
+
+   Adaptive (fluide) Größen:
+     adaptive-large   26 px (mobil) → 32 px (Desktop)   LH 32 → 40 px
+     adaptive-medium  21 px (mobil) → 24 px (Desktop)   LH 32 px (static-large)
+
+   Statische Größen:
+     static-large    21 px / 1.3125 rem   LH 32 px / 2 rem
+     static-medium   18 px / 1.125 rem    LH 24 px / 1.5 rem
+     static-small    16 px / 1 rem        LH 24 px / 1.5 rem  ← Basis/Body
+
+   Schriftgewichte:
+     regular   400
+     medium    500
+     semi-bold 600
+   ─────────────────────────────────────────────────────────────────────────── */
+
+body {
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    /* KERN static-small = 16 px */
+    font-size: var(--kern-typography-font-size-static-small, 1rem);
+    /* KERN static-small LH = 24 px → 24/16 = 1.5 */
+    line-height: 1.5;
+    font-weight: var(--kern-typography-font-weight-regular, 400);
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+    background-color: var(--kern-color-layout-background-default, #f0f2f5);
+}
+
+/*
+ * h1 – KERN adaptive-large
+ *   mobil:   26 px / 1.625 rem   LH 32 px / 2 rem
+ *   Desktop: 32 px / 2 rem       LH 40 px / 2.5 rem
+ *   clamp(min, bevorzugt, max)
+ */
+h1 {
+    font-size: clamp(1.625rem, 0.875rem + 2vw, 2rem);
+    line-height: clamp(2rem, 1.5rem + 1.5625vw, 2.5rem);
+    font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+    letter-spacing: -0.01em;
+}
+
+/*
+ * h2 – KERN adaptive-medium
+ *   mobil:   21 px / 1.3125 rem
+ *   Desktop: 24 px / 1.5 rem     LH static-large = 32 px / 2 rem
+ */
+h2 {
+    font-size: clamp(1.3125rem, 1.125rem + 0.625vw, 1.5rem);
+    line-height: 2rem;
+    font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+    letter-spacing: -0.005em;
+}
+
+/*
+ * h3 – KERN static-large
+ *   21 px / 1.3125 rem   LH 32 px / 2 rem
+ */
+h3 {
+    font-size: var(--kern-typography-font-size-static-large, 1.3125rem);
+    line-height: 2rem;
+    font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+/*
+ * h4 – KERN static-medium
+ *   18 px / 1.125 rem   LH 24 px / 1.5 rem
+ */
+h4 {
+    font-size: var(--kern-typography-font-size-static-medium, 1.125rem);
+    line-height: 1.5rem;
+    font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+/*
+ * h5, h6 – KERN static-small (= Body-Größe, nur durch Gewicht differenziert)
+ *   16 px / 1 rem   LH 24 px / 1.5 rem
+ */
+h5 {
+    font-size: var(--kern-typography-font-size-static-small, 1rem);
+    line-height: 1.5rem;
+    font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+h6 {
+    font-size: var(--kern-typography-font-size-static-small, 1rem);
+    line-height: 1.5rem;
+    font-weight: var(--kern-typography-font-weight-medium, 500);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   2. NAVIGATIONSLEISTE & KERN-KOPFZEILE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * kern-kopfzeile fixieren: sitzt immer ganz oben im Viewport.
+ * z-index 1031 > Bootstrap-Navbar (1030).
+ */
+.kern-kopfzeile {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1031;
+}
+
+/*
+ * Navbar direkt unter der kern-kopfzeile platzieren.
+ * Höhe kern-kopfzeile ≈ 32 px (2 rem).
+ */
+.navbar.fixed-top {
+    top: 2rem !important;
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.12);
+    /* Navbar-Höhe explizit steuern */
+    min-height: 52px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.navbar-brand {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    gap: 0.5rem;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+}
+
+/* Logo-Bild: maximale Höhe damit es bei unterschiedlichen SVG-Viewboxen stabil bleibt */
+.navbar-brand img {
+    height: 28px;
+    width: auto;
+    display: block;
+}
+
+/* Nav-Links: 14 px – kompakt für viele Menüpunkte, gut lesbar */
+.navbar .nav-link {
+    font-size: 0.875rem;
+    font-weight: var(--kern-typography-font-weight-medium, 500);
+    padding: 0.375rem 0.6rem !important;
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+    transition: background-color 0.15s ease;
+    line-height: 1.5;
+}
+
+/* Dropdown in der Navbar */
+.navbar .dropdown-menu {
+    margin-top: 0.375rem;
+    min-width: 14rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   3. KARTEN (Cards)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.card {
+    border: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    border-radius: var(--kern-metric-border-radius-large, 0.5rem);
+    background-color: #ffffff;
+    /* Einheitlicher, dezenter Schatten für alle Karten */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.15s ease;
+}
+
+/* shadow-sm wird nirgendwo mehr beansprucht, bleibt aber konsistent */
+.card.shadow-sm,
+.card.shadow {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+.card-header {
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.7rem 1.25rem;
+    background-color: #f5f7fa;
+    border-bottom: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    border-radius: calc(var(--kern-metric-border-radius-large, 0.5rem) - 1px)
+                   calc(var(--kern-metric-border-radius-large, 0.5rem) - 1px) 0 0 !important;
+    color: #3a3a3a;
+    letter-spacing: 0.01em;
+}
+
+/* Farbige Card-Header bleiben unverändert (bg-primary, bg-success …) */
+.card-header[class*="bg-primary"],
+.card-header[class*="bg-success"],
+.card-header[class*="bg-danger"],
+.card-header[class*="bg-warning"],
+.card-header[class*="bg-info"],
+.card-header[class*="bg-secondary"] {
+    background-color: inherit; /* kommt aus theme.css */
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-footer {
+    background-color: #f9fafb;
+    border-top: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    color: var(--kern-color-layout-text-muted, #6c757d);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   4. SCHALTFLÄCHEN (Buttons)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.btn {
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    font-size: 0.9375rem;
+    font-weight: var(--kern-typography-font-weight-medium, 500);
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+    padding: 0 1rem;
+    /* Gleiche Höhe wie Inputs (2.5rem = 40px = kern-form-input__input / form-control) */
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease-in-out;
+    border-width: 1.5px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+}
+
+/* btn-sm: kompakt für Tabellen/Listen; einheitlich 2.125rem */
+.btn-sm {
+    font-size: 0.875rem;
+    padding: 0 0.7rem;
+    height: 2.125rem;
+    line-height: 1;
+}
+
+.btn-lg {
+    font-size: 1rem;
+    padding: 0 1.4rem;
+    height: 3rem;
+}
+
+/* Barrierefreier Fokus-Indikator (KERN UX-Anforderung) */
+.btn:focus-visible {
+    outline: 3px solid var(--kern-focus-outline-color, rgba(13, 110, 253, 0.45));
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+/* Outline-Buttons: etwas wärmer */
+.btn-outline-secondary {
+    border-color: #b0b8c1;
+    color: #495057;
+}
+.btn-outline-secondary:hover {
+    background-color: #f0f2f5;
+    border-color: #868e96;
+    color: #1b1b1b;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   5. FORMULARE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* form-control/-select/-label/-text werden nicht mehr in Templates verwendet
+   (durch kern-form-input* ersetzt). Restliche Bootstrap-Klassen bleiben für
+   3rd-Party-Widgets (DataTables, TomSelect) – minimal angeglichen. */
+
+.input-group-text {
+    font-size: 0.875rem;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    border-color: #adb5bd;
+    background-color: #f5f7fa;
+    color: #495057;
+}
+
+/* Tom Select – KERN-Look (flat, light gray, bottom border) */
+.ts-wrapper .ts-control {
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif) !important;
+    font-size: var(--kern-typography-font-size-static-medium, 18px) !important;
+    line-height: var(--kern-typography-line-height-static-medium, 24px) !important;
+    color: var(--kern-color-layout-text-default, #171A2B) !important;
+    background: var(--kern-color-form-input-background, #F7F7F9) !important;
+    border: none !important;
+    border-bottom: 2px solid var(--kern-color-form-input-border, #171A2B) !important;
+    border-radius: 2px !important;
+    min-height: 48px !important;
+    padding: 6px 16px !important;
+    box-shadow: none !important;
+}
+.ts-wrapper.focus .ts-control,
+.ts-wrapper .ts-control:focus-within {
+    border-bottom-color: var(--kern-color-action-default, #1A3DA5) !important;
+    box-shadow: none !important;
+}
+.ts-dropdown {
+    border: 1px solid var(--kern-color-form-input-border, #171A2B) !important;
+    border-radius: 2px !important;
+    background: #fff !important;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans') !important;
+}
+.ts-dropdown .option {
+    padding: 8px 16px !important;
+    font-size: var(--kern-typography-font-size-static-medium, 18px) !important;
+}
+.ts-dropdown .option.active,
+.ts-dropdown .active {
+    background: var(--kern-color-action-default, #1A3DA5) !important;
+    color: #fff !important;
+}
+.ts-wrapper.multi .ts-control > div {
+    background: var(--kern-color-action-default, #1A3DA5) !important;
+    color: #fff !important;
+    border-radius: 2px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   6. TABELLEN
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.table {
+    /* Tabellen: 14 px – bleibt unter Body-Größe für mehr Dichte */
+    font-size: 0.875rem;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    line-height: 1.5rem;
+}
+
+/* Tabellen-Kopf */
+.table thead th {
+    font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #495057;
+    background-color: #f5f7fa;
+    border-bottom: 2px solid var(--kern-color-layout-border-default, #d8dce3) !important;
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 0.65rem 0.75rem;
+}
+
+.table > :not(caption) > * > * {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+}
+
+/* Hover-Zeilen mit KERN-Primärfarbe */
+.table-hover > tbody > tr:hover > * {
+    background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.04) !important;
+    color: inherit;
+}
+
+/* DataTables-Inputs (Suche + Page-Length) auf KERN-Look bringen.
+   Das DataTables-DOM ist Drittanbieter und nutzt form-control/-select – wir
+   überstylen die Klassen hier KERN-konform statt Templates anzufassen. */
+div.dt-container .dt-search input,
+div.dt-container .dt-length select,
+.dataTables_filter input.form-control,
+.dataTables_filter input.form-control-sm,
+.dataTables_length select.form-select,
+.dataTables_length select.form-select-sm {
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif) !important;
+    font-size: var(--kern-typography-font-size-static-medium, 18px) !important;
+    line-height: var(--kern-typography-line-height-static-medium, 24px) !important;
+    color: var(--kern-color-layout-text-default, #171A2B) !important;
+    background: var(--kern-color-form-input-background, #F7F7F9) !important;
+    border: none !important;
+    border-bottom: 2px solid var(--kern-color-form-input-border, #171A2B) !important;
+    border-radius: 2px !important;
+    height: 48px !important;
+    padding: 6px 16px !important;
+    box-shadow: none !important;
+}
+div.dt-container .dt-search input:focus,
+div.dt-container .dt-length select:focus,
+.dataTables_filter input.form-control:focus,
+.dataTables_length select.form-select:focus {
+    border-bottom-color: var(--kern-color-action-default, #1A3DA5) !important;
+    outline: none !important;
+}
+div.dt-container .dt-length select,
+.dataTables_length select.form-select {
+    min-width: 80px !important;
+    /* eigener Chevron, da KERN selectbox in der Regel im wrapper steckt */
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23171A2B' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 14px 12px !important;
+    padding-right: 36px !important;
+}
+
+div.dt-container .dt-info,
+div.dt-container .dt-empty {
+    font-size: 0.875rem;
+    color: var(--kern-color-layout-text-muted, #6c757d);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   7. BADGES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge {
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    /* Badges: 12 px – deutlich kleiner als Body für klare visuelle Hierarchie */
+    font-size: 0.75rem;
+    font-weight: var(--kern-typography-font-weight-medium, 500);
+    padding: 0.3em 0.6em;
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+    letter-spacing: 0.02em;
+    line-height: 1.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   8. HINWEISMELDUNGEN (Alerts)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.alert {
+    /* Alerts: static-small = 16 px */
+    font-size: 1rem;
+    line-height: 1.5rem;
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+    border-width: 0;
+    border-left: 4px solid transparent;
+    padding: 0.875rem 1rem;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+}
+
+/* Farbige linke Linie – erkennbarer als Hintergrundfläche (KERN-Prinzip: klare Signale) */
+.alert-success {
+    border-left-color: var(--kern-color-feedback-success-default, #198754);
+    background-color: #f0faf4;
+    color: #1a3d2b;
+}
+.alert-danger {
+    border-left-color: var(--kern-color-feedback-danger-default, #dc3545);
+    background-color: #fdf4f5;
+    color: #4a1220;
+}
+.alert-warning {
+    border-left-color: var(--kern-color-feedback-warning-default, #ffc107);
+    background-color: #fffbee;
+    color: #4a3200;
+}
+.alert-info {
+    border-left-color: var(--kern-color-feedback-info-default, #0dcaf0);
+    background-color: #f0fbfe;
+    color: #0a3a45;
+}
+.alert-primary {
+    border-left-color: var(--kern-color-action-default, #0d6efd);
+    background-color: #f0f5ff;
+    color: #0a2560;
+}
+.alert-secondary {
+    border-left-color: #6c757d;
+    background-color: #f8f9fa;
+    color: #2d3035;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   9. DROPDOWN-MENÜS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.dropdown-menu {
+    /* Dropdowns: 14 px – etwas kleiner als Body für kompakte Navigation */
+    font-size: 0.875rem;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    border: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    border-radius: var(--kern-metric-border-radius-large, 0.5rem);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+    padding: 0.35rem;
+}
+
+.dropdown-item {
+    font-size: 0.875rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+    transition: background-color 0.1s ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.07);
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+}
+
+.dropdown-item i.bi {
+    width: 1.1rem;
+    text-align: center;
+    opacity: 0.6;
+    margin-right: 0.15rem;
+    font-size: 0.9em;
+}
+
+.dropdown-divider {
+    margin: 0.35rem 0;
+    border-color: var(--kern-color-layout-border-default, #d8dce3);
+    opacity: 1;
+}
+
+.dropdown-header {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--kern-color-layout-text-muted, #6c757d);
+    padding: 0.45rem 0.75rem 0.2rem;
+}
+
+.dropdown-item-text {
+    font-size: 0.875rem;
+    padding: 0.45rem 0.75rem;
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   10. BREADCRUMB
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.breadcrumb {
+    font-size: 0.8rem;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    padding: 0.15rem 0;
+    margin-bottom: 0.5rem;
+    background: none;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-size: 1.1rem;
+    line-height: 1;
+    color: #b0b8c1;
+    padding-right: 0.35rem;
+    margin-top: -1px;
+    display: inline-block;
+}
+
+.breadcrumb-item a {
+    color: var(--kern-color-layout-text-muted, #6c757d);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.1s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: var(--kern-color-action-default, #0d6efd);
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   10b. UNIFIED CALENDAR (GANTT)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.unified-cal-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.unified-cal-table {
+    min-width: 520px;
+}
+.unified-cal-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+.unified-cal-label {
+    width: 155px;
+    min-width: 155px;
+    font-size: 0.78rem;
+    color: #555;
+    padding-right: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.unified-cal-timeline {
+    flex: 1;
+    position: relative;
+    background: #f0f2f5;
+    border-radius: 4px;
+    height: 26px;
+}
+.unified-cal-timeline--header {
+    height: 22px;
+    background: transparent;
+    border-radius: 0;
+    display: flex;
+    border-bottom: 2px solid #dee2e6;
+}
+.unified-cal-month {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 3px;
+    border-right: 1px solid #dee2e6;
+}
+.unified-cal-month:last-child {
+    border-right: none;
+}
+.unified-cal-month-name {
+    font-size: 0.7rem;
+    color: #888;
+    white-space: nowrap;
+    user-select: none;
+}
+.unified-cal-today {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    margin-left: -1px;
+    background: #C0003C;
+    z-index: 5;
+    pointer-events: none;
+    border-radius: 1px;
+}
+.unified-cal-bar {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    border-radius: 3px;
+    min-width: 4px;
+    overflow: hidden;
+    text-decoration: none;
+    display: block;
+    opacity: 0.9;
+    transition: opacity 0.12s, outline 0.12s;
+}
+a.unified-cal-bar:hover,
+a.unified-cal-bar:focus {
+    opacity: 1;
+    outline: 2px solid rgba(0,0,0,0.25);
+    outline-offset: 1px;
+    z-index: 3;
+}
+.unified-cal-bar--marker {
+    top: 4px;
+    bottom: 4px;
+    min-width: 8px;
+    border-radius: 2px;
+}
+.unified-cal-bar-label {
+    display: block;
+    font-size: 0.67rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 5px;
+    line-height: 20px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    pointer-events: none;
+}
+.unified-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.78rem;
+    color: #555;
+}
+.unified-cal-legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* Koordinationskalender: breiteres Label, Azubi-Kopfzeilen */
+.unified-cal-label--wide {
+    width: 200px;
+    min-width: 200px;
+}
+.unified-cal-label--student {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #222;
+}
+.unified-cal-label--sub {
+    font-size: 0.74rem;
+    color: #777;
+    padding-left: 16px;
+}
+.unified-cal-timeline--student-header {
+    background: #e8eaed;
+    height: 4px;
+    border-radius: 2px;
+}
+.unified-cal-row--sub {
+    margin-bottom: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   11. NAVIGATIONS-TABS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.tabs-scroll-wrapper {
+    position: relative;
+}
+
+.tabs-scroll-btn {
+    position: absolute;
+    top: 0;
+    bottom: 2px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    border: none;
+    background: linear-gradient(to right, var(--kern-color-layout-bg-default, #f5f6f8) 60%, transparent);
+    color: var(--kern-color-text-default, #1a1c21);
+    cursor: pointer;
+    font-size: 1rem;
+}
+.tabs-scroll-btn--left  { left: 0; background: linear-gradient(to right,  var(--kern-color-layout-bg-default, #f5f6f8) 60%, transparent); }
+.tabs-scroll-btn--right { right: 0; background: linear-gradient(to left, var(--kern-color-layout-bg-default, #f5f6f8) 60%, transparent); }
+.tabs-scroll-btn:hover  { color: var(--kern-color-brand-primary, #0055cc); }
+
+.nav-tabs {
+    border-bottom: 2px solid var(--kern-color-layout-border-default, #d8dce3);
+    margin-bottom: 1.25rem;
+    gap: 0.1rem;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-tabs .nav-item {
+    display: flex;
+}
+
+.nav-tabs .nav-link {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    border-radius: 0;
+    color: var(--kern-color-layout-text-muted, #6c757d);
+    transition: color 0.12s ease, border-color 0.12s ease;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+    border-bottom-color: var(--kern-color-layout-border-default, #d8dce3);
+    background-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   12. MODALE DIALOGE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.modal-content {
+    border-radius: var(--kern-metric-border-radius-large, 0.5rem);
+    border: none;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.1);
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    padding: 1rem 1.25rem;
+    border-radius: calc(var(--kern-metric-border-radius-large, 0.5rem) - 1px)
+                   calc(var(--kern-metric-border-radius-large, 0.5rem) - 1px) 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    padding: 0.875rem 1.25rem;
+    background-color: #f9fafb;
+    border-radius: 0 0 calc(var(--kern-metric-border-radius-large, 0.5rem) - 1px)
+                       calc(var(--kern-metric-border-radius-large, 0.5rem) - 1px);
+}
+
+.modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+}
+
+.modal-body {
+    font-size: 0.9rem;
+    padding: 1.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   13. PAGINIERUNG
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.pagination {
+    font-size: 0.875rem;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    gap: 0.15rem;
+}
+
+.page-link {
+    border-radius: var(--kern-metric-border-radius-default, 4px) !important;
+    border: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    padding: 0.35rem 0.7rem;
+    transition: all 0.12s ease;
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   14. SEITENSTRUKTUR & KONSISTENZ
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Einheitlicher Inhaltsbereich – padding-bottom verhindert, dass Inhalt
+   unter dem fixierten Footer verschwindet (Footer-Höhe ≈ 2.5 rem) */
+.container.overflow-auto {
+    padding-top: 1.25rem;
+    padding-bottom: 4rem;
+}
+
+
+/* Seitenüberschriften normalisieren (löst mt-4/mb-3 vs mb-2-Inkonsistenz) */
+.page-title {
+    margin-top: 1.25rem !important;
+    margin-bottom: 0.875rem !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Seiten-Icon in Überschriften konsistent */
+.page-title h2 i.bi,
+h2 > i.bi:first-child {
+    opacity: 0.75;
+    margin-right: 0.25rem;
+}
+
+/* Beschreibungstext unter Überschriften */
+h2 + p.text-muted,
+h2 + .text-muted {
+    font-size: 0.9rem;
+    margin-top: -0.375rem;
+    margin-bottom: 1.25rem;
+    color: var(--kern-color-layout-text-muted, #6c757d) !important;
+}
+
+/* Einheitliche Reihen-Abstände */
+.row.g-3 { --bs-gutter-x: 1rem; --bs-gutter-y: 1rem; }
+.row.g-4 { --bs-gutter-x: 1.25rem; --bs-gutter-y: 1.25rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   15. KENNZAHL-KACHELN (Stat Cards / Dashboard Widgets)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Icon-Kreise auf dem Dashboard */
+.rounded-3.bg-primary.bg-opacity-10 {
+    background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.1) !important;
+    border-radius: var(--kern-metric-border-radius-default, 4px) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   16. FUSSZEILE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+footer.border-top {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    border-top: 1px solid var(--kern-color-layout-border-default, #d8dce3) !important;
+    background-color: #f5f7fa;
+    font-size: 0.8rem;
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.6rem !important;
+    color: var(--kern-color-layout-text-muted, #6c757d);
+}
+
+footer.border-top a {
+    color: var(--kern-color-layout-text-muted, #6c757d);
+    text-decoration: none;
+    transition: color 0.12s ease;
+}
+
+footer.border-top a:hover {
+    color: var(--kern-color-action-default, #0d6efd);
+    text-decoration: underline;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   17. FORTSCHRITTSBALKEN & SONSTIGE ELEMENTE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.progress {
+    border-radius: 1rem;
+    height: 0.55rem;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    border-radius: 1rem;
+}
+
+/* Nav-Pills */
+.nav-pills .nav-link {
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+    transition: all 0.15s ease;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+}
+
+/* Accordion */
+.accordion-button {
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    background-color: #f5f7fa;
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.06);
+}
+
+.accordion-item {
+    border-color: var(--kern-color-layout-border-default, #d8dce3);
+}
+
+/* List Groups */
+.list-group-item {
+    font-size: 0.875rem;
+    border-color: var(--kern-color-layout-border-default, #d8dce3);
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+}
+
+/* Beschriftungstext & kleine Hilfstexte */
+.text-muted {
+    color: var(--kern-color-layout-text-muted, #6c757d) !important;
+}
+
+/* .small / small: 14 px = 0.875 rem (KERN empfiehlt keine Größen unter 16 px für Fließtext,
+   aber für kompakte Hilfstexte ist 14 px akzeptabel) */
+.small, small {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   18. BARRIEREFREIHEIT (KERN UX-Kernprinzip)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* KERN-Fokus-Ring für Tastaturnavigation (alle interaktiven Elemente) */
+:focus-visible {
+    outline: 3px solid var(--kern-focus-outline-color, rgba(13, 110, 253, 0.45)) !important;
+    outline-offset: 2px !important;
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+}
+
+/* Buttons: Outline statt Box-Shadow; Formularfelder behalten Box-Shadow aus theme.css
+   (wichtig für Maus-Nutzende, die auf ein Feld klicken und sofort Fokus-Feedback sehen) */
+.btn:focus:not(:focus-visible) {
+    box-shadow: none;
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   19. KERN-KOMPONENTEN – native HTML-Ergänzungen
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── kern-btn: Primärfarbe theme-aware machen (CDN hardcodiert #1A3DA5) ── */
+.kern-btn--primary {
+    background: var(--kern-color-action-default, #1A3DA5) !important;
+    border-color: var(--kern-color-action-default, #1A3DA5) !important;
+    color: var(--kern-color-action-on-default, #ffffff) !important;
+}
+.kern-btn--primary:hover,
+.kern-btn--primary:focus {
+    background: var(--kern-color-action-hover, #152e80) !important;
+    border-color: var(--kern-color-action-hover, #152e80) !important;
+}
+
+/* ── kern-form-input: Ergänzung falls CDN-Klassen unvollständig ── */
+.kern-form-input {
+    display: flex;
+    flex-direction: column;
+    /* CDN setzt align-items: flex-start, wodurch Kind-Divs (z.B. .ac-wrap)
+       auf Content-Breite schrumpfen. stretch erzwingt volle Breite für alle Kinder. */
+    align-items: stretch;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+}
+/* Textarea: KERN CDN setzt 48px Fix-Höhe – für Mehrzeilen aufheben */
+textarea.kern-form-input__input {
+    height: auto !important;
+    min-height: 5rem;
+    resize: vertical;
+}
+/* kern-label/hint/error nutzen KERN-CDN-Defaults; nur Error-Block bekommt
+   ein Flex-Layout für das Icon. */
+.kern-error {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+    color: var(--kern-color-feedback-danger, #BD0F09);
+    font-size: 0.875rem;
+}
+
+/* kern-form-check: KERN-CDN-Defaults nutzen (32×32, 2px Border, #f7f7f9).
+   Nur Label-Cursor + Margin. */
+.kern-form-check {
+    margin-bottom: 1rem;
+}
+.kern-form-check .kern-label {
+    cursor: pointer;
+}
+
+/* ── Audit-Log-Diff: Vorher/Nachher-Hervorhebung im Diff-Dialog ──────────── */
+.audit-diff-table td {
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+.audit-diff-old {
+    background-color: rgba(220, 53, 69, 0.08);
+    color: #842029;
+    text-decoration: line-through;
+    text-decoration-color: rgba(220, 53, 69, 0.6);
+    padding: 0.1rem 0.3rem;
+    border-radius: 2px;
+}
+.audit-diff-new {
+    background-color: rgba(25, 135, 84, 0.10);
+    color: #0f5132;
+    padding: 0.1rem 0.3rem;
+    border-radius: 2px;
+}
+
+/* ── kern-icon: fehlende Icons (nicht in kern.min.css v2.5.0 enthalten) ─────
+   Gleiche Technik wie kern.min.css: SVG als inline data-URI via mask-image.
+   background-color erbt die Farbe vom Elternelement (via currentColor-Trick). */
+.kern-icon--check_circle {
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%23000000'%3E%3Cpath d='m424-408-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l114 114q12 12 28 12t28-12l226-226q11-11 11-28t-11-28q-11-11-28-11t-28 11L424-408Zm56 328q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%23000000'%3E%3Cpath d='m424-408-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l114 114q12 12 28 12t28-12l226-226q11-11 11-28t-11-28q-11-11-28-11t-28 11L424-408Zm56 328q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") no-repeat center / contain;
+    background-color: var(--kern-color-feedback-success, #198754);
+}
+.kern-icon--error {
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%23000000'%3E%3Cpath d='M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm0-160q17 0 28.5-11.5T520-480v-160q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v160q0 17 11.5 28.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%23000000'%3E%3Cpath d='M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm0-160q17 0 28.5-11.5T520-480v-160q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v160q0 17 11.5 28.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") no-repeat center / contain;
+    background-color: var(--kern-color-feedback-danger, #BD0F09);
+}
+.kern-icon--upload {
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%23000000'%3E%3Cpath d='M440-320v-326L336-542q-11 11-28 11t-28-11q-11-11-11-28t11-28l144-144q12-12 28-12t28 12l144 144q11 11 11 28t-11 28q-11 11-28 11t-28-11L520-646v326q0 17-11.5 28.5T480-280q-17 0-28.5-11.5T440-320ZM240-160q-33 0-56.5-23.5T160-240v-80q0-17 11.5-28.5T200-360q17 0 28.5 11.5T240-320v80h480v-80q0-17 11.5-28.5T760-360q17 0 28.5 11.5T800-320v80q0 33-23.5 56.5T720-160H240Z'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%23000000'%3E%3Cpath d='M440-320v-326L336-542q-11 11-28 11t-28-11q-11-11-11-28t11-28l144-144q12-12 28-12t28 12l144 144q11 11 11 28t-11 28q-11 11-28 11t-28-11L520-646v326q0 17-11.5 28.5T480-280q-17 0-28.5-11.5T440-320ZM240-160q-33 0-56.5-23.5T160-240v-80q0-17 11.5-28.5T200-360q17 0 28.5 11.5T240-320v80h480v-80q0-17 11.5-28.5T760-360q17 0 28.5 11.5T800-320v80q0 33-23.5 56.5T720-160H240Z'/%3E%3C/svg%3E") no-repeat center / contain;
+    background-color: var(--kern-color-action-default, #1A3DA5);
+}
+
+/* Autocomplete-Wrapper: KERN setzt align-items:flex-start auf .kern-form-input,
+   wodurch Kind-Divs ohne explizite Breite auf Content-Breite schrumpfen.
+   .ac-wrap muss deshalb explizit auf volle Breite gezwungen werden. */
+.ac-wrap { width: 100%; }
+
+/* DataTables-Inputs werden weiter oben im Tabellen-Block KERN-konform gestylt. */
+
+/* Select-Arrow für .form-select erhalten */
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 16px 12px !important;
+    padding-right: 2.25rem !important;
+}
+
+
+/* ── kern-dialog: native <dialog> ── */
+dialog.kern-dialog:not([open]) {
+    display: none !important;
+}
+dialog.kern-dialog {
+    border: none;
+    border-radius: var(--kern-metric-border-radius-large, 0.5rem);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.12);
+    padding: 0;
+    max-width: 540px;
+    width: calc(100% - 2rem);
+    max-height: calc(100vh - 4rem);
+    overflow: hidden;
+    flex-direction: column;
+}
+dialog.kern-dialog[open] {
+    display: flex;
+}
+dialog.kern-dialog--lg  { max-width: 720px; }
+dialog.kern-dialog--xl  { max-width: 960px; height: 90vh; max-height: 90vh; }
+dialog.kern-dialog--full { max-width: none; width: calc(100% - 2rem); max-height: 90vh; }
+
+dialog.kern-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+/* Scrollbarer Body innerhalb des Dialogs */
+.kern-dialog__body {
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Footer-Buttons rechtsbündig */
+.kern-dialog__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/*
+ * kern-card: Korrekturen für KERN CDN v2.5.0
+ *
+ * Das CDN-Bundle setzt align-items: flex-start auf .kern-card, wodurch
+ * alle Kind-Elemente nur so breit wie ihr Inhalt werden (kein Stretch).
+ * Außerdem fehlen padding/background-Definitionen für einige Unterklassen.
+ * Diese Regeln überschreiben/ergänzen das CDN-Bundle.
+ */
+.kern-card {
+    /* Überschreibt CDN: align-items: flex-start → stretch (volle Breite) */
+    align-items: stretch !important;
+    /* Angepasste Border gemäß KERN-Tokens */
+    border-color: var(--kern-color-layout-border-default, #d8dce3) !important;
+    border-radius: var(--kern-metric-border-radius-large, 0.5rem) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    background-color: #ffffff !important;
+}
+
+.kern-card__container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+}
+
+.kern-card__header {
+    width: 100%;
+    padding: 0.7rem 1.25rem;
+    background-color: #f5f7fa;
+    border-bottom: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #3a3a3a;
+    box-sizing: border-box;
+}
+
+.kern-card__heading {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--kern-color-layout-text-default, #1b1b1b);
+}
+
+.kern-card__body {
+    flex: 1;
+    width: 100%;
+    padding: 1.25rem;
+    font-size: var(--kern-typography-font-size-static-small, 1rem);
+    font-family: var(--kern-typography-font-family-default, 'Fira Sans', system-ui, sans-serif);
+    box-sizing: border-box;
+}
+
+.kern-card__footer {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    background-color: #f9fafb;
+    border-top: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+    font-size: 0.875rem;
+    box-sizing: border-box;
+}
+
+/* kern-card__header mit Bootstrap-Farbklassen (bg-primary, bg-success …) */
+.kern-card__header.bg-primary {
+    background-color: var(--kern-color-action-default, #0d6efd) !important;
+    color: #ffffff !important;
+    border-bottom-color: var(--kern-color-action-default, #0d6efd);
+}
+
+/* Hervorgehobene Karte (aktiver Einsatz, wichtige Info) */
+.kern-card--highlighted {
+    border-color: var(--kern-color-action-default, #0d6efd);
+    border-width: 2px;
+}
+
+.kern-card--highlighted .kern-card__header {
+    background-color: var(--kern-color-action-default, #0d6efd);
+    color: #ffffff;
+    border-bottom-color: var(--kern-color-action-default, #0d6efd);
+}
+
+.kern-card--highlighted-warning {
+    border-color: var(--kern-color-feedback-warning-default, #ffc107);
+    border-width: 2px;
+}
+
+/* Fehlende kern-badge Variante (neutral/grau – nicht im KERN-Bundle) */
+.kern-badge--neutral {
+    background-color: #e9ecef;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+/* Klickbare Karte: Hover-Effekt und Cursor */
+.kern-card--clickable {
+    cursor: pointer;
+    transition: box-shadow 0.18s ease, transform 0.18s ease,
+                border-color 0.18s ease;
+    text-decoration: none;
+}
+
+a:hover > .kern-card--clickable,
+.kern-card--clickable:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+    border-color: var(--kern-color-action-default, #0d6efd);
+    transform: translateY(-2px);
+}
+
+/* Icon-Container auf Kacheln */
+.azubi-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+}
+
+/* Hover-Effekt für Schnellzugriff-Kacheln */
+.card-hover {
+    transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.card-hover:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+    border-color: var(--bs-primary);
+    transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   20. RESPONSIVE / MOBILE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Smartphone (bis 576px) ────────────────────────────────────────────────── */
+@media (max-width: 575.98px) {
+    /* Tabellen: Header darf umbrechen */
+    .table thead th {
+        white-space: normal;
+        font-size: 0.65rem;
+        padding: 0.5rem 0.4rem;
+    }
+    .table > :not(caption) > * > * {
+        padding: 0.5rem 0.4rem;
+        font-size: 0.82rem;
+    }
+
+    /* Kalender (Gantt): Label schmaler */
+    .unified-cal-label {
+        width: 80px;
+        min-width: 80px;
+        font-size: 0.68rem;
+    }
+    .unified-cal-label--wide {
+        width: 100px;
+        min-width: 100px;
+    }
+    .unified-cal-table {
+        min-width: 360px;
+    }
+    .unified-cal-month-name {
+        font-size: 0.58rem;
+    }
+    .unified-cal-bar-label {
+        font-size: 0.55rem;
+    }
+
+    /* Dashboard KPI-Kacheln: kompaktere Darstellung */
+    .card-body.d-flex.align-items-center.gap-3 {
+        gap: 0.5rem !important;
+    }
+    .card-body .fs-4 {
+        font-size: 1.1rem !important;
+    }
+
+    /* Dialoge: volle Breite nutzen */
+    dialog.kern-dialog {
+        max-width: calc(100% - 1rem);
+        width: calc(100% - 1rem);
+        max-height: calc(100vh - 2rem);
+    }
+    dialog.kern-dialog--lg,
+    dialog.kern-dialog--xl {
+        max-width: calc(100% - 1rem);
+    }
+
+    /* Footer: nicht fixiert auf kleinen Screens */
+    footer.border-top {
+        position: relative;
+        font-size: 0.72rem;
+    }
+    /* Weniger Footer-Padding fuer Content */
+    .container.overflow-auto {
+        padding-bottom: 1rem;
+    }
+
+    /* Breadcrumb kompakter */
+    .breadcrumb {
+        font-size: 0.78rem;
+    }
+}
+
+/* ── Tablet & kleiner (bis 768px) ──────────────────────────────────────────── */
+@media (max-width: 767.98px) {
+    /* Kalender (Gantt): Label etwas schmaler */
+    .unified-cal-label {
+        width: 110px;
+        min-width: 110px;
+    }
+    .unified-cal-label--wide {
+        width: 140px;
+        min-width: 140px;
+    }
+
+    /* Footer: nicht fixiert */
+    footer.border-top {
+        position: relative;
+    }
+    .container.overflow-auto {
+        padding-bottom: 1.5rem;
+    }
+
+    /* Sidebar-Abstand fuer Content (keine Sidebar-Margin auf mobil) */
+    body.has-sidebar .app-sidebar {
+        bottom: 0;
+    }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   21. DRUCKANSICHT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media print {
+    body {
+        background-color: #ffffff;
+        font-size: 11pt;
+    }
+    .navbar, footer, .btn, .no-print { display: none !important; }
+    body { padding-top: 0 !important; }
+    .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+}

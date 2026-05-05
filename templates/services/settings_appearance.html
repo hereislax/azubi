@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Erscheinungsbild{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+        <li class="breadcrumb-item active">Erscheinungsbild</li>
+    </ol>
+</nav>
+
+<h2 class="mb-1"><i class="bi bi-palette me-1"></i> Erscheinungsbild</h2>
+<p class="text-muted mb-3">App-Name und Farben der Benutzeroberfläche anpassen.</p>
+
+<form method="post" id="appearanceForm">
+    {% csrf_token %}
+
+    <div class="row g-4">
+
+        {# ── App-Name ───────────────────────────────────────────────────── #}
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold"><i class="bi bi-type me-1"></i> App-Name</div>
+                <div class="card-body">
+                    <input type="text" name="brand_name" class="kern-form-input__input"                           value="{{ config.brand_name }}" maxlength="50" placeholder="Azubi" required>
+                    <div class="form-text">Wird in Navigationsleiste und Browser-Tab angezeigt.</div>
+                </div>
+            </div>
+        </div>
+
+    {# ── App-Name ───────────────────────────────────────────────────── #}
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold"><i class="bi bi-type me-1"></i> Behörden-Name</div>
+                <div class="card-body">
+                    <input type="text" name="brand_header" class="kern-form-input__input" value="{{ config.brand_header }}" maxlength="100" placeholder="Eine offizielle Anwendung der Abteilung X in der Bundesbehörde Z" required>
+                    <div class="form-text">Wird in der Kopfzeile über der Navigationsleiste angezeigt.</div>
+                </div>
+            </div>
+        </div>
+        {# ── Farbvorlagen (Stilguide Bundesregierung) ───────────────────── #}
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold"><i class="bi bi-swatches me-1"></i> Farbvorlagen</div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Vordefinierte Farbschemata aus dem
+                        <a href="https://styleguide.bundesregierung.gov.de/sg-de/basiselemente/farben" target="_blank" rel="noopener" class="text-decoration-none">Stilguide der Bundesregierung</a>.
+                        Klicken Sie auf ein Schema, um alle Farben zu übernehmen.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3" id="colorPresets">
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn"
+                                data-preset='{"brand_primary_color":"#0d6efd","brand_secondary_color":"#6c757d","brand_success_color":"#198754","brand_danger_color":"#dc3545","brand_warning_color":"#ffc107","brand_info_color":"#0dcaf0"}'
+                                title="Bootstrap Standard">
+                            <span class="d-flex gap-1 align-items-center">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#0d6efd;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#198754;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#dc3545;"></span>
+                                Bootstrap Standard
+                            </span>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn"
+                                data-preset='{"brand_primary_color":"#0077B6","brand_secondary_color":"#576164","brand_success_color":"#00854A","brand_danger_color":"#C0003C","brand_warning_color":"#F7BB3D","brand_info_color":"#00818B"}'
+                                title="Bundesregierung Blau">
+                            <span class="d-flex gap-1 align-items-center">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#0077B6;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#00854A;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#C0003C;"></span>
+                                Bundesregierung Blau
+                            </span>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn"
+                                data-preset='{"brand_primary_color":"#004B76","brand_secondary_color":"#576164","brand_success_color":"#005C45","brand_danger_color":"#780F2D","brand_warning_color":"#F7BB3D","brand_info_color":"#007194"}'
+                                title="Bundesregierung Dunkelblau">
+                            <span class="d-flex gap-1 align-items-center">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#004B76;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#005C45;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#780F2D;"></span>
+                                Bundesregierung Dunkelblau
+                            </span>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn"
+                                data-preset='{"brand_primary_color":"#007194","brand_secondary_color":"#576164","brand_success_color":"#00854A","brand_danger_color":"#C0003C","brand_warning_color":"#F7BB3D","brand_info_color":"#00818B"}'
+                                title="Bundesregierung Petrol">
+                            <span class="d-flex gap-1 align-items-center">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#007194;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#00854A;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#C0003C;"></span>
+                                Bundesregierung Petrol
+                            </span>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn"
+                                data-preset='{"brand_primary_color":"#005C45","brand_secondary_color":"#576164","brand_success_color":"#597C39","brand_danger_color":"#C0003C","brand_warning_color":"#F7BB3D","brand_info_color":"#00818B"}'
+                                title="Bundesregierung Dunkelgrün">
+                            <span class="d-flex gap-1 align-items-center">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#005C45;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#597C39;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#C0003C;"></span>
+                                Bundesregierung Dunkelgrün
+                            </span>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn"
+                                data-preset='{"brand_primary_color":"#5F316E","brand_secondary_color":"#576164","brand_success_color":"#00854A","brand_danger_color":"#C0003C","brand_warning_color":"#F7BB3D","brand_info_color":"#00818B"}'
+                                title="Bundesregierung Violett">
+                            <span class="d-flex gap-1 align-items-center">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#5F316E;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#00854A;"></span>
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#C0003C;"></span>
+                                Bundesregierung Violett
+                            </span>
+                        </button>
+
+                    </div>
+
+                    <hr class="my-3">
+                    <p class="text-muted small mb-2 fw-semibold">Alle Bundesregierung-Farben (Klicken kopiert den Hex-Code):</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for name, hex in bundesfarben %}
+                        <button type="button" class="btn btn-sm p-0 border-0 bundes-swatch"
+                                data-hex="{{ hex }}" title="{{ name }}: {{ hex }}"
+                                style="width:32px;height:32px;border-radius:6px;background:{{ hex }};cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2);">
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <p class="text-muted" style="font-size:.75rem;margin-top:.4rem;">
+                        Die 16 Basisfarben aus dem Stilguide der Bundesregierung.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {# ── Farben ─────────────────────────────────────────────────────── #}
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold"><i class="bi bi-palette2 me-1"></i> Farben</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% with colors=config %}
+                        <div class="col-md-4">
+                            <label class="kern-label">Primär</label>
+                            <div class="form-text mb-1">Navbar, Buttons, Links, Formulare</div>
+                            {% include "services/_color_picker.html" with field="brand_primary_color" value=config.brand_primary_color %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="kern-label">Sekundär</label>
+                            <div class="form-text mb-1">Sekundäre Buttons & Badges</div>
+                            {% include "services/_color_picker.html" with field="brand_secondary_color" value=config.brand_secondary_color %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="kern-label">Erfolg</label>
+                            <div class="form-text mb-1">Erfolgsmeldungen & Aktiv-Badges</div>
+                            {% include "services/_color_picker.html" with field="brand_success_color" value=config.brand_success_color %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="kern-label">Gefahr</label>
+                            <div class="form-text mb-1">Löschen-Buttons & Fehlermeldungen</div>
+                            {% include "services/_color_picker.html" with field="brand_danger_color" value=config.brand_danger_color %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="kern-label">Warnung</label>
+                            <div class="form-text mb-1">Warnhinweise</div>
+                            {% include "services/_color_picker.html" with field="brand_warning_color" value=config.brand_warning_color %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="kern-label">Info</label>
+                            <div class="form-text mb-1">Info-Hinweise</div>
+                            {% include "services/_color_picker.html" with field="brand_info_color" value=config.brand_info_color %}
+                        </div>
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── Vorschau ───────────────────────────────────────────────────── #}
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold"><i class="bi bi-eye me-1"></i> Vorschau</div>
+                <div class="card-body">
+                    <div id="previewBar" class="rounded p-3 mb-3 d-flex align-items-center gap-3">
+                        <span id="previewName" class="fw-bold fs-5">{{ config.brand_name }}</span>
+                        <span class="small opacity-75">Navigationsleiste</span>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <button type="button" class="btn preview-btn" id="prevPrimary">Primär</button>
+                        <button type="button" class="btn preview-btn" id="prevSecondary">Sekundär</button>
+                        <button type="button" class="btn preview-btn" id="prevSuccess">Erfolg</button>
+                        <button type="button" class="btn preview-btn" id="prevDanger">Gefahr</button>
+                        <button type="button" class="btn preview-btn" id="prevWarning">Warnung</button>
+                        <button type="button" class="btn preview-btn" id="prevInfo">Info</button>
+                        <span class="badge ms-2" id="prevBadgePrimary">Badge Primär</span>
+                        <span class="badge" id="prevBadgeSuccess">Badge Erfolg</span>
+                        <span class="badge" id="prevBadgeDanger">Badge Gefahr</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-floppy me-1"></i> Speichern & Anwenden
+            </button>
+            <button type="button" class="btn btn-outline-secondary ms-2" id="resetDefaults">
+                Standardfarben wiederherstellen
+            </button>
+        </div>
+
+    </div>
+</form>
+
+<script>
+(function () {
+    const DEFAULTS = {
+        brand_primary_color:   '#0d6efd',
+        brand_secondary_color: '#6c757d',
+        brand_success_color:   '#198754',
+        brand_danger_color:    '#dc3545',
+        brand_warning_color:   '#ffc107',
+        brand_info_color:      '#0dcaf0',
+    };
+
+    function hexToRgb(h) {
+        h = h.replace('#','');
+        return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+    }
+    function textColor(h) {
+        const [r,g,b] = hexToRgb(h);
+        return (0.299*r + 0.587*g + 0.114*b)/255 < 0.55 ? '#fff' : '#212529';
+    }
+
+    // Wire each color picker: sync <input type=color> ↔ text input
+    document.querySelectorAll('.color-row').forEach(row => {
+        const picker = row.querySelector('input[type=color]');
+        const text   = row.querySelector('input[type=text]');
+        picker.addEventListener('input', () => { text.value = picker.value; updatePreview(); });
+        text.addEventListener('input',  () => {
+            if (/^#[0-9a-fA-F]{6}$/.test(text.value)) { picker.value = text.value; updatePreview(); }
+        });
+        // On submit use the text field value (more reliable)
+        document.getElementById('appearanceForm').addEventListener('submit', () => { picker.name = ''; });
+    });
+
+    function getColor(field) {
+        const t = document.querySelector(`.color-row [data-field="${field}"]`);
+        return t ? t.value : DEFAULTS[field];
+    }
+
+    function updatePreview() {
+        const primary   = getColor('brand_primary_color');
+        const secondary = getColor('brand_secondary_color');
+        const success   = getColor('brand_success_color');
+        const danger    = getColor('brand_danger_color');
+        const warning   = getColor('brand_warning_color');
+        const info      = getColor('brand_info_color');
+        const nameEl    = document.querySelector('input[name=brand_name]');
+
+        const bar = document.getElementById('previewBar');
+        const name = document.getElementById('previewName');
+        bar.style.backgroundColor = primary;
+        name.style.color = textColor(primary);
+        name.textContent = nameEl ? nameEl.value || 'Azubi' : 'Azubi';
+
+        function styleBtn(el, color) {
+            el.style.backgroundColor = color;
+            el.style.borderColor = color;
+            el.style.color = textColor(color);
+        }
+        function styleBadge(el, color) {
+            el.style.backgroundColor = color;
+            el.style.color = textColor(color);
+        }
+
+        styleBtn(document.getElementById('prevPrimary'),   primary);
+        styleBtn(document.getElementById('prevSecondary'), secondary);
+        styleBtn(document.getElementById('prevSuccess'),   success);
+        styleBtn(document.getElementById('prevDanger'),    danger);
+        styleBtn(document.getElementById('prevWarning'),   warning);
+        styleBtn(document.getElementById('prevInfo'),      info);
+        styleBadge(document.getElementById('prevBadgePrimary'), primary);
+        styleBadge(document.getElementById('prevBadgeSuccess'), success);
+        styleBadge(document.getElementById('prevBadgeDanger'),  danger);
+    }
+
+    document.querySelector('input[name=brand_name]').addEventListener('input', updatePreview);
+
+    document.getElementById('resetDefaults').addEventListener('click', () => {
+        document.querySelectorAll('.color-row').forEach(row => {
+            const text   = row.querySelector('input[type=text]');
+            const picker = row.querySelector('input[type=color]');
+            const field  = text.dataset.field;
+            if (DEFAULTS[field]) { text.value = picker.value = DEFAULTS[field]; }
+        });
+        updatePreview();
+    });
+
+    updatePreview();
+
+    // ── Farbvorlagen-Schaltflächen ────────────────────────────────────────
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = JSON.parse(btn.dataset.preset);
+            document.querySelectorAll('.color-row').forEach(row => {
+                const text   = row.querySelector('input[type=text]');
+                const picker = row.querySelector('input[type=color]');
+                const field  = text.dataset.field;
+                if (preset[field]) {
+                    text.value = picker.value = preset[field];
+                }
+            });
+            updatePreview();
+        });
+    });
+
+    // ── Bundesregierung-Farbfelder: Hex kopieren ──────────────────────────
+    document.querySelectorAll('.bundes-swatch').forEach(swatch => {
+        swatch.addEventListener('click', () => {
+            const hex = swatch.dataset.hex;
+            navigator.clipboard.writeText(hex).then(() => {
+                const orig = swatch.title;
+                swatch.title = '✓ Kopiert: ' + hex;
+                swatch.style.outline = '3px solid #333';
+                setTimeout(() => { swatch.title = orig; swatch.style.outline = ''; }, 1500);
+            }).catch(() => {
+                // Fallback: nur visuell hervorheben
+                swatch.style.outline = '3px solid #333';
+                setTimeout(() => { swatch.style.outline = ''; }, 1000);
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

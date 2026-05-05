@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Block löschen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item active">Block löschen</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-trash me-1"></i> Ablaufblock löschen</h5>
+            </div>
+            <div class="card-body">
+                <p>Soll der Block <strong>„{{ schedule_block.name }}"</strong> wirklich gelöscht werden?</p>
+                <dl class="row mb-4">
+                    <dt class="col-sm-4">Beginn</dt>
+                    <dd class="col-sm-8">{{ schedule_block.start_date|date:"d.m.Y" }}</dd>
+                    <dt class="col-sm-4">Ende</dt>
+                    <dd class="col-sm-8">{{ schedule_block.end_date|date:"d.m.Y" }}</dd>
+                    {% if block.location %}
+                    <dt class="col-sm-4">Standort</dt>
+                    <dd class="col-sm-8">{{ schedule_block.location }}</dd>
+                    {% endif %}
+                </dl>
+                <form method="post" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i> Ja, löschen
+                    </button>
+                    <a href="{% url 'course:course_detail' course.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Abbrechen
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

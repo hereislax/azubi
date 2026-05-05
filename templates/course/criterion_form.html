@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load kern %}
+
+{% block title %}Kriterium {{ action }} – {{ profile.description }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:job_profile_list' %}">Berufsbilder</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:job_profile_config' profile.pk %}">{{ profile.description }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Kriterium {{ action }}</li>
+    </ol>
+</nav>
+<h2 class="mb-3"><i class="bi bi-clipboard-check me-1"></i> Beurteilungskriterium {{ action }}</h2>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="card mb-3">
+        <div class="card-header bg-light"><i class="bi bi-card-text me-1"></i> Stammdaten</div>
+        <div class="card-body">
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}
+                {% kern_field field %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header bg-light"><i class="bi bi-link-45deg me-1"></i> Mapping zu Kompetenzen</div>
+        <div class="card-body">
+            <p class="text-muted small">
+                Auf welche Kompetenzen zahlt dieses Kriterium ein? Gewicht 1.0 = volle Wirkung,
+                niedrigere Werte für teilweise Wirkung. Eine Bewertung dieses Kriteriums fließt
+                gewichtet in den Wert der jeweiligen Kompetenz ein.
+            </p>
+            {{ formset.management_form }}
+            {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kompetenz</th>
+                            <th style="width: 120px;">Gewicht</th>
+                            <th style="width: 60px;">Entfernen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in formset %}
+                        <tr>
+                            <td>
+                                {{ f.competence }}
+                                {% if f.competence.errors %}<div class="invalid-feedback d-block">{{ f.competence.errors }}</div>{% endif %}
+                                {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                            </td>
+                            <td>
+                                {{ f.weight }}
+                                {% if f.weight.errors %}<div class="invalid-feedback d-block">{{ f.weight.errors }}</div>{% endif %}
+                            </td>
+                            <td>{% if f.DELETE %}{{ f.DELETE }}{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+        <a href="{% url 'course:job_profile_config' profile.pk %}" class="btn btn-outline-secondary">Abbrechen</a>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Speichern</button>
+    </div>
+</form>
+{% endblock %}

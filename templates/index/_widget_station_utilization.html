@@ -1,0 +1,34 @@
+<div class="card shadow-sm h-100">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-speedometer2 text-muted me-1"></i>
+        <span class="fw-semibold small">Stationsauslastung</span>
+        <span class="text-muted fw-normal ms-auto" style="font-size:.72rem;">heute</span>
+    </div>
+    <div class="card-body p-0">
+        {% if station_utilization %}
+        <ul class="list-group list-group-flush">
+            {% for su in station_utilization %}
+            <li class="list-group-item px-3 py-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-truncate me-2">{{ su.unit.name }}</span>
+                    <span class="badge {% if su.pct >= 100 %}bg-danger{% elif su.pct >= 75 %}bg-warning text-dark{% else %}bg-success{% endif %} rounded-pill flex-shrink-0">
+                        {{ su.current }}/{{ su.capacity }}
+                    </span>
+                </div>
+                <div class="progress" style="height:5px;">
+                    <div class="progress-bar {% if su.pct >= 100 %}bg-danger{% elif su.pct >= 75 %}bg-warning{% else %}bg-success{% endif %}"
+                         role="progressbar" style="width:{{ su.pct }}%"></div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small p-3 mb-0">Keine Stationen mit Kapazitätslimit aktiv.</p>
+        {% endif %}
+    </div>
+    <div class="card-footer bg-transparent py-1">
+        <a href="{% url 'course:capacity_planning' %}" class="text-muted small text-decoration-none">
+            <i class="bi bi-bar-chart me-1"></i> Kapazitätsplanung ansehen
+        </a>
+    </div>
+</div>

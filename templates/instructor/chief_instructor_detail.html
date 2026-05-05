@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+
+{% block title %}{{ coordination.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'instructor:chief_instructor_list' %}">Ausbildungskoordinationen</a></li>
+        <li class="breadcrumb-item active">{{ coordination.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-person-gear me-1"></i> {{ coordination.name }}</h2>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'instructor:chief_instructor_calendar' coordination.public_id %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-calendar3 me-1"></i> Kalender
+        </a>
+        {% if not is_training_coordinator %}
+        <a href="{% url 'instructor:chief_instructor_edit' coordination.public_id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i> Bearbeiten
+        </a>
+        <a href="{% url 'instructor:chief_instructor_delete' coordination.public_id %}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash me-1"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Koordination info ──────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-info-circle me-1"></i> Koordinationsdetails
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Funktionspostfach</dt>
+            <dd class="col-sm-9">
+                {% if coordination.functional_email %}
+                    <a href="mailto:{{ coordination.functional_email }}">{{ coordination.functional_email }}</a>
+                    <span class="text-muted small ms-2">Zuweisungs-E-Mails werden hierhin gesendet</span>
+                {% else %}
+                    <span class="text-muted">–</span>
+                {% endif %}
+            </dd>
+            <dt class="col-sm-3">Organisationseinheiten</dt>
+            <dd class="col-sm-9">
+                {% for unit in coordination.units.all %}
+                    <span class="badge bg-secondary me-1">{{ unit.name }}</span>
+                {% empty %}
+                    <span class="text-muted">–</span>
+                {% endfor %}
+            </dd>
+        </dl>
+    </div>
+</div>
+
+{# ── Mitglieder ─────────────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-people me-1"></i> Mitglieder</span>
+        {% if not is_training_coordinator %}
+        <a href="{% url 'instructor:member_create' coordination.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-person-plus me-1"></i> Person hinzufügen
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+<div class="table-responsive">
+<table class="table table-sm table-hover table-bordered align-middle mb-0">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Dienstliche E-Mail</th>
+            <th>Benutzerkonto</th>
+            {% if not is_training_coordinator %}<th></th>{% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in coordination.members.all %}
+        <tr>
+            <td>{{ m }}</td>
+            <td><a href="mailto:{{ m.email }}">{{ m.email }}</a></td>
+            <td>
+                {% if m.user %}
+                    <span class="badge bg-success"><i class="bi bi-person-check me-1"></i> Vorhanden</span>
+                    <span class="text-muted small ms-1">{{ m.user.username }}</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-person-x me-1"></i> Kein Konto</span>
+                    {% if not is_training_coordinator %}
+                    <a href="{% url 'instructor:member_create_user' coordination.pk m.pk %}" class="btn btn-sm btn-outline-primary ms-2">
+                        <i class="bi bi-person-plus me-1"></i> Konto anlegen
+                    </a>
+                    {% endif %}
+                {% endif %}
+            </td>
+            {% if not is_training_coordinator %}
+            <td class="text-end" style="white-space:nowrap">
+                <a href="{% url 'instructor:member_edit' coordination.pk m.pk %}" class="btn btn-sm btn-outline-secondary" title="Bearbeiten">
+                    <i class="bi bi-pencil me-1"></i>
+                </a>
+                <a href="{% url 'instructor:member_delete' coordination.pk m.pk %}" class="btn btn-sm btn-outline-danger" title="Entfernen">
+                    <i class="bi bi-trash me-1"></i>
+                </a>
+            </td>
+            {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="{% if not is_training_coordinator %}4{% else %}3{% endif %}" class="text-center text-muted">
+                Keine Mitglieder zugewiesen.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+    </div>
+</div>
+
+{# ── Assignments tabs ──────────────────────────────────────────────────────── #}
+<div class="tabs-scroll-wrapper">
+    <button class="tabs-scroll-btn tabs-scroll-btn--left" aria-label="Tabs nach links scrollen" hidden>
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <button class="tabs-scroll-btn tabs-scroll-btn--right" aria-label="Tabs nach rechts scrollen" hidden>
+        <i class="bi bi-chevron-right"></i>
+    </button>
+    <ul class="nav nav-tabs mt-4" id="assignmentTabs" role="tablist">
+        {% if pending_assignments %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                <i class="bi bi-hourglass-split text-warning me-1"></i> Ausstehend
+                <span class="badge bg-warning text-dark ms-1">{{ pending_assignments|length }}</span>
+            </button>
+        </li>
+        {% endif %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if not pending_assignments %}active{% endif %}" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab">
+                Aktuell{% if current_assignments %} <span class="badge bg-primary ms-1">{{ current_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="future-tab" data-bs-toggle="tab" data-bs-target="#future" type="button" role="tab">
+                Künftig{% if future_assignments %} <span class="badge bg-secondary ms-1">{{ future_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">
+                Vergangen{% if past_assignments %} <span class="badge bg-secondary ms-1">{{ past_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item ms-auto" role="presentation">
+            <button class="nav-link" id="units-tab" data-bs-toggle="tab" data-bs-target="#units" type="button" role="tab">
+                <i class="bi bi-diagram-3 me-1"></i> Verantwortungsbereich
+            </button>
+        </li>
+    </ul>
+</div>
+
+<div class="tab-content border border-top-0 rounded-bottom p-4 mb-4" id="assignmentTabContent">
+
+    {% if pending_assignments %}
+    <div class="tab-pane fade show active" id="pending" role="tabpanel">
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-pending" style="width:100%">
+            <thead class="table-light">
+                <tr>
+                    <th>Nachwuchskraft</th>
+                    <th>Kurs</th>
+                    <th>Organisationseinheit</th>
+                    <th>Von</th>
+                    <th>Bis</th>
+                    <th>Block</th>
+                    <th>Angelegt von</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for a in pending_assignments %}
+            <tr>
+                <td><a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a></td>
+                <td>{{ a.student.course }}</td>
+                <td>{{ a.unit.name }}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+                <td>{% if a.created_by %}{{ a.created_by.get_full_name|default:a.created_by.username }}{% else %}–{% endif %}</td>
+                <td class="text-end" style="white-space:nowrap">
+                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-success" title="Annehmen">
+                        <i class="bi bi-check-lg me-1"></i>
+                    </a>
+                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen">
+                        <i class="bi bi-x-lg me-1"></i>
+                    </a>
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary" title="Bearbeiten">
+                        <i class="bi bi-pencil me-1"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="tab-pane fade {% if not pending_assignments %}show active{% endif %}" id="current" role="tabpanel">
+        {% if current_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-current" style="width:100%">
+            <thead class="table-light">
+                <tr>
+                    <th>Nachwuchskraft</th>
+                    <th>Kurs</th>
+                    <th>Organisationseinheit</th>
+                    <th>Von</th>
+                    <th>Bis</th>
+                    <th>Block</th>
+                    <th>Bewertung</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for a in current_assignments %}
+            <tr>
+                <td>
+                    <a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a>
+                    {% if a.status == 'rejected' %}<span class="badge bg-danger ms-1">Abgelehnt</span>{% elif a.status == 'pending' %}<span class="badge bg-warning text-dark ms-1">Ausstehend</span>{% endif %}
+                </td>
+                <td>{{ a.student.course }}</td>
+                <td>{{ a.unit.name }}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+                <td style="white-space:nowrap">
+                    {% with assessment=a.assessment %}
+                    {% if assessment %}
+                        <span class="badge bg-{{ assessment.status_badge }}">{{ assessment.get_status_display }}</span>
+                        <a href="{% url 'assessment:detail' assessment.public_id %}" class="btn btn-sm btn-outline-secondary ms-1" title="Beurteilung ansehen"><i class="bi bi-eye me-1"></i></a>
+                    {% else %}
+                        <span class="text-muted small">–</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td class="text-end" style="white-space:nowrap">
+                    {% if a.status == 'pending' %}
+                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-success" title="Annehmen"><i class="bi bi-check-lg me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen"><i class="bi bi-x-lg me-1"></i></a>
+                    {% endif %}
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine aktuellen Einsätze.</p>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="future" role="tabpanel">
+        {% if future_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-future" style="width:100%">
+            <thead class="table-light">
+                <tr>
+                    <th>Nachwuchskraft</th>
+                    <th>Kurs</th>
+                    <th>Organisationseinheit</th>
+                    <th>Von</th>
+                    <th>Bis</th>
+                    <th>Block</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for a in future_assignments %}
+            <tr>
+                <td>
+                    <a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a>
+                    {% if a.status == 'rejected' %}<span class="badge bg-danger ms-1">Abgelehnt</span>{% elif a.status == 'pending' %}<span class="badge bg-warning text-dark ms-1">Ausstehend</span>{% endif %}
+                </td>
+                <td>{{ a.student.course }}</td>
+                <td>{{ a.unit.name }}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+                <td class="text-end" style="white-space:nowrap">
+                    {% if a.status == 'pending' %}
+                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-success" title="Annehmen"><i class="bi bi-check-lg me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen"><i class="bi bi-x-lg me-1"></i></a>
+                    {% endif %}
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine künftigen Einsätze.</p>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="past" role="tabpanel">
+        {% if past_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-past" style="width:100%">
+            <thead class="table-light">
+                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th><th>Bewertung</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for a in past_assignments %}
+            <tr>
+                <td>
+                    <a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a>
+                    {% if a.status == 'rejected' %}<span class="badge bg-danger ms-1">Abgelehnt</span>{% elif a.status == 'pending' %}<span class="badge bg-warning text-dark ms-1">Ausstehend</span>{% endif %}
+                </td>
+                <td>{{ a.unit.name }}{% if a.unit.label %} <span class="text-muted">({{ a.unit.label }})</span>{% endif %}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+                <td style="white-space:nowrap">
+                    {% with assessment=a.assessment %}
+                    {% if assessment %}
+                        <span class="badge bg-{{ assessment.status_badge }}">{{ assessment.get_status_display }}</span>
+                        <a href="{% url 'assessment:detail' assessment.public_id %}" class="btn btn-sm btn-outline-secondary ms-1" title="Beurteilung ansehen"><i class="bi bi-eye me-1"></i></a>
+                    {% else %}
+                        <span class="text-muted small">–</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td class="text-end">
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine vergangenen Einsätze.</p>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="units" role="tabpanel">
+        {% if unit_trees %}
+        <ul class="list-group">
+            {% for node in unit_trees %}
+                {% include "instructor/_unit_tree_node.html" %}
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">Keine Organisationseinheiten zugewiesen.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+$(document).ready(function () {
+    const dtOptions = {
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+        columnDefs: [{ orderable: false, targets: -1 }],
+    };
+    {% if pending_assignments %}$('#table-pending').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));{% endif %}
+    {% if current_assignments %}
+    {% if pending_assignments %}
+    $('#current-tab').one('shown.bs.tab', function () {
+        $('#table-current').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));
+    });
+    {% else %}
+    $('#table-current').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));
+    {% endif %}
+    {% endif %}
+    {% if future_assignments %}
+    $('#future-tab').one('shown.bs.tab', function () {
+        $('#table-future').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));
+    });
+    {% endif %}
+    {% if past_assignments %}
+    $('#past-tab').one('shown.bs.tab', function () {
+        $('#table-past').DataTable($.extend({}, dtOptions, { order: [[3, 'desc']] }));
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

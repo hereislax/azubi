@@ -1,0 +1,34 @@
+<div class="card shadow-sm h-100">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-building text-muted me-1"></i>
+        <span class="fw-semibold small">Wohnheim-Belegung</span>
+    </div>
+    <div class="card-body p-0">
+        {% if dormitory_stats %}
+        <ul class="list-group list-group-flush">
+            {% for ds in dormitory_stats %}
+            <li class="list-group-item px-3 py-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-semibold">{{ ds.dorm.name }}</span>
+                    <span class="{% if ds.free == 0 %}text-danger{% elif ds.free <= 2 %}text-warning{% else %}text-success{% endif %} small fw-semibold">
+                        {{ ds.free }} frei
+                    </span>
+                </div>
+                <div class="progress" style="height:6px;">
+                    <div class="progress-bar {% if ds.pct >= 100 %}bg-danger{% elif ds.pct >= 80 %}bg-warning{% else %}bg-success{% endif %}"
+                         role="progressbar" style="width:{{ ds.pct }}%"></div>
+                </div>
+                <div class="text-muted mt-1" style="font-size:.7rem;">{{ ds.occupied }} / {{ ds.capacity }} belegt</div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small p-3 mb-0">Keine Wohnheim-Daten.</p>
+        {% endif %}
+    </div>
+    <div class="card-footer bg-transparent py-1">
+        <a href="{% url 'dormitory:occupancy_calendar' %}" class="text-muted small text-decoration-none">
+            <i class="bi bi-calendar3 me-1"></i> Belegungsplan ansehen
+        </a>
+    </div>
+</div>

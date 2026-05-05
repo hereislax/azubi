@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Zuweisungsschreiben erstellen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item active">Zuweisungsschreiben erstellen</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-envelope-plus me-1"></i> Zuweisungsschreiben erstellen</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                <table class="table table-sm mb-4">
+                    <tr><th>Block</th><td>{{ schedule_block.name }}</td></tr>
+                    <tr><th>Zeitraum</th><td>{{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</td></tr>
+                    {% if schedule_block.location %}
+                    <tr><th>Standort</th><td>{{ schedule_block.location }}</td></tr>
+                    {% endif %}
+                </table>
+                </div>
+
+                {% if not has_template %}
+                <div class="alert alert-warning py-2 small mb-3">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Keine aktive Vorlage hinterlegt. Bitte zuerst eine <strong>.docx-Vorlage</strong>
+                    im Admin unter <em>Kurs › Zuweisungsschreiben-Vorlagen</em> hochladen.
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="kern-form-input">
+                        <label for="free_text" class="kern-label">
+                            Freitext <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <textarea id="free_text" name="free_text" rows="5" class="kern-form-input__input"
+                                  placeholder="Dieser Text wird in die Vorlage eingefügt."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <p class="fw-semibold mb-1 small"><i class="bi bi-people me-1"></i> Empfänger ({{ students|length }})</p>
+                        {% if students %}
+                            <ul class="list-group list-group-flush small">
+                                {% for s in students %}
+                                    <li class="list-group-item py-1 px-0 d-flex justify-content-between">
+                                        <span>{{ s.gender }} {{ s.first_name }} {{ s.last_name }}</span>
+                                        {% if s.email_id %}
+                                            <span class="text-muted">{{ s.email_id }}</span>
+                                        {% else %}
+                                            <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i> keine dienstl. E-Mail</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-people" style="font-size:2.5rem;"></i>
+                                <p class="mt-2 mb-0">Keine Nachwuchskräfte vorhanden.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if is_training_director %}
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="bi bi-envelope me-1"></i>
+                            Als <strong>Ausbildungsleitung</strong> werden die Schreiben sofort generiert und per E-Mail versendet.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning py-2 small mb-3">
+                            <i class="bi bi-envelope me-1"></i>
+                            Als <strong>Ausbildungsreferat</strong> werden die Schreiben generiert und gespeichert.
+                            Vor dem Versand ist eine <strong>Freigabe durch die Ausbildungsleitung</strong> erforderlich.
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-success"
+                                {% if not has_template or not students %}disabled{% endif %}>
+                            <i class="bi bi-envelope-plus me-1"></i> Schreiben generieren
+                        </button>
+                        <a href="{% url 'course:course_detail' course.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Abbrechen
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

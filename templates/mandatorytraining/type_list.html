@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Schulungs-Typen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'mandatorytraining:overview' %}">Pflichtschulungen</a></li>
+        <li class="breadcrumb-item active">Schulungs-Typen</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-shield-check me-1"></i> Schulungs-Typen</h2>
+    {% if can_write %}
+    <a href="{% url 'mandatorytraining:type_create' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Schulungs-Typ anlegen
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th class="text-center">Pflicht</th>
+                    <th>Wiederholung</th>
+                    <th class="text-center">Erinnerung (T-)</th>
+                    <th>Geltungsbereich</th>
+                    <th class="text-center">Teilnahmen</th>
+                    <th class="text-center">Aktiv</th>
+                    {% if can_write %}<th class="text-end">Aktion</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in types %}
+                <tr>
+                    <td>
+                        <i class="{{ t.icon|default:'bi-shield-check' }} me-1"></i>
+                        <span class="fw-semibold">{{ t.name }}</span>
+                        {% if t.description %}<div class="small text-muted">{{ t.description|truncatechars:80 }}</div>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if t.is_mandatory %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-dash text-muted"></i>{% endif %}
+                    </td>
+                    <td>
+                        {% if t.recurrence == 'one_time' %}
+                            <span class="badge bg-info text-dark">einmalig</span>
+                            <span class="text-muted small">lebenslang</span>
+                        {% elif t.recurrence == 'fixed' %}
+                            <span class="badge bg-info text-dark">Stichtag</span>
+                            <span class="text-muted small">{{ t.fixed_deadline_day }}.{{ t.fixed_deadline_month }}.{% if t.fixed_recurrence_years > 1 %} alle {{ t.fixed_recurrence_years }} J.{% endif %}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border">rollierend</span>
+                            <span class="text-muted small">{{ t.validity_months }} Monate</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{% if t.recurrence == 'one_time' %}<span class="text-muted">—</span>{% else %}{{ t.reminder_days_before }}{% endif %}</td>
+                    <td>
+                        {% if t.applies_to_all_students %}
+                        <span class="badge bg-light text-dark border">alle Berufsbilder</span>
+                        {% else %}
+                        {% for jp in t.applies_to_job_profiles.all %}
+                        <span class="badge bg-info text-dark border me-1">{{ jp.job_profile }}</span>
+                        {% empty %}<span class="text-muted small">— keines —</span>{% endfor %}
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ t.completion_count }}</td>
+                    <td class="text-center">
+                        {% if t.active %}<span class="badge bg-success">aktiv</span>
+                        {% else %}<span class="badge bg-secondary">inaktiv</span>{% endif %}
+                    </td>
+                    {% if can_write %}
+                    <td class="text-end">
+                        <a href="{% url 'mandatorytraining:type_edit' t.public_id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'mandatorytraining:type_delete' t.public_id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{% if can_write %}8{% else %}7{% endif %}" class="text-center text-muted py-3">Noch keine Schulungs-Typen angelegt.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

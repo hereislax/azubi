@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Anfragen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+        <li class="breadcrumb-item active">Anfragen</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-4 gap-2">
+    <h2 class="mb-0"><i class="bi bi-chat-left-text me-1"></i> Anfragen</h2>
+</div>
+
+{# ── Statusfilter ────────────────────────────────────────────────────────── #}
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'open' %}active{% endif %}" href="?status=open">
+            Offen
+            {% if counts.open %}<span class="badge bg-warning text-dark ms-1">{{ counts.open }}</span>{% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'in_progress' %}active{% endif %}" href="?status=in_progress">
+            In Bearbeitung
+            {% if counts.in_progress %}<span class="badge bg-info ms-1">{{ counts.in_progress }}</span>{% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'closed' %}active{% endif %}" href="?status=closed">
+            Geschlossen
+            {% if counts.closed %}<span class="badge bg-secondary ms-1">{{ counts.closed }}</span>{% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'all' %}active{% endif %}" href="?status=all">Alle</a>
+    </li>
+</ul>
+
+{# ── Anfragen-Tabelle ────────────────────────────────────────────────────── #}
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        {% if inquiries %}
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Status</th>
+                        <th>Nachwuchskraft</th>
+                        <th>Betreff</th>
+                        <th class="text-center">Antworten</th>
+                        <th>Erstellt</th>
+                        <th>Letzte Aktivität</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inq in inquiries %}
+                    <tr>
+                        <td>
+                            {% if inq.status == 'open' %}
+                            <span class="badge bg-warning text-dark">Offen</span>
+                            {% elif inq.status == 'in_progress' %}
+                            <span class="badge bg-info">In Bearbeitung</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Geschlossen</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            <a href="{% url 'student:student_detail' inq.student.pk %}">
+                                {{ inq.student.first_name }} {{ inq.student.last_name }}
+                            </a>
+                        </td>
+                        <td class="fw-semibold small">{{ inq.subject }}</td>
+                        <td class="text-center">
+                            {% if inq.replies.count %}
+                            <span class="badge bg-secondary rounded-pill">{{ inq.replies.count }}</span>
+                            {% else %}<span class="text-muted">–</span>{% endif %}
+                        </td>
+                        <td class="text-muted small">{{ inq.created_at|date:"d.m.Y H:i" }}</td>
+                        <td class="text-muted small">{{ inq.updated_at|date:"d.m.Y H:i" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'student:student_detail' inq.student.pk %}?tab=nachrichten"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-reply me-1"></i> Antworten
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-chat-left-text" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Keine Anfragen mit diesem Status vorhanden.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

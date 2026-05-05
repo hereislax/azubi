@@ -1,0 +1,23 @@
+<div class="card shadow-sm h-100">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-envelope-open text-muted me-1"></i>
+        <span class="fw-semibold small">Ausstehende Schreiben</span>
+    </div>
+    <div class="card-body p-0">
+        {% if pending_letters %}
+        <ul class="list-group list-group-flush">
+            {% for item in pending_letters %}
+            <li class="list-group-item px-3 py-2">
+                <div class="small fw-semibold">{{ item.obj.schedule_block }}</div>
+                <div class="text-muted" style="font-size:.75rem;">
+                    <span class="badge bg-light text-secondary border me-1">{{ item.type }}</span>
+                    {{ item.obj.schedule_block.course }}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small p-3 mb-0">Keine Schreiben zur Freigabe.</p>
+        {% endif %}
+    </div>
+</div>

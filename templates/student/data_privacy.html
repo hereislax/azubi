@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Datenschutz / Anonymisierung{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'student:student_list' %}">Nachwuchskräfte</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Datenschutz / Anonymisierung</li>
+        </ol>
+    </nav>
+
+    <h2 class="mb-4"><i class="bi bi-shield-lock me-1"></i> Datenschutz / Anonymisierung</h2>
+
+    {% if due %}
+    <form method="post" action="{% url 'student:anonymize_all' %}"
+          onsubmit="return confirm('Alle {{ due|length }} fälligen Nachwuchskräfte wirklich anonymisieren? Diese Aktion kann nicht rückgängig gemacht werden.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger mb-4">
+            <i class="bi bi-shield-fill-exclamation me-1"></i>
+            Alle {{ due|length }} fälligen Nachwuchskraft/-kräfte jetzt anonymisieren
+        </button>
+    </form>
+    {% endif %}
+
+    <!-- Karte 1: Zur Anonymisierung fällig -->
+    <div class="card border-danger mb-4">
+        <div class="card-header bg-danger text-white">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Zur Anonymisierung fällig (&gt;12 Monate inaktiv)
+            <span class="badge bg-white text-danger ms-2">{{ due|length }}</span>
+        </div>
+        <div class="card-body">
+            {% if due %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Status geändert am</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in due %}
+                        <tr>
+                            <td>{{ student.first_name }} {{ student.last_name }}</td>
+                            <td>
+                                {% if student.status %}
+                                <span class="badge bg-{{ student.status.color }}">{{ student.status.description }}</span>
+                                {% else %}
+                                <span class="text-muted">–</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.status_changed_at %}
+                                {{ student.status_changed_at|date:"d.m.Y" }}
+                                {% else %}
+                                <span class="text-muted">–</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="post"
+                                      action="{% url 'student:anonymize_student' student.pk %}"
+                                      onsubmit="return confirm('{{ student.first_name }} {{ student.last_name }} wirklich anonymisieren?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-shield-fill-x me-1"></i> Jetzt anonymisieren
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-shield-check" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Keine Nachwuchskräfte zur Anonymisierung fällig.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Karte 2: Demnächst fällig (10–12 Monate) -->
+    <div class="card border-warning mb-4">
+        <div class="card-header bg-warning text-dark">
+            <i class="bi bi-exclamation-circle-fill me-1"></i>
+            Demnächst fällig (10–12 Monate inaktiv)
+            <span class="badge bg-white text-warning ms-2">{{ approaching|length }}</span>
+        </div>
+        <div class="card-body">
+            {% if approaching %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Status geändert am</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in approaching %}
+                        <tr>
+                            <td>{{ student.first_name }} {{ student.last_name }}</td>
+                            <td>
+                                {% if student.status %}
+                                <span class="badge bg-{{ student.status.color }}">{{ student.status.description }}</span>
+                                {% else %}
+                                <span class="text-muted">–</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.status_changed_at %}
+                                {{ student.status_changed_at|date:"d.m.Y" }}
+                                {% else %}
+                                <span class="text-muted">–</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-shield-check" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Keine Nachwuchskräfte in der Vorwarnzone.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Karte 3: Bereits anonymisiert -->
+    <div class="card border-secondary mb-4">
+        <div class="card-header bg-secondary text-white">
+            <i class="bi bi-shield-check me-1"></i>
+            Bereits anonymisiert
+            <span class="badge bg-white text-secondary ms-2">{{ anonymized|length }}</span>
+        </div>
+        <div class="card-body">
+            {% if anonymized %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Anonymisiert am</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in anonymized %}
+                        <tr>
+                            <td><code>{{ student.pk }}</code></td>
+                            <td>{{ student.anonymized_at|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-shield-check" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Noch keine anonymisierten Nachwuchskräfte vorhanden.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}NK-Import{% endblock %}
+
+{% block content %}
+<div style="max-width: 720px;">
+
+    <nav aria-label="breadcrumb" class="mt-3 mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+            <li class="breadcrumb-item active">Importieren</li>
+        </ol>
+    </nav>
+
+    <div class="card border-info mb-4">
+        <div class="card-header bg-info bg-opacity-10 d-flex align-items-center">
+            <i class="bi bi-1-circle me-2 text-info"></i>
+            <span class="fw-semibold">Schritt 1 – Vorlage herunterladen</span>
+        </div>
+        <div class="card-body">
+            <p class="mb-3 small">
+                Die Vorlage enthält die richtigen Spaltenüberschriften, eine Beispielzeile sowie
+                Referenzlisten aller bestehenden <strong>Kurse</strong>,
+                <strong>Beschäftigungsverhältnisse</strong>, <strong>Status</strong> und
+                <strong>Geschlechter</strong>. Bitte ausschließlich die Werte aus den
+                Referenzlisten verwenden – sonst werden die Zeilen mit Fehler markiert.
+            </p>
+            <a href="{% url 'student:student_import_template' %}" class="btn btn-outline-info">
+                <i class="bi bi-download me-1"></i> Vorlage herunterladen (.xlsx)
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <i class="bi bi-2-circle me-2"></i>
+            <span class="fw-semibold">Schritt 2 – Ausgefüllte Datei hochladen</span>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="kern-form-input {% if form.file.errors %}kern-form-input--error{% endif %}">
+                    <label class="kern-label" for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+                    {% if form.file.help_text %}
+                    <div class="kern-hint" id="{{ form.file.id_for_label }}-hint">{{ form.file.help_text }}</div>
+                    {% endif %}
+                    {{ form.file }}
+                    {% if form.file.errors %}
+                    <span class="kern-error">
+                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ form.file.errors|join:", " }}
+                    </span>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-eye me-1"></i> Vorschau anzeigen
+                </button>
+                <a href="{% url 'student:student_list' %}" class="btn btn-outline-secondary ms-2">Abbrechen</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4 border-secondary">
+        <div class="card-header bg-secondary bg-opacity-10">
+            <a class="text-decoration-none text-dark fw-semibold" data-bs-toggle="collapse" href="#format-help">
+                <i class="bi bi-info-circle me-1"></i> Erwartetes Dateiformat
+            </a>
+        </div>
+        <div class="collapse" id="format-help">
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    Die erste Zeile muss die Spaltenköpfe enthalten (Groß-/Kleinschreibung egal).
+                    Bei CSV: Semikolon als Trennzeichen, UTF-8-Kodierung.
+                </p>
+                <div class="table-responsive">
+                <table class="table table-sm table-bordered small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Spaltenname</th>
+                            <th>Pflicht</th>
+                            <th>Hinweis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>Vorname</code></td><td><span class="badge bg-danger">Ja</span></td><td></td></tr>
+                        <tr><td><code>Nachname</code></td><td><span class="badge bg-danger">Ja</span></td><td></td></tr>
+                        <tr><td><code>Geburtsdatum</code></td><td><span class="badge bg-danger">Ja</span></td><td>Format: TT.MM.JJJJ</td></tr>
+                        <tr><td><code>Geburtsort</code></td><td><span class="badge bg-danger">Ja</span></td><td></td></tr>
+                        <tr><td><code>Geschlecht</code></td><td><span class="badge bg-danger">Ja</span></td><td>Abkürzung, z.&nbsp;B. <code>m</code>, <code>w</code>, <code>d</code></td></tr>
+                        <tr><td><code>Kurs</code></td><td><span class="badge bg-danger">Ja</span></td><td>Exakter Kurs-Titel aus dem System</td></tr>
+                        <tr><td><code>Beschaeftigungsverhaeltnis</code></td><td><span class="badge bg-danger">Ja</span></td><td>Exakte Bezeichnung aus dem System</td></tr>
+                        <tr><td><code>Email_privat</code></td><td><span class="badge bg-secondary">Nein</span></td><td></td></tr>
+                        <tr><td><code>Email_Kennung</code></td><td><span class="badge bg-secondary">Nein</span></td><td>Dienstliche E-Mail-Kennung</td></tr>
+                        <tr><td><code>Telefon</code></td><td><span class="badge bg-secondary">Nein</span></td><td></td></tr>
+                        <tr><td><code>Status</code></td><td><span class="badge bg-secondary">Nein</span></td><td>Exakte Bezeichnung aus dem System</td></tr>
+                        <tr><td><code>Strasse</code></td><td><span class="badge bg-secondary">Nein</span></td><td colspan="1" rowspan="4">Adresse: alle vier Felder gemeinsam ausfüllen oder leer lassen.</td></tr>
+                        <tr><td><code>Hausnummer</code></td><td><span class="badge bg-secondary">Nein</span></td></tr>
+                        <tr><td><code>PLZ</code></td><td><span class="badge bg-secondary">Nein</span></td></tr>
+                        <tr><td><code>Ort</code></td><td><span class="badge bg-secondary">Nein</span></td></tr>
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

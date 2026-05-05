@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Einsatzvorschläge – {{ schedule_block.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:internship_calendar' course.pk schedule_block.public_id %}">{{ schedule_block.name }}</a></li>
+        <li class="breadcrumb-item active">Vorschläge</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-lightbulb me-1"></i> Einsatzvorschläge</h2>
+        <div class="text-muted small mt-1">
+            {{ schedule_block.name }} ({{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }})
+        </div>
+    </div>
+    <a href="{% url 'course:internship_calendar' course.pk schedule_block.public_id %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Zum Kalender
+    </a>
+</div>
+
+{# ── NK-Auswahl ──────────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-12 col-sm-8">
+                <div class="kern-form-input">
+                    <label for="suggest-student" class="kern-label">Nachwuchskraft</label>
+                    <div class="kern-form-input__select-wrapper">
+                        <select id="suggest-student" name="student" class="kern-form-input__select" onchange="this.form.submit()">
+                            <option value="">-- Nachwuchskraft auswählen --</option>
+                            {% for s in students %}
+                            <option value="{{ s.pk }}" {% if selected_student and selected_student.pk == s.pk %}selected{% endif %}>
+                                {{ s.last_name }}, {{ s.first_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="bi bi-lightbulb me-1"></i> Vorschläge generieren
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Vorschläge ──────────────────────────────────────────────────────────── #}
+{% if selected_student %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <h5 class="mb-0">Vorschläge für {{ selected_student.first_name }} {{ selected_student.last_name }}</h5>
+    {% if selected_student.internship_preference.notes %}
+    <span class="badge bg-light text-muted border" title="{{ selected_student.internship_preference.notes }}">
+        <i class="bi bi-chat-left-text me-1"></i> NK-Wunsch vorhanden
+    </span>
+    {% endif %}
+</div>
+
+{% if suggestions %}
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:2rem;"></th>
+                        <th>Organisationseinheit</th>
+                        <th>Gründe</th>
+                        <th class="text-center" style="width:4rem;">Score</th>
+                        <th style="width:8rem;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in suggestions %}
+                    <tr>
+                        <td class="text-center">
+                            {% if s.curriculum_match %}
+                            <i class="bi bi-mortarboard-fill text-primary" title="Curriculum-Anforderung"></i>
+                            {% elif s.is_preferred %}
+                            <i class="bi bi-heart-fill text-danger" title="NK-Wunsch"></i>
+                            {% else %}
+                            <i class="bi bi-geo-alt text-muted"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-semibold small">{{ s.unit.name }} – {{ s.unit.label }}</div>
+                            <div class="text-muted" style="font-size:.72rem;">{{ s.unit.get_full_path }}</div>
+                        </td>
+                        <td>
+                            {% for reason in s.reasons %}
+                            <span class="badge {% if 'Anforderung' in reason %}bg-primary{% elif 'Gewünscht' in reason %}bg-danger bg-opacity-75{% elif 'Noch nicht' in reason %}bg-success bg-opacity-75{% else %}bg-secondary{% endif %} me-1" style="font-size:.65rem;">
+                                {{ reason }}
+                            </span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-dark rounded-pill">{{ s.score }}</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'course:internship_assignment_create' course.pk schedule_block.public_id %}?student={{ selected_student.pk }}&unit={{ s.unit.pk }}&start_date={{ schedule_block.start_date|date:'Y-m-d' }}&end_date={{ schedule_block.end_date|date:'Y-m-d' }}"
+                               class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-pencil me-1"></i> Übernehmen
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small mt-3">
+    <i class="bi bi-info-circle me-1"></i>
+    Bei „Übernehmen" werden die Daten in das Erfassungsformular übertragen. Sie können dort noch Anpassungen vornehmen, bevor der Einsatz angelegt wird.
+</p>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-lightbulb fs-1 d-block mb-2 opacity-25"></i>
+    <div class="small">Keine passenden Vorschläge gefunden. Alle Anforderungen sind bereits erfüllt oder keine Kapazitäten frei.</div>
+</div>
+{% endif %}
+
+{% elif not selected_student %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-person-check fs-1 d-block mb-2 opacity-25"></i>
+    <div class="small">Bitte wählen Sie eine Nachwuchskraft aus, um Vorschläge zu generieren.</div>
+</div>
+{% endif %}
+{% endblock %}

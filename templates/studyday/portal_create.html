@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Lerntag beantragen{% endblock %}
+
+{% block content %}
+<div class="py-3" style="max-width:540px;">
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:studyday_list' %}">Lern- und Studientage</a></li>
+        <li class="breadcrumb-item active">Neuer Antrag</li>
+    </ol>
+</nav>
+
+<h2 class="mb-4"><i class="bi bi-calendar-plus me-1"></i> Lerntag beantragen</h2>
+
+{% if balance %}
+<div class="alert alert-info py-2 small mb-4">
+    <i class="bi bi-piggy-bank me-1"></i>
+    Verbleibendes Guthaben: <strong>{{ balance.remaining }} Tag(e)</strong>
+    {% if balance.monthly_cap %}
+    &nbsp;·&nbsp; diesen Monat noch: <strong>{{ balance.monthly_remaining }} Tag(e)</strong>
+    {% endif %}
+    <br><span class="text-muted">Regelung: {{ balance.policy.get_human_rule }}</span>
+</div>
+{% endif %}
+
+{% if balance.exam_prep %}
+<div class="alert alert-primary py-2 small mb-4">
+    <i class="bi bi-pencil-square me-1"></i>
+    Prüfungsvorbereitungstage: <strong>{{ balance.exam_prep.remaining }} von {{ balance.exam_prep.total }}</strong> verbleibend
+</div>
+{% endif %}
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {# ── Art des Antrags (nur wenn Prüfungsvorbereitungstage konfiguriert) ── #}
+    {% if balance.exam_prep %}
+    <div class="kern-form-input mb-3">
+        <label class="kern-label">Art des Antrags <span class="text-danger">*</span></label>
+        <div class="d-flex gap-3 mt-1">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="request_type"
+                       id="type_study" value="study"
+                       {% if request_type != 'exam_prep' %}checked{% endif %}>
+                <label class="form-check-label" for="type_study">Lerntag</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="request_type"
+                       id="type_exam" value="exam_prep"
+                       {% if request_type == 'exam_prep' %}checked{% endif %}>
+                <label class="form-check-label" for="type_exam">Prüfungsvorbereitung</label>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Datum ──────────────────────────────────────────────────────────────── #}
+    <div class="kern-form-input">
+        <label for="date" class="kern-label">
+            {% if policy.max_days_per_request > 1 %}Datum (von){% else %}Datum{% endif %}
+            <span class="text-danger">*</span>
+        </label>
+        <input type="date" id="date" name="date" class="kern-form-input__input"
+               value="{{ date_value|default:'' }}"
+               min="{{ min_date }}"
+               required>
+        {% if policy.min_advance_days %}
+        <div class="form-text">Frühestmöglich: {{ min_date }}</div>
+        {% endif %}
+        {% if policy.allowed_weekdays %}
+        <div class="form-text">Erlaubte Wochentage: {{ policy.get_allowed_weekday_short_names|join:", " }}</div>
+        {% endif %}
+    </div>
+
+    {# ── Enddatum (nur bei Mehrtagsanträgen) ────────────────────────────────── #}
+    {% if policy.max_days_per_request > 1 %}
+    <div class="kern-form-input">
+        <label for="date_end" class="kern-label">
+            Datum (bis) <span class="kern-label__optional">(optional – max. {{ policy.max_days_per_request }} Tage)</span>
+        </label>
+        <input type="date" id="date_end" name="date_end" class="kern-form-input__input"
+               value="{{ date_end_value|default:'' }}"
+               min="{{ min_date }}">
+        <div class="form-text">Leer lassen für einen einzelnen Tag.</div>
+    </div>
+    {% endif %}
+
+    {# ── Begründung ─────────────────────────────────────────────────────────── #}
+    <div class="kern-form-input">
+        <label for="reason" class="kern-label">Begründung <span class="kern-label__optional">(optional)</span></label>
+        <textarea id="reason" name="reason" class="kern-form-input__input" rows="3"
+                  placeholder="Z. B. Prüfungsvorbereitung, Selbststudium, ...">{{ reason_value|default:'' }}</textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-send me-1"></i> Antrag einreichen
+        </button>
+        <a href="{% url 'portal:studyday_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
+    </div>
+</form>
+
+</div>
+{% endblock %}

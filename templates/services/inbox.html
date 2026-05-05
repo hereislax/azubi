@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}Eingangskorb{% endblock %}
+
+{% block extra_head %}
+<style>
+    .combo-dropdown {
+        position: fixed;
+        border: 1px solid #dee2e6;
+        border-radius: .375rem;
+        background: #fff;
+    }
+    .combo-dropdown .combo-item {
+        border: none;
+        border-bottom: 1px solid #f0f0f0;
+        border-radius: 0;
+        padding: .35rem .6rem;
+        font-size: .85rem;
+        cursor: pointer;
+    }
+    .combo-dropdown .combo-item:last-child { border-bottom: none; }
+    .combo-dropdown .combo-item:hover,
+    .combo-dropdown .combo-item:focus { background: #f0f4ff; outline: none; }
+    .doc-row:hover { background: #f8f9fa; }
+    .doc-icon { width: 38px; text-align: center; flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">Eingangskorb</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0">
+            <i class="bi bi-tray me-1"></i> Eingangskorb
+            {% if documents %}
+                <span class="badge bg-danger ms-1">{{ documents|length }}</span>
+            {% endif %}
+        </h2>
+        <p class="text-muted small mb-0 mt-1">
+            Dokumente ohne Zuweisung — bitte einer Nachwuchskraft oder einem Kurs zuordnen.
+        </p>
+    </div>
+</div>
+
+<hr class="mt-2 mb-3">
+
+{% if documents %}
+
+<div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+    <input type="search" id="docSearch" class="kern-form-input__input" placeholder="Dokument suchen …"
+           oninput="filterRows(this.value)" style="max-width:280px;">
+    <div class="btn-group btn-group-sm" role="group">
+        <button class="btn btn-outline-secondary active" id="sortDateBtn" onclick="sortRows('date')">
+            <i class="bi bi-calendar3 me-1"></i> Datum
+        </button>
+        <button class="btn btn-outline-secondary" id="sortTitleBtn" onclick="sortRows('title')">
+            <i class="bi bi-sort-alpha-down me-1"></i> Titel
+        </button>
+    </div>
+    <span class="text-muted small" id="rowCount">{{ documents|length }} Dokumente</span>
+</div>
+
+<div id="docList">
+{% for doc in documents %}
+<div class="card shadow-sm mb-2 doc-row"
+     data-title="{{ doc.title|lower }}"
+     data-date="{{ doc.created|date:'Y-m-d' }}">
+    <div class="card-body d-flex align-items-center gap-3 py-2 px-3">
+
+        <div class="doc-icon">
+            {% if doc.mime_type == "application/pdf" %}
+                <i class="bi bi-file-earmark-pdf text-danger fs-3 me-1"></i>
+            {% elif "word" in doc.mime_type %}
+                <i class="bi bi-file-earmark-word text-primary fs-3 me-1"></i>
+            {% elif "mail" in doc.mime_type %}
+                <i class="bi bi-envelope-fill text-warning fs-3 me-1"></i>
+            {% else %}
+                <i class="bi bi-file-earmark text-secondary fs-3 me-1"></i>
+            {% endif %}
+        </div>
+
+        <div class="flex-grow-1" style="min-width:0;">
+            <div class="fw-semibold text-truncate" style="font-size:.9rem;" title="{{ doc.title }}">
+                <span id="doc-title-{{ doc.id }}">{{ doc.title }}</span>
+            </div>
+            <div class="text-muted" style="font-size:.78rem;">
+                <i class="bi bi-calendar3 me-1"></i>
+                <span id="doc-created-{{ doc.id }}">{{ doc.created|date:"d.m.Y" }}</span>
+                &nbsp;·&nbsp;
+                <span class="font-monospace">{{ doc.original_file_name }}</span>
+                {% if doc.archive_serial_number %}
+                &nbsp;·&nbsp;
+                <span class="badge text-bg-secondary font-monospace" title="Archiv-Seriennummer">
+                    ASN {{ doc.archive_serial_number }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'services:assign_document' doc.id %}"
+              class="d-flex gap-2 align-items-center flex-shrink-0" style="min-width:260px;">
+            {% csrf_token %}
+            <div class="assignee-combo position-relative flex-grow-1">
+                <div class="d-flex gap-1">
+                    <input type="text" class="kern-form-input__input combo-search"
+                           placeholder="Name oder Kurs …" autocomplete="off">
+                    <button type="button" class="btn btn-sm btn-outline-secondary combo-clear"
+                            style="display:none;" tabindex="-1">
+                        <i class="bi bi-x me-1"></i>
+                    </button>
+                </div>
+                <input type="hidden" name="assignee" class="combo-value">
+                <div class="combo-dropdown shadow-sm"
+                     style="z-index:1055; max-height:220px; overflow-y:auto; display:none;">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary flex-shrink-0" disabled title="Zuweisen">
+                <i class="bi bi-check-lg me-1"></i>
+            </button>
+        </form>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0 doc-edit-btn"
+                data-doc-id="{{ doc.id }}"
+                data-url="{% url 'services:document_update' doc.id %}"
+                data-title="{{ doc.title|escapejs }}"
+                data-created="{{ doc.created|slice:':10' }}"
+                title="Metadaten bearbeiten">
+            <i class="bi bi-pencil me-1"></i>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                onclick="openPreview('{% url 'services:paperless_preview' doc.id %}', '{{ doc.title|escapejs }}')"
+                title="Vorschau öffnen">
+            <i class="bi bi-eye me-1"></i>
+        </button>
+
+    </div>
+</div>
+{% endfor %}
+</div>
+
+{% else %}
+
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-check-circle" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Eingangskorb ist leer. Alle Dokumente sind bereits zugeordnet.</p>
+</div>
+
+{% endif %}
+
+{# Bearbeiten-Dialog #}
+<dialog class="kern-dialog" id="editDocModal" aria-labelledby="editDocModal_heading">
+    <header class="kern-dialog__header">
+        <h2 class="kern-title kern-title--large" id="editDocModal_heading">
+            <i class="bi bi-pencil me-1"></i> Dokument bearbeiten
+        </h2>
+        <button type="button" class="kern-btn kern-btn--tertiary"
+                onclick="kernDialogClose(this)" aria-label="Schließen">
+            <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+            <span class="kern-label kern-sr-only">Schließen</span>
+        </button>
+    </header>
+    <section class="kern-dialog__body">
+        <input type="hidden" id="editCsrf" value="{{ csrf_token }}">
+        <div class="kern-form-input">
+            <label class="kern-label" for="editDocTitle">Titel</label>
+            <input class="kern-form-input__input" type="text" id="editDocTitle">
+        </div>
+        <div class="kern-form-input">
+            <label class="kern-label" for="editDocDate">Datum</label>
+            <input class="kern-form-input__input" type="date" id="editDocDate">
+        </div>
+    </section>
+    <footer class="kern-dialog__footer">
+        <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+            <span class="kern-label">Abbrechen</span>
+        </button>
+        <button type="button" id="editDocSaveBtn" class="kern-btn kern-btn--primary">
+            <span class="kern-label">Speichern</span>
+        </button>
+    </footer>
+</dialog>
+
+{# Vorschau-Dialog #}
+<dialog class="kern-dialog kern-dialog--xl" id="previewModal" aria-labelledby="previewModal_heading">
+    <header class="kern-dialog__header">
+        <h2 class="kern-title kern-title--large" id="previewModal_heading"
+            style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85%;">Vorschau</h2>
+        <button type="button" class="kern-btn kern-btn--tertiary"
+                onclick="document.getElementById('previewModal').close()" aria-label="Schließen">
+            <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+            <span class="kern-label kern-sr-only">Schließen</span>
+        </button>
+    </header>
+    <section class="kern-dialog__body" style="padding:0; height:80vh;">
+        <iframe id="previewFrame" src="" title="Dokumentvorschau"
+                style="width:100%; height:100%; border:none; display:block;"></iframe>
+    </section>
+</dialog>
+
+<script>
+/* ── Dokument bearbeiten ─────────────────────────────────────── */
+(function () {
+    let _url = null, _id = null;
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.doc-edit-btn');
+        if (!btn) return;
+        _url = btn.dataset.url;
+        _id = btn.dataset.docId;
+        document.getElementById('editDocTitle').value = btn.dataset.title;
+        document.getElementById('editDocDate').value = btn.dataset.created || '';
+        document.getElementById('editDocModal').showModal();
+    });
+
+    document.getElementById('editDocSaveBtn').addEventListener('click', function () {
+        const title = document.getElementById('editDocTitle').value.trim();
+        const created = document.getElementById('editDocDate').value;
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        fetch(_url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.getElementById('editCsrf').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: `title=${encodeURIComponent(title)}&created=${encodeURIComponent(created)}`,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                const titleEl = document.getElementById('doc-title-' + _id);
+                if (titleEl) titleEl.textContent = title;
+                const createdEl = document.getElementById('doc-created-' + _id);
+                if (createdEl) createdEl.textContent = fmtDate(created);
+                document.querySelector(`.doc-edit-btn[data-doc-id="${_id}"]`).dataset.title = title;
+                document.querySelector(`.doc-edit-btn[data-doc-id="${_id}"]`).dataset.created = created;
+                document.getElementById('editDocModal').close();
+            } else {
+                alert('Fehler beim Speichern. Bitte erneut versuchen.');
+            }
+        })
+        .catch(() => alert('Netzwerkfehler.'))
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="kern-label">Speichern</span>';
+        });
+    });
+
+    function fmtDate(iso) {
+        if (!iso) return '–';
+        const [y, m, d] = iso.split('-');
+        return `${d}.${m}.${y}`;
+    }
+})();
+
+/* ── Typeahead-Daten ─────────────────────────────────────────── */
+const ASSIGNEES = [
+    {% for student in students %}
+    {v:"student:{{ student.pk|escapejs }}", l:"{{ student.last_name|escapejs }}, {{ student.first_name|escapejs }}", t:"s"},
+    {% endfor %}
+    {% for course in courses %}
+    {v:"course:{{ course.pk|escapejs }}", l:"{{ course.title|escapejs }}", t:"c"},
+    {% endfor %}
+];
+
+function renderDropdown(dropdown, results) {
+    if (!results.length) {
+        dropdown.innerHTML = '<div class="px-2 py-2 text-muted" style="font-size:.82rem;">Keine Treffer</div>';
+    } else {
+        dropdown.innerHTML = results.map(a =>
+            `<button type="button" class="combo-item w-100 text-start d-flex align-items-center gap-2"
+                     data-value="${a.v}" data-label="${a.l}">
+                <i class="bi ${a.t === 's' ? 'bi-person' : 'bi-journal-text'} text-muted" style="font-size:.85rem; flex-shrink:0;"></i>
+                <span>${a.l}</span>
+                ${a.t === 'c' ? '<span class="badge text-bg-info ms-auto" style="font-size:.7rem;">Kurs</span>' : ''}
+            </button>`
+        ).join('');
+    }
+    const combo = dropdown.closest('.assignee-combo');
+    const rect = combo.getBoundingClientRect();
+    dropdown.style.width = rect.width + 'px';
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.display = '';
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 240) {
+        dropdown.style.top = 'auto';
+        dropdown.style.bottom = (window.innerHeight - rect.top + 2) + 'px';
+    } else {
+        dropdown.style.top = (rect.bottom + 2) + 'px';
+        dropdown.style.bottom = 'auto';
+    }
+}
+
+window.addEventListener('scroll', function () {
+    document.querySelectorAll('.combo-dropdown').forEach(d => d.style.display = 'none');
+}, true);
+
+function selectAssignee(combo, value, label) {
+    combo.querySelector('.combo-search').value = label;
+    combo.querySelector('.combo-value').value = value;
+    combo.querySelector('.combo-dropdown').style.display = 'none';
+    combo.querySelector('.combo-clear').style.display = '';
+    combo.closest('form').querySelector('[type=submit]').disabled = false;
+}
+
+function resetAssignee(combo) {
+    combo.querySelector('.combo-search').value = '';
+    combo.querySelector('.combo-value').value = '';
+    combo.querySelector('.combo-dropdown').style.display = 'none';
+    combo.querySelector('.combo-clear').style.display = 'none';
+    combo.closest('form').querySelector('[type=submit]').disabled = true;
+}
+
+document.addEventListener('input', function(e) {
+    if (!e.target.classList.contains('combo-search')) return;
+    const combo = e.target.closest('.assignee-combo');
+    const query = e.target.value.trim().toLowerCase();
+    combo.querySelector('.combo-value').value = '';
+    combo.closest('form').querySelector('[type=submit]').disabled = true;
+    combo.querySelector('.combo-clear').style.display = 'none';
+    const dropdown = combo.querySelector('.combo-dropdown');
+    if (!query) { dropdown.style.display = 'none'; return; }
+    const results = ASSIGNEES.filter(a => a.l.toLowerCase().includes(query)).slice(0, 25);
+    renderDropdown(dropdown, results);
+});
+
+document.addEventListener('click', function(e) {
+    const item = e.target.closest('.combo-item');
+    if (item) {
+        e.preventDefault();
+        selectAssignee(item.closest('.assignee-combo'), item.dataset.value, item.dataset.label);
+        return;
+    }
+    if (e.target.closest('.combo-clear')) {
+        resetAssignee(e.target.closest('.assignee-combo'));
+        return;
+    }
+    if (!e.target.closest('.assignee-combo')) {
+        document.querySelectorAll('.combo-dropdown').forEach(d => d.style.display = 'none');
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (!e.target.classList.contains('combo-search')) return;
+    const dropdown = e.target.closest('.assignee-combo').querySelector('.combo-dropdown');
+    if (dropdown.style.display === 'none') return;
+    const items = [...dropdown.querySelectorAll('.combo-item')];
+    const idx = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); (items[idx + 1] || items[0])?.focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); (items[idx - 1] || items[items.length - 1])?.focus(); }
+    else if (e.key === 'Escape') { dropdown.style.display = 'none'; e.target.focus(); }
+});
+
+/* ── Vorschau ────────────────────────────────────────────────── */
+function openPreview(url, title) {
+    document.getElementById('previewFrame').src = url;
+    document.getElementById('previewModal_heading').textContent = title;
+    document.getElementById('previewModal').showModal();
+}
+document.getElementById('previewModal')?.addEventListener('close', function () {
+    document.getElementById('previewFrame').src = '';
+});
+
+/* ── Filter & Sortierung ─────────────────────────────────────── */
+function filterRows(query) {
+    const q = query.toLowerCase();
+    let visible = 0;
+    document.querySelectorAll('.doc-row').forEach(row => {
+        const show = row.dataset.title.includes(q);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('rowCount').textContent = visible + ' Dokumente';
+}
+
+function sortRows(by) {
+    document.getElementById('sortDateBtn').classList.toggle('active', by === 'date');
+    document.getElementById('sortTitleBtn').classList.toggle('active', by === 'title');
+    const list = document.getElementById('docList');
+    const rows = [...list.querySelectorAll('.doc-row')];
+    rows.sort((a, b) => by === 'date'
+        ? b.dataset.date.localeCompare(a.dataset.date)
+        : a.dataset.title.localeCompare(b.dataset.title)
+    );
+    rows.forEach(r => list.appendChild(r));
+}
+</script>
+{% endblock %}

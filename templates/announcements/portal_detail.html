@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ announcement.title }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:announcement_list' %}">Ankündigungen</a></li>
+        <li class="breadcrumb-item active">{{ announcement.title }}</li>
+    </ol>
+</nav>
+
+<h2 class="mb-3"><i class="bi bi-megaphone me-1"></i> {{ announcement.title }}</h2>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-megaphone text-muted me-1"></i>
+        <span class="fw-semibold">{{ announcement.title }}</span>
+    </div>
+    <div class="card-body">
+        <div class="text-muted small mb-3">
+            <i class="bi bi-person me-1"></i>
+            {{ announcement.sender.get_full_name|default:announcement.sender.username }}
+            &middot;
+            <i class="bi bi-calendar3 ms-2 me-1"></i>
+            {{ announcement.published_at|date:"d.m.Y H:i" }}
+        </div>
+        <div style="white-space:pre-wrap;">{{ announcement.body }}</div>
+    </div>
+    {% if announcement.attachments.all %}
+    <div class="card-footer py-2">
+        <div class="small fw-semibold text-muted mb-1">Anhänge</div>
+        <div class="d-flex flex-wrap gap-2">
+        {% for att in announcement.attachments.all %}
+            <a href="{{ att.file.url }}" class="btn btn-outline-secondary btn-sm" download>
+                <i class="bi bi-paperclip me-1"></i>{{ att.filename }}
+            </a>
+        {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if announcement.requires_acknowledgement and not recipient.acknowledged_at %}
+<div class="alert alert-warning d-flex align-items-center gap-3">
+    <i class="bi bi-clipboard-check fs-4 flex-shrink-0 me-1"></i>
+    <div>
+        <strong>Bitte bestätigen</strong> – Diese Ankündigung erfordert deine aktive Bestätigung.
+    </div>
+    <form method="post" action="{% url 'portal:acknowledge' announcement.public_id %}" class="ms-auto">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-check2-all me-1"></i> Zur Kenntnis genommen
+        </button>
+    </form>
+</div>
+{% elif announcement.requires_acknowledgement and recipient.acknowledged_at %}
+<div class="alert alert-success d-flex align-items-center gap-2">
+    <i class="bi bi-check2-all me-1"></i>
+    Bestätigt am {{ recipient.acknowledged_at|date:"d.m.Y H:i" }}.
+</div>
+{% endif %}
+{% endblock %}

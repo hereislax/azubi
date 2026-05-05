@@ -1,0 +1,22 @@
+[run]
+source = .
+omit =
+    */migrations/*
+    */tests.py
+    */test_*.py
+    */__init__.py
+    Azubi/asgi.py
+    Azubi/wsgi.py
+    Azubi/celery.py
+    manage.py
+    .venv/*
+    staticfiles/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if TYPE_CHECKING:
+    if __name__ == .__main__.:
+show_missing = True
+skip_covered = False

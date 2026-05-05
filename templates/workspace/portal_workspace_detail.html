@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ workspace.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'workspace:portal_my_bookings' %}">Raumbuchung</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'workspace:portal_workspace_list' %}">Arbeitsplätze</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ workspace.name }}</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="{{ workspace.workspace_type.icon|default:'bi-door-closed' }} me-1"></i>{{ workspace.name }}</h2>
+        <p class="text-muted mb-0">
+            {{ workspace.workspace_type.name }} · {{ workspace.location.name }} · Kapazität {{ workspace.capacity }}
+        </p>
+    </div>
+    <a href="{% url 'workspace:portal_booking_create_for_workspace' workspace.pk %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Buchen
+    </a>
+</div>
+
+{% if workspace.equipment or workspace.description %}
+<div class="card mb-3"><div class="card-body py-2">
+    {% if workspace.equipment %}<div><strong>Ausstattung:</strong> {{ workspace.equipment }}</div>{% endif %}
+    {% if workspace.description %}<div class="text-muted">{{ workspace.description }}</div>{% endif %}
+</div></div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header bg-light"><i class="bi bi-calendar3 me-1"></i> Verfügbarkeit</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th style="width:170px;">Datum</th><th>Status</th><th class="text-end" style="width:140px;">Aktion</th></tr></thead>
+            <tbody>
+                {% for d in days %}
+                <tr {% if d.is_own %}class="table-info"{% elif d.is_closed %}class="table-warning"{% endif %}>
+                    <td>{{ d.date|date:"D, d.m.Y" }}</td>
+                    <td>
+                        {% if d.is_own %}
+                            <span class="badge bg-info text-dark">Von dir gebucht</span>
+                        {% elif d.is_closed %}
+                            <span class="badge bg-danger">Gesperrt</span>
+                        {% elif d.remaining == 0 %}
+                            <span class="badge bg-warning text-dark">Voll belegt</span>
+                        {% else %}
+                            <span class="badge bg-success">{{ d.remaining }} von {{ workspace.capacity }} frei</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if not d.is_own and not d.is_closed and d.remaining > 0 %}
+                        <a href="{% url 'workspace:portal_booking_create_for_workspace' workspace.pk %}?date={{ d.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus"></i> Buchen
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Statistik Nachwuchskräfte{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Statistik</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bar-chart-line me-1"></i> Statistik Nachwuchskräfte</h2>
+    <a href="{% url 'student:student_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Zur Liste
+    </a>
+</div>
+
+<!-- Kennzahlen -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center shadow-sm border-success">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-success">{{ total_active }}</div>
+                <div class="text-muted small mt-1">Aktive Nachwuchskräfte</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-secondary">{{ total_all }}</div>
+                <div class="text-muted small mt-1">Gesamt (inkl. abgeschlossen)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- 1.1 Geschlecht -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-gender-ambiguous me-1"></i> Aufteilung nach Geschlecht
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="chartGender" style="max-height:260px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1.2 Beschäftigung -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-briefcase me-1"></i> Aufteilung nach Beschäftigungsverhältnis
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="chartEmployment" style="max-height:260px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1.3 Alter -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-person-badge me-1"></i> Aufteilung nach Alter
+            </div>
+            <div class="card-body">
+                <canvas id="chartAge" style="max-height:260px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1.4 Kurs -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-journals me-1"></i> Aufteilung nach Kurs
+            </div>
+            <div class="card-body">
+                <canvas id="chartCourse" style="max-height:260px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1.5 Voraussichtliches Abschlussdatum -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-calendar-check me-1"></i> Voraussichtliches Abschlussdatum (nach Jahr)
+            </div>
+            <div class="card-body">
+                <canvas id="chartEndDate" style="max-height:220px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="/static/js/chart.umd.min.js"></script>
+<script>
+const COLORS = [
+    '#0d6efd','#198754','#fd7e14','#6f42c1','#20c997',
+    '#dc3545','#0dcaf0','#d63384','#ffc107','#6c757d',
+];
+
+function pieChart(id, labels, values) {
+    new Chart(document.getElementById(id), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: COLORS.slice(0, labels.length),
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+function barChart(id, labels, values, color) {
+    new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: color || '#0d6efd',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+pieChart('chartGender',
+    {{ gender.labels|safe }},
+    {{ gender.values|safe }}
+);
+
+pieChart('chartEmployment',
+    {{ employment.labels|safe }},
+    {{ employment.values|safe }}
+);
+
+barChart('chartAge',
+    {{ age.labels|safe }},
+    {{ age.values|safe }},
+    '#6f42c1'
+);
+
+barChart('chartCourse',
+    {{ course.labels|safe }},
+    {{ course.values|safe }},
+    '#198754'
+);
+
+barChart('chartEndDate',
+    {{ end_date.labels|safe }},
+    {{ end_date.values|safe }},
+    '#fd7e14'
+);
+</script>
+{% endblock %}

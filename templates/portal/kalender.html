@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Mein Kalender{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item active">Mein Kalender</li>
+    </ol>
+</nav>
+
+<h2 class="mb-4"><i class="bi bi-calendar3 me-1"></i> Mein Kalender</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% include "_calendar_gantt.html" with cal=calendar_data year_url_base="/portal/kalender/?year=" %}
+    </div>
+</div>
+
+{% endblock %}

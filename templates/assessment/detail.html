@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Beurteilung – {{ assessment.assignment.student }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'assessment:list' %}">Stationsbeurteilungen</a></li>
+        <li class="breadcrumb-item active">{{ assessment.assignment.student }}</li>
+    </ol>
+</nav>
+
+<div class="row g-3">
+
+    {# ── Linke Spalte: Metadaten + Aktionen ─────────────────────────────── #}
+    <div class="col-12 col-lg-4">
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="fw-semibold"><i class="bi bi-clipboard-check me-1"></i> Stationsbeurteilung</span>
+                <span class="badge bg-{{ assessment.status_badge }}">{{ assessment.get_status_display }}</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Nachwuchskraft</div>
+                        <div class="fw-semibold">
+                            <a href="{% url 'student:student_detail' assessment.assignment.student.pk %}">
+                                {{ assessment.assignment.student }}
+                            </a>
+                        </div>
+                    </li>
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Organisationseinheit</div>
+                        <div>{{ assessment.assignment.unit }}</div>
+                    </li>
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Zeitraum</div>
+                        <div>{{ assessment.assignment.start_date|date:"d.m.Y" }} – {{ assessment.assignment.end_date|date:"d.m.Y" }}</div>
+                    </li>
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Block</div>
+                        <div>{{ assessment.assignment.schedule_block.name }}</div>
+                    </li>
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Bewertungsvorlage</div>
+                        <div>{{ assessment.template.name }} ({{ assessment.template.get_rating_scale_display }})</div>
+                    </li>
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Praxistutor</div>
+                        <div>{{ assessment.assessor_name|default:"–" }}</div>
+                        {% if assessment.assessor_email %}<div class="text-muted">{{ assessment.assessor_email }}</div>{% endif %}
+                    </li>
+                    {% if assessment.submitted_at %}
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Eingereicht am</div>
+                        <div>{{ assessment.submitted_at|date:"d.m.Y H:i" }} Uhr</div>
+                    </li>
+                    {% endif %}
+                    {% if assessment.confirmed_at %}
+                    <li class="list-group-item px-3 py-2">
+                        <div class="text-muted" style="font-size:.75rem;">Bestätigt am</div>
+                        <div>{{ assessment.confirmed_at|date:"d.m.Y H:i" }} Uhr</div>
+                        <div class="text-muted small">von {{ assessment.confirmed_by.get_full_name|default:assessment.confirmed_by.username }}</div>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        {# Aktionen #}
+        {% if can_confirm and assessment.status == STATUS_SUBMITTED %}
+        <form method="post" action="{% url 'assessment:confirm' assessment.public_id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success w-100 mb-2">
+                <i class="bi bi-pen"></i> Verbindlich bestätigen
+            </button>
+        </form>
+        {% endif %}
+
+        {% if assessment.status == STATUS_CONFIRMED %}
+        <a href="{% url 'assessment:signed_pdf' assessment.public_id %}" class="btn btn-outline-secondary w-100 mb-2">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Signiertes PDF
+        </a>
+        {% endif %}
+
+        {% if assessment.status == 'pending' %}
+        <form method="post" action="{% url 'assessment:resend_token' assessment.public_id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary w-100 mb-2">
+                <i class="bi bi-envelope-arrow-up"></i> Link erneut senden
+            </button>
+        </form>
+        {% if assessment.token_sent_at %}
+        <div class="text-muted small text-center">Zuletzt gesendet: {{ assessment.token_sent_at|date:"d.m.Y H:i" }} Uhr</div>
+        {% endif %}
+
+        {# ── Eskalations-Status ────────────────────────────────────────── #}
+        {% if assessment.reminder_count > 0 or assessment.escalated_at %}
+        <div class="card border-warning mt-3 mb-2">
+            <div class="card-header bg-warning bg-opacity-25 fw-semibold small">
+                <i class="bi bi-exclamation-triangle me-1"></i> Eskalations-Verlauf
+            </div>
+            <ul class="list-group list-group-flush small">
+                <li class="list-group-item px-3 py-2">
+                    <span class="text-muted">Erinnerungen gesendet:</span>
+                    <span class="fw-semibold">{{ assessment.reminder_count }}</span>
+                </li>
+                {% if assessment.last_reminder_at %}
+                <li class="list-group-item px-3 py-2">
+                    <span class="text-muted">Letzte Erinnerung:</span>
+                    <span>{{ assessment.last_reminder_at|date:"d.m.Y H:i" }} Uhr</span>
+                </li>
+                {% endif %}
+                {% if assessment.escalated_at %}
+                <li class="list-group-item px-3 py-2 bg-danger bg-opacity-10">
+                    <div><span class="text-muted">Eskaliert am:</span>
+                        <span class="fw-semibold">{{ assessment.escalated_at|date:"d.m.Y H:i" }} Uhr</span></div>
+                    {% if assessment.escalated_to %}
+                    <div class="text-muted">an {{ assessment.escalated_to.name }}</div>
+                    {% endif %}
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        {# ── Eingriffs-Aktionen für Koordination ───────────────────────── #}
+        <form method="post" action="{% url 'assessment:renew_token' assessment.public_id %}" class="mb-2">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-warning w-100"
+                    onclick="return confirm('Neuen Token erzeugen, Erinnerungen zurücksetzen und Link erneut senden?');">
+                <i class="bi bi-arrow-clockwise me-1"></i> Token erneuern &amp; Eskalation zurücksetzen
+            </button>
+        </form>
+
+        <button type="button" class="btn btn-outline-warning w-100 mb-2"
+                data-bs-toggle="collapse" data-bs-target="#changeAssessorForm">
+            <i class="bi bi-person-gear me-1"></i> Anderen Praxistutor eintragen
+        </button>
+        <div class="collapse mb-2" id="changeAssessorForm">
+            <form method="post" action="{% url 'assessment:change_assessor' assessment.public_id %}" class="card card-body p-2">
+                {% csrf_token %}
+                <div class="kern-form-input mb-2">
+                    <label class="kern-label">Name</label>
+                    <input type="text" name="assessor_name" class="kern-form-input__input"
+                           value="{{ assessment.assessor_name }}" required>
+                </div>
+                <div class="kern-form-input mb-2">
+                    <label class="kern-label">E-Mail</label>
+                    <input type="email" name="assessor_email" class="kern-form-input__input"
+                           value="{{ assessment.assessor_email }}" required>
+                </div>
+                <button type="submit" class="btn btn-warning btn-sm">
+                    Praxistutor wechseln &amp; Link senden
+                </button>
+            </form>
+        </div>
+        {% endif %}
+        {% endif %}
+
+    </div>
+
+    {# ── Rechte Spalte: Bewertungen ──────────────────────────────────────── #}
+    <div class="col-12 col-lg-8">
+
+        {# Praxistutoren-Beurteilung #}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-person-check me-1"></i> Beurteilung durch Praxistutoren</span>
+                {% with avg=assessment.average_grade %}
+                {% if avg %}
+                <span class="badge bg-primary fs-6 px-3">Ø {{ avg }}</span>
+                {% endif %}
+                {% endwith %}
+            </div>
+            <div class="card-body p-0">
+                {% if ratings %}
+                <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kriterium</th>
+                            <th class="text-center" style="width:120px;">Bewertung</th>
+                            <th>Kommentar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rating in ratings %}
+                        <tr>
+                            <td class="small">
+                                {% if rating.criterion.category %}
+                                <span class="text-muted" style="font-size:.7rem;">{{ rating.criterion.category }} ·</span>
+                                {% endif %}
+                                {{ rating.criterion.name }}
+                            </td>
+                            <td class="text-center fw-semibold">{{ rating.value }}</td>
+                            <td class="small text-muted">{{ rating.comment|default:"–" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                {% if assessment.overall_comment %}
+                <div class="px-3 py-2 border-top small">
+                    <span class="text-muted fw-semibold">Gesamtkommentar:</span>
+                    <div>{{ assessment.overall_comment|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted small p-3 mb-0">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    Noch keine Bewertungen eingereicht.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Selbstbeurteilung (Azubi) #}
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-person-workspace me-1"></i> Selbstbeurteilung (Auszubildende)</span>
+                <div class="d-flex align-items-center gap-2">
+                    {% if self_assessment %}
+                    {% with avg=self_assessment.average_grade %}
+                    {% if avg %}<span class="badge bg-secondary fs-6 px-3">Ø {{ avg }}</span>{% endif %}
+                    {% endwith %}
+                    <span class="badge bg-{{ self_assessment.status_badge }}">{{ self_assessment.get_status_display }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if self_ratings %}
+                <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kriterium</th>
+                            <th class="text-center" style="width:120px;">Bewertung</th>
+                            <th>Kommentar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rating in self_ratings %}
+                        <tr>
+                            <td class="small">
+                                {% if rating.criterion.category %}
+                                <span class="text-muted" style="font-size:.7rem;">{{ rating.criterion.category }} ·</span>
+                                {% endif %}
+                                {{ rating.criterion.name }}
+                            </td>
+                            <td class="text-center fw-semibold">{{ rating.value }}</td>
+                            <td class="small text-muted">{{ rating.comment|default:"–" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                {% if self_assessment.overall_comment %}
+                <div class="px-3 py-2 border-top small">
+                    <span class="text-muted fw-semibold">Gesamtkommentar:</span>
+                    <div>{{ self_assessment.overall_comment|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+                {% elif self_assessment %}
+                <p class="text-muted small p-3 mb-0">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    Selbstbeurteilung vorhanden, aber noch keine Bewertungen eingetragen.
+                </p>
+                {% else %}
+                <p class="text-muted small p-3 mb-0">
+                    <i class="bi bi-dash-circle me-1"></i>
+                    Keine Selbstbeurteilung eingereicht.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Paperless-ngx{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+        <li class="breadcrumb-item active">Paperless-ngx</li>
+    </ol>
+</nav>
+
+<div class="row mt-3 g-4">
+
+    {# ── Konfiguration ─────────────────────────────────────────────────── #}
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-archive me-1"></i> Paperless-ngx Verbindung</h5>
+            </div>
+            <div class="card-body">
+
+                {% if test_result %}
+                <div class="alert alert-{{ test_result.0 }} py-2">
+                    <i class="bi bi-{% if test_result.0 == 'success' %}check-circle{% elif test_result.0 == 'warning' %}exclamation-triangle{% else %}x-circle{% endif %} me-1"></i>
+                    {{ test_result.1 }}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="paperless_url">URL</label>
+                        <input type="url" name="paperless_url" id="paperless_url"
+                               class="kern-form-input__input"
+                               value="{{ config.paperless_url }}"
+                               placeholder="http://paperless:8000">
+                        <small class="form-text text-muted">
+                            Basis-URL der Paperless-ngx-Instanz (ohne abschließenden Slash).
+                        </small>
+                    </div>
+
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="paperless_api_key">API-Key</label>
+                        <input type="password" name="paperless_api_key" id="paperless_api_key"
+                               class="kern-form-input__input"
+                               value="{{ config.paperless_api_key }}"
+                               placeholder="Token eingeben">
+                        <small class="form-text text-muted">
+                            API-Token eines Paperless-Nutzers mit Berechtigungen für Dokumente und Korrespondenten.
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> Speichern & testen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# ── Hinweise ──────────────────────────────────────────────────────── #}
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-1"></i> Hinweise</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">Den API-Key finden Sie in Paperless-ngx unter:</p>
+                <ol class="small mb-3">
+                    <li>Anmelden als Admin-Benutzer</li>
+                    <li><strong>Einstellungen</strong> &rarr; <strong>Mein Profil</strong></li>
+                    <li>Abschnitt <em>Auth Token</em></li>
+                </ol>
+                <p class="small text-muted mb-0">
+                    Der Benutzer benötigt mindestens Berechtigungen für
+                    <code>Document</code> (alle) und <code>Correspondent</code> (alle).
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

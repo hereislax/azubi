@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Arbeitsplätze{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">Raumbuchung</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-door-open me-1"></i> Arbeitsplätze &amp; Lerninseln</h2>
+        <p class="text-muted mb-0">Übersicht aller buchbaren Räume. Anlegen über das <a href="{% url 'admin:index' %}">Admin-Portal</a>.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'workspace:booking_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list-ul me-1"></i> Alle Buchungen
+        </a>
+        <a href="{% url 'workspace:booking_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Buchung anlegen
+        </a>
+    </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <div class="kern-form-input__select-wrapper">
+            <select name="location" class="kern-form-input__select">
+                <option value="">Alle Standorte</option>
+                {% for loc in locations %}
+                <option value="{{ loc.pk }}" {% if filter_location == loc.pk %}selected{% endif %}>{{ loc.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kern-form-input__select-wrapper">
+            <select name="type" class="kern-form-input__select">
+                <option value="">Alle Typen</option>
+                {% for t in types %}
+                <option value="{{ t.pk }}" {% if filter_type == t.pk %}selected{% endif %}>{{ t.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+            <i class="bi bi-funnel me-1"></i> Filtern
+        </button>
+    </div>
+    <div class="col-md-2">
+        <a href="{% url 'workspace:workspace_list' %}" class="btn btn-outline-secondary btn-sm w-100">
+            Zurücksetzen
+        </a>
+    </div>
+</form>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+    {% for row in rows %}
+    {% with ws=row.workspace %}
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="{{ ws.workspace_type.icon|default:'bi-door-closed' }} me-1"></i>{{ ws.name }}</span>
+                <span class="badge bg-secondary">{{ ws.workspace_type.name }}</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-2"><i class="bi bi-geo-alt me-1"></i> {{ ws.location.name }}</p>
+                <p class="mb-1"><strong>Kapazität:</strong> {{ ws.capacity }}</p>
+                {% if ws.equipment %}<p class="mb-2 small text-muted">{{ ws.equipment }}</p>{% endif %}
+                <p class="mb-0">
+                    <strong>Heute:</strong>
+                    {% if row.today_blocked %}
+                        <span class="badge bg-danger">Gesperrt{% if row.today_blocked.reason %} – {{ row.today_blocked.reason }}{% endif %}</span>
+                    {% elif row.today_remaining == 0 %}
+                        <span class="badge bg-warning text-dark">Voll belegt</span>
+                    {% else %}
+                        <span class="badge bg-success">{{ row.today_remaining }} von {{ ws.capacity }} frei</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="card-footer bg-white d-flex gap-2">
+                <a href="{% url 'workspace:workspace_detail' ws.public_id %}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                    <i class="bi bi-calendar3 me-1"></i> Belegung
+                </a>
+                <a href="{% url 'workspace:booking_create_for_workspace' ws.pk %}" class="btn btn-sm btn-primary flex-grow-1">
+                    <i class="bi bi-plus me-1"></i> Buchen
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">Keine Arbeitsplätze gefunden.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

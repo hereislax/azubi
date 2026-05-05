@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Statistik Praxistutoren{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'instructor:instructor_list' %}">Praxistutoren</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Statistik</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bar-chart-line me-1"></i> Statistik Praxistutoren</h2>
+    <a href="{% url 'instructor:instructor_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Zur Liste
+    </a>
+</div>
+
+{# ── Kennzahlen ──────────────────────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-secondary">{{ total }}</div>
+                <div class="text-muted small mt-1">Praxistutoren gesamt</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center shadow-sm border-success">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-success">{{ confirmed }}</div>
+                <div class="text-muted small mt-1">Bestätigt</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center shadow-sm border-warning">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-warning">{{ pending }}</div>
+                <div class="text-muted small mt-1">Ausstehend</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center shadow-sm border-primary">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-primary">{{ active_count }}</div>
+                <div class="text-muted small mt-1">Aktive Betreuungen heute</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    {# ── Status ──────────────────────────────────────────────────────────── #}
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-patch-check me-1"></i> Aufteilung nach Status
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="chartStatus" style="max-height:240px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {# ── Berufsbild ──────────────────────────────────────────────────────── #}
+    <div class="col-md-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-journals me-1"></i> Aufteilung nach Berufsbild
+            </div>
+            <div class="card-body">
+                <canvas id="chartJobProfile" style="max-height:240px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {# ── Organisationseinheit ────────────────────────────────────────────── #}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-diagram-3 me-1"></i> Aufteilung nach Organisationseinheit
+                {% if unit_data.labels|length == 20 %}<span class="text-muted fw-normal small ms-1">(Top 20)</span>{% endif %}
+            </div>
+            <div class="card-body">
+                <canvas id="chartUnit" style="max-height:300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {# ── Standort ────────────────────────────────────────────────────────── #}
+    {% if location_data.labels %}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-geo-alt me-1"></i> Aufteilung nach Standort
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="chartLocation" style="max-height:260px;"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Aktuell aktive Betreuungen (Chart-Tabelle) ─────────────────────── #}
+    {% if top_supervisors %}
+    <div class="col-md-{% if location_data.labels %}6{% else %}12{% endif %}">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-person-lines-fill me-1"></i> Aktive Betreuungen pro Praxistutor (heute)
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Praxistutor</th>
+                            <th class="text-end">Betreuungen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, count in top_supervisors %}
+                        <tr>
+                            <td>{{ name }}</td>
+                            <td class="text-end">
+                                <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{# ── Auslastungsübersicht ────────────────────────────────────────────────── #}
+<h4 class="mt-5 mb-3"><i class="bi bi-speedometer2 me-1"></i> Auslastungsübersicht (bestätigte Praxistutoren)</h4>
+
+{% if workload %}
+<div class="table-responsive">
+    <table class="table table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Praxistutor</th>
+                <th>Einheit</th>
+                <th class="text-center" style="width:140px;">Auslastung</th>
+                <th>Aktuelle Nachwuchskräfte</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in workload %}
+            <tr {% if row.at_max %}class="table-warning"{% endif %}>
+                <td>
+                    <a href="{% url 'instructor:instructor_detail' row.instructor.public_id %}" class="text-decoration-none fw-semibold">
+                        {{ row.instructor.last_name }}, {{ row.instructor.first_name }}
+                    </a>
+                    {% if row.at_max %}
+                    <span class="badge bg-warning text-dark ms-1" title="Maximale Betreuungsanzahl erreicht">voll</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted small">{{ row.instructor.unit|default:"–" }}</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height:14px;">
+                            <div class="progress-bar {% if row.at_max %}bg-warning{% elif row.pct >= 60 %}bg-info{% else %}bg-success{% endif %}"
+                                 style="width:{{ row.pct }}%;"></div>
+                        </div>
+                        <span class="small text-muted text-nowrap">{{ row.count }}&thinsp;/&thinsp;{{ max_supervised }}</span>
+                    </div>
+                </td>
+                <td>
+                    {% if row.assignments %}
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for a in row.assignments %}
+                        <a href="{% url 'student:student_detail' a.student.pk %}"
+                           class="badge bg-light text-dark border text-decoration-none"
+                           title="{{ a.unit.name }} ({{ a.start_date|date:'d.m.Y' }}–{{ a.end_date|date:'d.m.Y' }})">
+                            {{ a.student.first_name }} {{ a.student.last_name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <span class="text-muted small">Keine aktiven Betreuungen</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-person-badge" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Keine bestätigten Praxistutoren vorhanden.</p>
+</div>
+{% endif %}
+
+<script src="/static/js/chart.umd.min.js"></script>
+<script>
+const COLORS = [
+    '#0d6efd','#198754','#fd7e14','#6f42c1','#20c997',
+    '#dc3545','#0dcaf0','#d63384','#ffc107','#6c757d',
+    '#adb5bd','#495057','#2196f3','#4caf50','#ff5722',
+];
+
+function pieChart(id, labels, values) {
+    new Chart(document.getElementById(id), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{ data: values, backgroundColor: COLORS.slice(0, labels.length), borderWidth: 2 }]
+        },
+        options: { plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+function barChart(id, labels, values, color) {
+    new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{ data: values, backgroundColor: color || COLORS, borderRadius: 4 }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+}
+
+pieChart('chartStatus',
+    {{ status_data.labels|safe }},
+    {{ status_data.values|safe }}
+);
+
+barChart('chartJobProfile',
+    {{ jp_data.labels|safe }},
+    {{ jp_data.values|safe }}
+);
+
+barChart('chartUnit',
+    {{ unit_data.labels|safe }},
+    {{ unit_data.values|safe }},
+    '#0d6efd'
+);
+
+{% if location_data.labels %}
+pieChart('chartLocation',
+    {{ location_data.labels|safe }},
+    {{ location_data.values|safe }}
+);
+{% endif %}
+</script>
+{% endblock %}

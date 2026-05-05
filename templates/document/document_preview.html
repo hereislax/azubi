@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-3 mb-2 flex-wrap gap-2">
+    <h5 class="mb-0"><i class="bi bi-file-earmark-pdf text-danger me-1"></i> {{ document_title }}</h5>
+    <div class="d-flex gap-2">
+        <a href="{% url 'document:document_download_original' paperless_id %}"
+           class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-download me-1"></i> Download Original (.docx)
+        </a>
+        <button onclick="window.close()" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Schließen
+        </button>
+    </div>
+</div>
+
+<iframe src="{% url 'services:paperless_preview' paperless_id %}"
+        style="width:100%; height:calc(100vh - 120px); border:none; border-radius:4px;"
+        title="Dokumentvorschau">
+</iframe>
+{% endblock %}

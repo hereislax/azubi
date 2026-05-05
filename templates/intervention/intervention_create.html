@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Neue Maßnahme{% endblock %}
+
+{% block extra_head %}
+<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'intervention:list' %}">Maßnahmen</a></li>
+        {% if student %}
+        <li class="breadcrumb-item">
+            <a href="{% url 'student:student_detail' student.pk %}?tab=massnahmen">
+                {{ student.first_name }} {{ student.last_name }}
+            </a>
+        </li>
+        {% endif %}
+        <li class="breadcrumb-item active">Neue Maßnahme</li>
+    </ol>
+</nav>
+
+<h2 class="mb-4">
+    <i class="bi bi-shield-exclamation me-1"></i> Neue Maßnahme erfassen
+</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {% if student %}
+    <input type="hidden" name="student" value="{{ student.pk }}">
+    {% endif %}
+
+    <div class="row g-4">
+
+        {# Linke Spalte #}
+        <div class="col-lg-7">
+
+            {# Nachwuchskraft (falls nicht vorbelegt) #}
+            {% if not student %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-person me-1"></i> Nachwuchskraft
+                </div>
+                <div class="card-body">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="studentSearch">
+                            Nachwuchskraft <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" name="student" id="studentSearch"
+                               class="kern-form-input__input"
+                               placeholder="Azubi-ID eingeben …"
+                               value="{{ post.student|default:'' }}" required>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-person me-1"></i> Nachwuchskraft
+                </div>
+                <div class="card-body">
+                    <p class="mb-0 fw-semibold">
+                        {{ student.first_name }} {{ student.last_name }}
+                        {% if student.status %}
+                        <span class="badge bg-{{ student.status.color }} ms-2">{{ student.status }}</span>
+                        {% endif %}
+                    </p>
+                    {% if student.course %}
+                    <p class="text-muted small mb-0">{{ student.course }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {# Kategorie & Datum #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-tag me-1"></i> Kategorisierung
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="kern-form-input">
+                                <label class="kern-label" for="category">
+                                    Kategorie <span class="text-danger">*</span>
+                                </label>
+                                <select name="category" id="category" class="kern-form-input__input" required>
+                                    <option value="">– Bitte wählen –</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.pk }}"
+                                            data-requires-followup="{{ cat.requires_followup|yesno:'true,false' }}"
+                                            {% if post.category == cat.pk|stringformat:"s" %}selected{% endif %}>
+                                        {{ cat.name }}
+                                        (Stufe {{ cat.escalation_level }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="kern-form-input">
+                                <label class="kern-label" for="date">
+                                    Datum <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" name="date" id="date"
+                                       class="kern-form-input__input" required
+                                       value="{{ post.date|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Auslöser #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-lightning me-1"></i> Auslöser <span class="text-danger">*</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-3 mb-3">
+                        {% for val, label in trigger_choices %}
+                        <div class="form-check">
+                            <input class="form-check-input trigger-radio" type="radio"
+                                   name="trigger_type" id="trigger_{{ val }}" value="{{ val }}"
+                                   {% if post.trigger_type == val or forloop.first and not post %}
+                                   {% if post.trigger_type == val %}checked{% endif %}
+                                   {% endif %}
+                                   required>
+                            <label class="form-check-label" for="trigger_{{ val }}">{{ label }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {# Verknüpfte Krankmeldung #}
+                    {% if sick_leaves %}
+                    <div id="block-absence" class="trigger-block d-none">
+                        <div class="kern-form-input">
+                            <label class="kern-label" for="trigger_sick_leave">
+                                Krankmeldung verknüpfen <span class="text-muted small">(optional)</span>
+                            </label>
+                            <select name="trigger_sick_leave" id="trigger_sick_leave" class="kern-form-input__input">
+                                <option value="">– keine –</option>
+                                {% for sl in sick_leaves %}
+                                <option value="{{ sl.pk }}"
+                                        {% if post.trigger_sick_leave == sl.pk|stringformat:"s" %}selected{% endif %}>
+                                    {{ sl.start_date|date:"d.m.Y" }}
+                                    {% if sl.end_date %}– {{ sl.end_date|date:"d.m.Y" }}{% else %}(offen){% endif %}
+                                    · {{ sl.get_sick_type_display }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# Verknüpfte Beurteilung #}
+                    {% if assessments %}
+                    <div id="block-assessment" class="trigger-block d-none">
+                        <div class="kern-form-input">
+                            <label class="kern-label" for="trigger_assessment">
+                                Beurteilung verknüpfen <span class="text-muted small">(optional)</span>
+                            </label>
+                            <select name="trigger_assessment" id="trigger_assessment" class="kern-form-input__input">
+                                <option value="">– keine –</option>
+                                {% for a in assessments %}
+                                <option value="{{ a.pk }}"
+                                        {% if post.trigger_assessment == a.pk|stringformat:"s" %}selected{% endif %}>
+                                    {{ a.assignment.unit }} · {{ a.get_status_display }}
+                                    {% with avg=a.average_grade %}{% if avg %} · Ø {{ avg }}{% endif %}{% endwith %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Beschreibung #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-chat-text me-1"></i> Inhalt
+                </div>
+                <div class="card-body">
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="description">
+                            Beschreibung / Gesprächsinhalt <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="description" id="description"
+                                  class="kern-form-input__input" rows="5" required
+                                  placeholder="Was wurde besprochen? Sachverhalt, Hintergrund …">{{ post.description|default:'' }}</textarea>
+                    </div>
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="agreement">Getroffene Vereinbarungen</label>
+                        <textarea name="agreement" id="agreement"
+                                  class="kern-form-input__input" rows="3"
+                                  placeholder="Was wurde vereinbart? Welche Schritte wurden festgelegt?">{{ post.agreement|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {# Rechte Spalte #}
+        <div class="col-lg-5">
+
+            {# Frist #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-calendar-event me-1"></i> Folgetermin / Frist
+                </div>
+                <div class="card-body">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="followup_date">
+                            Frist
+                            <span id="followup-required-badge" class="badge bg-danger ms-1 d-none">Pflichtfeld</span>
+                        </label>
+                        <input type="date" name="followup_date" id="followup_date"
+                               class="kern-form-input__input"
+                               value="{{ post.followup_date|default:'' }}">
+                    </div>
+                    <span class="kern-hint">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Bei manchen Kategorien ist ein Folgetermin verpflichtend.
+                    </span>
+                </div>
+            </div>
+
+            {# Beteiligte #}
+            {% if staff_users %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-people me-1"></i> Beteiligte
+                    <span class="text-muted fw-normal small">(optional)</span>
+                </div>
+                <div class="card-body">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="participants">Weitere Beteiligte</label>
+                        <select name="participants" id="participants" multiple>
+                            {% for u in staff_users %}
+                            <option value="{{ u.pk }}">
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Aktionsleiste #}
+            <div class="d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle me-1"></i> Maßnahme speichern
+                </button>
+                {% if student %}
+                <a href="{% url 'student:student_detail' student.pk %}?tab=massnahmen"
+                   class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> Abbrechen
+                </a>
+                {% else %}
+                <a href="{% url 'intervention:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> Abbrechen
+                </a>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</form>
+
+<script>
+(function () {
+    // Auslöser-Blöcke ein-/ausblenden je nach gewähltem Radio-Button
+    const triggerRadios   = document.querySelectorAll('.trigger-radio');
+    const absenceBlock    = document.getElementById('block-absence');
+    const assessmentBlock = document.getElementById('block-assessment');
+
+    function updateTriggerBlocks() {
+        const val = document.querySelector('.trigger-radio:checked')?.value;
+        if (absenceBlock)    absenceBlock.classList.toggle('d-none',    val !== 'absence');
+        if (assessmentBlock) assessmentBlock.classList.toggle('d-none', val !== 'assessment');
+    }
+    triggerRadios.forEach(r => r.addEventListener('change', updateTriggerBlocks));
+    updateTriggerBlocks();
+
+    // Pflichtfeld-Badge für Folgetermin abhängig von der gewählten Kategorie
+    const catSelect        = document.getElementById('category');
+    const followupRequired = document.getElementById('followup-required-badge');
+    const followupInput    = document.getElementById('followup_date');
+
+    function updateFollowupRequired() {
+        const opt = catSelect.selectedOptions[0];
+        const req = opt?.dataset.requiresFollowup === 'true';
+        if (followupRequired) followupRequired.classList.toggle('d-none', !req);
+        if (followupInput)    followupInput.required = req;
+    }
+    if (catSelect) {
+        catSelect.addEventListener('change', updateFollowupRequired);
+        updateFollowupRequired();
+    }
+
+    // Datum-Feld auf das heutige Datum vorbelegen, wenn noch leer
+    const dateInput = document.getElementById('date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        dateInput.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+    }
+
+    // Beteiligte – TomSelect mit Suchfunktion initialisieren
+    const participantsEl = document.getElementById('participants');
+    if (participantsEl) {
+        new TomSelect(participantsEl, {
+            plugins: ['remove_button'],
+            placeholder: 'Personen suchen und auswählen …',
+            maxOptions: null,
+            searchField: ['text'],
+        });
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Praktikumsplanung – {{ schedule_block.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item active">Praktikumsplanung – {{ schedule_block.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-calendar3 me-1"></i> Praktikumsplanung</h2>
+        <div class="text-muted small mt-1">
+            {{ schedule_block.name }} &nbsp;·&nbsp;
+            {{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'course:internship_suggestions' course.pk schedule_block.public_id %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-lightbulb me-1"></i> Vorschläge
+        </a>
+        <a href="{% url 'course:internship_assignment_create' course.pk schedule_block.public_id %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Einsatz hinzufügen
+        </a>
+    </div>
+</div>
+
+<style>
+    .cal-outer {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.82rem;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        overflow: hidden;
+        min-width: 700px;
+    }
+    .cal-row {
+        display: flex;
+        align-items: stretch;
+        border-bottom: 1px solid #ececec;
+    }
+    .cal-row:last-child { border-bottom: none; }
+    .cal-label {
+        width: 180px;
+        min-width: 180px;
+        flex-shrink: 0;
+        padding: 0 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-right: 2px solid #dee2e6;
+        background: #fff;
+        overflow: hidden;
+    }
+    .cal-label.header-label { background: #f8f9fa; }
+    .cal-tl {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+    }
+    .month-strip {
+        display: flex;
+        height: 30px;
+        background: #f8f9fa;
+        border-bottom: 2px solid #0d6efd;
+    }
+    .month-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        white-space: nowrap;
+        border-right: 1px solid #dee2e6;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    .month-cell:last-child { border-right: none; }
+    .cal-row.student-row { min-height: 50px; }
+    .cal-row.student-row:hover .cal-label,
+    .cal-row.student-row:hover .cal-tl { background: #f5f8ff; }
+    .cal-row.student-row .cal-label { background: #fff; }
+    .cal-row.student-row .cal-tl { background: #fff; }
+    .grid-line {
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 1px;
+        background: #e9ecef;
+        pointer-events: none;
+    }
+    .today-line {
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 2px;
+        background: #dc3545;
+        pointer-events: none;
+        z-index: 5;
+    }
+    .today-label {
+        position: absolute;
+        top: 2px; left: 3px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #dc3545;
+        white-space: nowrap;
+    }
+    .asgn-bar {
+        position: absolute;
+        height: 55px;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 3px 7px;
+        gap: 1px;
+        color: #fff;
+        overflow: hidden;
+        text-decoration: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,.2);
+        z-index: 2;
+        transition: filter .12s, box-shadow .12s;
+    }
+    .asgn-bar:hover {
+        filter: brightness(1.12);
+        box-shadow: 0 2px 6px rgba(0,0,0,.3);
+        color: #fff;
+        z-index: 10;
+    }
+    .asgn-bar.status-rejected {
+        border: 2px solid #dc3545;
+        opacity: 0.8;
+        background-image: repeating-linear-gradient(
+            45deg,
+            transparent 0px,
+            transparent 5px,
+            rgba(0,0,0,.22) 5px,
+            rgba(0,0,0,.22) 7px
+        );
+    }
+    .asgn-bar.status-pending {
+        border: 2px dashed rgba(255,255,255,.7);
+        opacity: 0.85;
+    }
+    .bar-name {
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        line-height: 1.2;
+    }
+    .bar-dates {
+        font-size: 0.62rem;
+        opacity: .9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        line-height: 1.2;
+    }
+    .free-label {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 6px;
+        font-size: 0.7rem;
+        color: #ced4da;
+        font-style: italic;
+        pointer-events: none;
+    }
+    .cal-tl-student { cursor: crosshair; }
+    .drag-ghost {
+        position: absolute;
+        top: 4px; bottom: 4px;
+        background: rgba(13,110,253,.18);
+        border: 2px dashed #0d6efd;
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    .drag-ghost-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #0d6efd;
+        white-space: nowrap;
+        padding: 0 4px;
+    }
+    body.dragging { user-select: none; }
+
+    @media (max-width: 575.98px) {
+        .cal-outer { min-width: 500px; }
+        .cal-label { width: 110px; min-width: 110px; font-size: 0.72rem; }
+    }
+</style>
+
+<div style="overflow-x: auto;">
+<div class="cal-outer">
+
+    {# Month header #}
+    <div class="cal-row">
+        <div class="cal-label header-label">
+            <span class="text-muted" style="font-size:0.75rem;">Nachwuchskraft</span>
+        </div>
+        <div class="cal-tl" style="padding:0;">
+            <div class="month-strip">
+                {% for m in months_data %}
+                <div class="month-cell" style="flex: {{ m.days }} 0 0%;">
+                    <span>{{ m.short }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Student rows #}
+    {% for row in rows_data %}
+    <div class="cal-row student-row" style="min-height:{{ row.row_height }}px;">
+        <div class="cal-label">
+            <span class="fw-semibold" style="font-size:0.82rem;">
+                {{ row.student.first_name }} {{ row.student.last_name }}
+            </span>
+        </div>
+        <div class="cal-tl cal-tl-student" data-student-pk="{{ row.student.pk }}">
+
+            {% for m in months_data %}{% if not forloop.first %}
+            <div class="grid-line" style="left:{{ m.offset }}%;"></div>
+            {% endif %}{% endfor %}
+
+            {% if today_offset is not None %}
+            <div class="today-line" style="left:{{ today_offset }}%;"></div>
+            {% endif %}
+
+            {% if row.assignments %}
+                {% for a in row.assignments %}
+                <a href="{% url 'course:internship_assignment_edit' course.pk schedule_block.public_id a.assignment.pk %}"
+                   class="asgn-bar{% if a.assignment.status == 'rejected' %} status-rejected{% elif a.assignment.status == 'pending' %} status-pending{% endif %}"
+                   style="left:{{ a.offset }}%; width:{{ a.width }}%; top:{{ a.top_px }}px; background-color:{{ a.color }};"
+                   title="{% if a.assignment.status == 'rejected' %}⚠ Abgelehnt – {% elif a.assignment.status == 'pending' %}⏳ Ausstehend – {% endif %}{{ a.label }}&#10;{{ a.start_fmt }} – {{ a.end_fmt }}&#10;{{ a.assignment.location }}{% if a.assignment.rejection_reason %}&#10;Begründung: {{ a.assignment.rejection_reason }}{% endif %}">
+                    <span class="bar-name">{% if a.assignment.status == 'rejected' %}⚠ {% elif a.assignment.status == 'pending' %}⏳ {% endif %}{{ a.label }}</span>
+                    <span class="bar-dates">{{ a.start_fmt }} – {{ a.end_fmt }}</span>
+                    <span class="bar-dates">{{ a.assignment.location }}</span>
+                </a>
+                {% endfor %}
+            {% else %}
+                <span class="free-label">kein Einsatz</span>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="cal-row" style="padding:2rem; justify-content:center; color:#6c757d;">
+        Diesem Kurs sind noch keine Nachwuchskräfte zugeordnet.
+    </div>
+    {% endfor %}
+
+</div>{# cal-outer #}
+</div>{# overflow-x #}
+
+{# Legend #}
+<div class="mt-3 d-flex align-items-center gap-4 flex-wrap" style="font-size:0.78rem; color:#6c757d;">
+    <span><span style="display:inline-block;width:3px;height:14px;background:#dc3545;vertical-align:middle;border-radius:1px;" class="me-1"></span>Heute</span>
+    {% for entry in units_legend %}
+    <span>
+        <span style="display:inline-block;width:28px;height:12px;background:{{ entry.color }};border-radius:3px;vertical-align:middle;" class="me-1"></span>
+        {{ entry.unit.name }}{% if entry.unit.label %} ({{ entry.unit.label }}){% endif %}
+    </span>
+    {% endfor %}
+    <span>⏳ Ausstehend (noch nicht geprüft)</span>
+    <span>⚠ Abgelehnt (Anpassung erforderlich)</span>
+    <span class="fst-italic">Zum Bearbeiten auf einen Einsatz klicken &nbsp;·&nbsp; Neuen Einsatz durch Klicken und Ziehen anlegen.</span>
+</div>
+
+<script>
+(function () {
+    const BLOCK_START = new Date('{{ block_start_iso }}');
+    const BLOCK_DAYS  = {{ block_days }};
+    const CREATE_URL  = '{% url "course:internship_assignment_create" course.pk schedule_block.public_id %}';
+
+    let dragState = null;  // { tl, studentPk, startPct, ghost }
+
+    function pctToDate(pct) {
+        const d = new Date(BLOCK_START);
+        d.setDate(d.getDate() + Math.round(pct * BLOCK_DAYS));
+        return d;
+    }
+    function fmtIso(d) {
+        return d.toISOString().slice(0, 10);
+    }
+    function fmtDisplay(d) {
+        return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    document.querySelectorAll('.cal-tl-student').forEach(tl => {
+        tl.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+            if (e.target.closest('.asgn-bar')) return;
+
+            const rect = tl.getBoundingClientRect();
+            const pct  = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+
+            const ghost = document.createElement('div');
+            ghost.className = 'drag-ghost';
+            ghost.style.left  = (pct * 100) + '%';
+            ghost.style.width = '0';
+            const label = document.createElement('span');
+            label.className = 'drag-ghost-label';
+            ghost.appendChild(label);
+            tl.appendChild(ghost);
+
+            dragState = { tl, studentPk: tl.dataset.studentPk, startPct: pct, ghost, label };
+            document.body.classList.add('dragging');
+            e.preventDefault();
+        });
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!dragState) return;
+        const { tl, startPct, ghost, label } = dragState;
+        const rect   = tl.getBoundingClientRect();
+        const curPct = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+        const left   = Math.min(startPct, curPct);
+        const width  = Math.abs(curPct - startPct);
+
+        ghost.style.left  = (left * 100) + '%';
+        ghost.style.width = (width * 100) + '%';
+
+        if (width > 0.005) {
+            const d1 = pctToDate(Math.min(startPct, curPct));
+            const d2 = pctToDate(Math.max(startPct, curPct));
+            if (d2 < d1) d2.setDate(d1.getDate());
+            label.textContent = fmtDisplay(d1) + ' – ' + fmtDisplay(d2);
+        } else {
+            label.textContent = '';
+        }
+    });
+
+    document.addEventListener('mouseup', e => {
+        if (!dragState) return;
+        const { tl, studentPk, startPct, ghost } = dragState;
+        ghost.remove();
+        document.body.classList.remove('dragging');
+
+        const rect   = tl.getBoundingClientRect();
+        const endPct = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+        dragState = null;
+
+        const span = Math.abs(endPct - startPct);
+        if (span < 0.005) return;  // Zu kleiner Drag – ignorieren
+
+        const startDay = Math.round(Math.min(startPct, endPct) * BLOCK_DAYS);
+        const endDay   = Math.max(startDay, Math.round(Math.max(startPct, endPct) * BLOCK_DAYS) - 1);
+
+        const d1 = new Date(BLOCK_START); d1.setDate(d1.getDate() + startDay);
+        const d2 = new Date(BLOCK_START); d2.setDate(d2.getDate() + endDay);
+
+        const params = new URLSearchParams({
+            start_date: fmtIso(d1),
+            end_date:   fmtIso(d2),
+            student:    studentPk,
+        });
+        window.location.href = CREATE_URL + '?' + params.toString();
+    });
+
+    // Drag abbrechen bei Escape oder wenn Maus das Fenster verlässt
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && dragState) {
+            dragState.ghost.remove();
+            document.body.classList.remove('dragging');
+            dragState = null;
+        }
+    });
+    document.addEventListener('mouseleave', () => {
+        if (dragState) {
+            dragState.ghost.remove();
+            document.body.classList.remove('dragging');
+            dragState = null;
+        }
+    });
+})();
+</script>
+{% endblock %}

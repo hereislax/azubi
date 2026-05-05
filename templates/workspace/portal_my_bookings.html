@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Meine Raumbuchungen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Raumbuchung</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-door-open me-1"></i> Meine Raumbuchungen</h2>
+    <a href="{% url 'workspace:portal_workspace_list' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Neue Buchung
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light"><i class="bi bi-calendar-event me-1"></i> Kommende Buchungen</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Datum</th><th>Arbeitsplatz</th><th>Standort</th><th>Zweck</th><th class="text-end">Aktion</th></tr></thead>
+            <tbody>
+                {% for b in upcoming %}
+                <tr>
+                    <td>{{ b.date|date:"D, d.m.Y" }}</td>
+                    <td><i class="{{ b.workspace.workspace_type.icon|default:'bi-door-closed' }} me-1"></i>{{ b.workspace.name }}</td>
+                    <td>{{ b.workspace.location.name }}</td>
+                    <td>{{ b.purpose|default:"—" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'workspace:portal_booking_cancel' b.public_id %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-x-circle"></i> Stornieren
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Keine kommenden Buchungen.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if past %}
+<div class="card">
+    <div class="card-header bg-light"><i class="bi bi-clock-history me-1"></i> Vergangene Buchungen</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Datum</th><th>Arbeitsplatz</th><th>Standort</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for b in past %}
+                <tr>
+                    <td>{{ b.date|date:"d.m.Y" }}</td>
+                    <td>{{ b.workspace.name }}</td>
+                    <td>{{ b.workspace.location.name }}</td>
+                    <td>
+                        {% if b.status == 'confirmed' %}<span class="badge bg-success">Bestätigt</span>
+                        {% else %}<span class="badge bg-secondary">Storniert</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

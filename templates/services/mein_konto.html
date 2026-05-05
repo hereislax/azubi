@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Mein Konto{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active">Mein Konto</li>
+    </ol>
+</nav>
+
+<h2 class="mb-3"><i class="bi bi-person-gear me-1"></i> Mein Konto</h2>
+
+<div class="row g-4">
+
+    {# ── Kontoinformationen ───────────────────────────────────────────────── #}
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-person-badge me-1"></i> Kontoinformationen
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted fw-normal small">Benutzername</dt>
+                    <dd class="col-sm-8">{{ user.username }}</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal small">Name</dt>
+                    <dd class="col-sm-8">{{ user.get_full_name|default:"–" }}</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal small">E-Mail</dt>
+                    <dd class="col-sm-8">{{ user.email|default:"–" }}</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal small">Rolle</dt>
+                    <dd class="col-sm-8">
+                        {% if is_training_director %}
+                            <span class="badge bg-primary">Ausbildungsleitung</span>
+                        {% elif is_training_office %}
+                            <span class="badge bg-secondary">Ausbildungsreferat</span>
+                        {% elif is_training_coordinator %}
+                            <span class="badge bg-info text-dark">Ausbildungskoordination</span>
+                        {% elif student_profile %}
+                            <span class="badge bg-success">Nachwuchskraft</span>
+                        {% else %}
+                            <span class="badge bg-light text-muted border">–</span>
+                        {% endif %}
+                    </dd>
+
+                    {% if profile %}
+                    <dt class="col-sm-4 text-muted fw-normal small">Letzte Anmeldung</dt>
+                    <dd class="col-sm-8">{{ user.last_login|date:"d.m.Y H:i"|default:"–" }}</dd>
+                    {% endif %}
+
+                    {% if student_profile %}
+                    <dt class="col-sm-4 text-muted fw-normal small">Kurs</dt>
+                    <dd class="col-sm-8">{{ student_profile.course|default:"–" }}</dd>
+                    {% endif %}
+
+                    {% if chief_profile %}
+                    <dt class="col-sm-4 text-muted fw-normal small">Koordination</dt>
+                    <dd class="col-sm-8">{{ chief_profile.coordination|default:"–" }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {# ── Profildaten (nur für Nutzer mit UserProfile) ─────────────────────── #}
+    {% if profile %}
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-card-list me-1"></i> Profildaten
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_profile">
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="job_title">Funktion</label>
+                        <input class="kern-form-input__input" type="text" id="job_title"
+                               name="job_title" value="{{ profile.job_title }}"
+                               placeholder="z. B. Sachbearbeiterin Ausbildung">
+                    </div>
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="location">Standort</label>
+                        <select class="kern-form-input__input" id="location" name="location">
+                            <option value="">– kein Standort –</option>
+                            {% for loc in locations %}
+                            <option value="{{ loc.pk }}" {% if profile.location_id == loc.pk %}selected{% endif %}>
+                                {{ loc.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="kern-form-input">
+                                <label class="kern-label" for="room">Raum</label>
+                                <input class="kern-form-input__input" type="text" id="room"
+                                       name="room" value="{{ profile.room }}"
+                                       placeholder="z. B. 2.14">
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="kern-form-input">
+                                <label class="kern-label" for="phone">Durchwahl</label>
+                                <input class="kern-form-input__input" type="text" id="phone"
+                                       name="phone" value="{{ profile.phone }}"
+                                       placeholder="z. B. -1234">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="kern-btn kern-btn--primary">
+                            <i class="bi bi-floppy" aria-hidden="true"></i>
+                            <span class="kern-label">Speichern</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── SSO-Verknüpfung ─────────────────────────────────────────────────── #}
+    {% if external_identity %}
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-shield-lock me-1"></i> Anmeldung über Identity-Provider
+            </div>
+            <div class="card-body">
+                <dl class="row mb-3">
+                    <dt class="col-sm-4 text-muted fw-normal small">Provider</dt>
+                    <dd class="col-sm-8">{{ external_provider_name }}</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal small">Verknüpft seit</dt>
+                    <dd class="col-sm-8">{{ external_identity.date_joined|date:"d.m.Y H:i" }}</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal small">Zuletzt benutzt</dt>
+                    <dd class="col-sm-8">
+                        {{ external_identity.last_login|date:"d.m.Y H:i"|default:"–" }}
+                    </dd>
+                </dl>
+
+                <div class="kern-alert kern-alert--info mb-3" role="alert">
+                    <div class="kern-alert__header">
+                        <span class="kern-icon kern-icon--info" aria-hidden="true"></span>
+                        <span class="kern-title">
+                            Solange diese Verknüpfung besteht, ist die lokale Anmeldung
+                            mit Benutzername und Passwort gesperrt.
+                        </span>
+                    </div>
+                </div>
+
+                <form method="post"
+                      onsubmit="return confirm('Verknüpfung mit {{ external_provider_name|escapejs }} wirklich lösen? Anschließend müssen Sie sich entweder über „Passwort vergessen?“ ein neues Passwort setzen oder die Verknüpfung von der Ausbildungskoordination neu einrichten lassen.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="unlink_sso">
+                    <button type="submit" class="kern-btn kern-btn--secondary">
+                        <i class="bi bi-shield-slash" aria-hidden="true"></i>
+                        <span class="kern-label">Verknüpfung lösen</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Passwort ändern ──────────────────────────────────────────────────── #}
+    {% if not external_identity %}
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-key me-1"></i> Passwort ändern
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_password">
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="id_old_password">Aktuelles Passwort</label>
+                        <input class="kern-form-input__input{% if password_form.old_password.errors %} is-invalid{% endif %}"
+                               type="password" id="id_old_password" name="old_password"
+                               autocomplete="current-password" required>
+                        {% for error in password_form.old_password.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="id_new_password1">Neues Passwort</label>
+                        <input class="kern-form-input__input{% if password_form.new_password1.errors %} is-invalid{% endif %}"
+                               type="password" id="id_new_password1" name="new_password1"
+                               autocomplete="new-password" required>
+                        {% for error in password_form.new_password1.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                        <span class="kern-hint">Mind. 12 Zeichen, mit mindestens einer Zahl und einem Sonderzeichen.</span>
+                    </div>
+                    <div class="kern-form-input mb-3">
+                        <label class="kern-label" for="id_new_password2">Neues Passwort bestätigen</label>
+                        <input class="kern-form-input__input{% if password_form.new_password2.errors %} is-invalid{% endif %}"
+                               type="password" id="id_new_password2" name="new_password2"
+                               autocomplete="new-password" required>
+                        {% for error in password_form.new_password2.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="kern-btn kern-btn--primary">
+                        <i class="bi bi-key" aria-hidden="true"></i>
+                        <span class="kern-label">Passwort ändern</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Benachrichtigungseinstellungen ───────────────────────────────────── #}
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-bell me-1"></i> Benachrichtigungen
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Steuere, welche E-Mail-Benachrichtigungen du erhalten möchtest.
+                </p>
+                <a href="{% url 'services:notification_preferences' %}" class="kern-btn kern-btn--secondary">
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                    <span class="kern-label">Benachrichtigungen verwalten</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

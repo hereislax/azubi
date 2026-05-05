@@ -1,0 +1,102 @@
+<div class="unified-calendar">
+
+    {# ── Jahresnavigation ──────────────────────────────────────────────────── #}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{{ year_url_base }}{{ cal.prev_year }}"
+           class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-chevron-left me-1"></i>{{ cal.prev_year }}
+        </a>
+        <span class="fw-bold fs-5">{{ cal.year }}</span>
+        <a href="{{ year_url_base }}{{ cal.next_year }}"
+           class="btn btn-sm btn-outline-secondary">
+            {{ cal.next_year }}<i class="bi bi-chevron-right ms-1"></i>
+        </a>
+    </div>
+
+    {% if cal.has_data %}
+
+    <div class="unified-cal-scroll">
+    <div class="unified-cal-table">
+
+        {# ── Monatskopfzeile ───────────────────────────────────────────────── #}
+        <div class="unified-cal-row">
+            <div class="unified-cal-label"></div>
+            <div class="unified-cal-timeline unified-cal-timeline--header">
+                {% for m in cal.months_data %}
+                <div class="unified-cal-month" style="width:{{ m.width }}%;">
+                    <span class="unified-cal-month-name d-none d-sm-block">{{ m.name }}</span>
+                    <span class="unified-cal-month-name d-sm-none">{{ m.short }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# ── Ereignis-Reihen ───────────────────────────────────────────────── #}
+        {% for row in cal.rows %}
+        <div class="unified-cal-row">
+            <div class="unified-cal-label" title="{{ row.label }}">
+                <i class="bi {{ row.icon }} me-1"></i>{{ row.label }}
+            </div>
+            <div class="unified-cal-timeline">
+
+                {# Heute-Linie #}
+                {% if cal.today_offset %}
+                <div class="unified-cal-today" style="left:{{ cal.today_offset }}%;"></div>
+                {% endif %}
+
+                {# Ereignis-Balken #}
+                {% for event in row.events %}
+                {% if event.url %}
+                <a href="{{ event.url }}"
+                   class="unified-cal-bar{% if event.is_marker %} unified-cal-bar--marker{% endif %}"
+                   style="left:{{ event.offset }}%;width:{{ event.width }}%;background-color:{{ event.color }};"
+                   title="{{ event.label }}&#10;{{ event.start_fmt }}{% if event.end_fmt != event.start_fmt %} – {{ event.end_fmt }}{% endif %}">
+                    {% if not event.is_marker %}
+                    <span class="unified-cal-bar-label">{{ event.label }}</span>
+                    {% endif %}
+                </a>
+                {% else %}
+                <div class="unified-cal-bar{% if event.is_marker %} unified-cal-bar--marker{% endif %}"
+                     style="left:{{ event.offset }}%;width:{{ event.width }}%;background-color:{{ event.color }};"
+                     title="{{ event.label }}&#10;{{ event.start_fmt }}{% if event.end_fmt != event.start_fmt %} – {{ event.end_fmt }}{% endif %}">
+                    {% if not event.is_marker %}
+                    <span class="unified-cal-bar-label">{{ event.label }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>{# /.unified-cal-table #}
+    </div>{# /.unified-cal-scroll #}
+
+    {# ── Legende ───────────────────────────────────────────────────────────── #}
+    <div class="unified-cal-legend">
+        {% for row in cal.rows %}
+        {% if row.label != 'Maßnahmen-Fristen' %}
+        <span class="d-flex align-items-center gap-1">
+            <span class="unified-cal-legend-dot"
+                  style="background-color:{{ row.events.0.color }};"></span>
+            {{ row.label }}
+        </span>
+        {% endif %}
+        {% endfor %}
+        {% for cat in cal.intervention_categories %}
+        <span class="d-flex align-items-center gap-1">
+            <span class="unified-cal-legend-dot" style="background-color:{{ cat.color }};"></span>
+            {{ cat.name }}
+        </span>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar3" style="font-size:2.5rem;"></i>
+        <p class="mt-2 mb-0">Keine Ereignisse für {{ cal.year }}.</p>
+    </div>
+    {% endif %}
+
+</div>{# /.unified-calendar #}

@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .akte-highlight-row mark,
+    .akte-highlight-row span[class*="highlight"] {
+        background-color: #fff3cd;
+        padding: 0 2px;
+        border-radius: 2px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb" class="mt-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+            <li class="breadcrumb-item active">{{ course.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h2 class="mb-0"><i class="bi bi-journal-bookmark me-1"></i> {{ course.title }}</h2>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'course:curriculum_overview' course.pk %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-list-check me-1"></i> Ausbildungsplan
+            </a>
+            <a href="{% url 'course:course_competence_matrix' course.pk %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-grid-3x3 me-1"></i> Kompetenzmatrix
+            </a>
+            <a href="{% url 'course:course_edit' course.pk %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil me-1"></i> Bearbeiten
+            </a>
+            <a href="{% url 'course:course_delete' course.pk %}" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>
+            </a>
+        </div>
+    </div>
+
+    {# ── Tabs ─────────────────────────────────────────────────────────────────── #}
+    <div class="tabs-scroll-wrapper">
+        <button class="tabs-scroll-btn tabs-scroll-btn--left" aria-label="Tabs nach links scrollen" hidden>
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <button class="tabs-scroll-btn tabs-scroll-btn--right" aria-label="Tabs nach rechts scrollen" hidden>
+            <i class="bi bi-chevron-right"></i>
+        </button>
+        <ul class="nav nav-tabs" id="courseTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#data"
+                        type="button" role="tab">
+                    <i class="bi bi-info-circle me-1"></i> Kursdaten
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="noten-tab" data-bs-toggle="tab" data-bs-target="#students"
+                        type="button" role="tab">
+                    <i class="bi bi-people me-1"></i> Nachwuchskräfte
+                </button>
+            </li>
+            {% if can_view_akte %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="akte-tab" data-bs-toggle="tab" data-bs-target="#akte"
+                        type="button" role="tab">
+                    <i class="bi bi-folder2-open me-1"></i> Kursakte
+                    {% if paperless_docs %}
+                    <span class="badge bg-secondary ms-1">{{ paperless_docs|length }}</span>
+                    {% endif %}
+                </button>
+            </li>
+            {% endif %}
+            {% if can_manage_checklists %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if request.GET.tab == 'kurs-checklisten' %}active{% endif %}"
+                        id="kurs-checklisten-tab" data-bs-toggle="tab" data-bs-target="#kurs-checklisten"
+                        type="button" role="tab">
+                    <i class="bi bi-clipboard-check me-1"></i> Kurs-Checklisten
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if request.GET.tab == 'checklisten' %}active{% endif %}"
+                        id="checklisten-tab" data-bs-toggle="tab" data-bs-target="#checklisten"
+                        type="button" role="tab">
+                    <i class="bi bi-check2-square me-1"></i> NK-Checklisten
+                </button>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="tab-content border border-top-0 rounded-bottom p-4 mb-4" id="courseTabContent">
+
+        {# ── Tab: Stammdaten ─────────────────────────────────────────────────── #}
+        <div class="tab-pane fade show active" id="data" role="tabpanel">
+
+            <div class="row" data-masonry='{"percentPosition": true }'>
+                <!-- Kursdaten -->
+                <div class="col-sm-6 col-lg-6 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light fw-semibold">
+                            <i class="bi bi-info-circle me-1"></i> Kursdaten
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">Beginn</dt>
+                                <dd class="col-sm-7">{{ course.start_date|date:"d.m.Y" }}</dd>
+
+                                <dt class="col-sm-5">Voraussichtlicher Abschluss</dt>
+                                <dd class="col-sm-7">{{ course.end_date|date:"d.m.Y" }}</dd>
+
+                                <dt class="col-sm-5">Berufsbild</dt>
+                                <dd class="col-sm-7">{{ course.job_profile|default:"–" }}</dd>
+
+                                {% if course.job_profile %}
+                                    <dt class="col-sm-5">Abschluss</dt>
+                                    <dd class="col-sm-7">{{ course.job_profile.degree|default:"–" }}</dd>
+
+                                    <dt class="col-sm-5">Laufbahn</dt>
+                                    <dd class="col-sm-7">{{ course.job_profile.career|default:"–" }}</dd>
+
+                                    <dt class="col-sm-5">Fachrichtung</dt>
+                                    <dd class="col-sm-7">{{ course.job_profile.specialization|default:"–" }}</dd>
+
+                                    <dt class="col-sm-5">Gesetzliche Grundlage</dt>
+                                    <dd class="col-sm-7">{{ course.job_profile.legal_basis|default:"–" }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ablaufplan -->
+                <div class="col-sm-6 col-lg-6 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-list-ol me-1"></i> Ablaufplan</span>
+                            <a href="{% url 'course:schedule_block_create' course.pk %}"
+                               class="btn btn-primary btn-sm py-0 px-2">
+                                <i class="bi bi-plus-lg me-1"></i> Block hinzufügen
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if schedule_blocks %}
+                                <div class="timeline">
+                                    {% for schedule_block in schedule_blocks %}
+                                        {% if schedule_block.end_date < today %}
+                                            {% with state="done" dot_class="bg-secondary" badge_class="bg-secondary" badge_label="Abgeschlossen" %}
+                                                {% include "course/_timeline_block.html" %}
+                                            {% endwith %}
+                                        {% elif schedule_block.start_date <= today %}
+                                            {% with state="active" dot_class="bg-success" badge_class="bg-success" badge_label="Laufend" %}
+                                                {% include "course/_timeline_block.html" %}
+                                            {% endwith %}
+                                        {% else %}
+                                            {% with state="upcoming" dot_class="bg-light border" badge_class="bg-light text-dark border" badge_label="Geplant" %}
+                                                {% include "course/_timeline_block.html" %}
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5 text-muted">
+                                    <i class="bi bi-list-ol" style="font-size:2.5rem;"></i>
+                                    <p class="mt-2 mb-0">Noch kein Ablaufplan hinterlegt.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Laufzeit -->
+                <div class="col-sm-6 col-lg-6 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light fw-semibold">
+                            <i class="bi bi-calendar3 me-1"></i> Laufzeit
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center text-center gap-2">
+                            <div class="text-muted small">{{ course.start_date|date:"d.m.Y" }}
+                                – {{ course.end_date|date:"d.m.Y" }}</div>
+                            {% if course.end_date >= today %}
+                                <span class="badge bg-success fs-6">Laufend</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">Abgeschlossen</span>
+                            {% endif %}
+                            <div class="text-muted small mt-2">
+                                <i class="bi bi-people me-1"></i>
+                                {{ students|length }}
+                                {% if students|length == 1 %}Nachwuchskraft{% else %}Nachwuchskräfte{% endif %}
+                                zugeordnet
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="students" role="tabpanel">
+
+            <!-- Nachwuchskräfte -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-people me-1"></i> Nachwuchskräfte</span>
+                    <a href="{% url 'student:student_create' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-person-add me-1"></i> Hinzufügen
+                    </a>
+                </div>
+                {% if students %}
+                    <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Beschäftigungsverhältnis</th>
+                            <th>E-Mail (dienstlich)</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for s in students %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'student:student_detail' s.pk %}"
+                                       class="text-decoration-none fw-semibold">
+                                        {{ s.gender }} {{ s.first_name }} {{ s.last_name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if s.status %}
+                                        <span class="badge bg-{{ s.status.color }}">{{ s.status }}</span>
+                                    {% else %}
+                                        <span class="text-muted">–</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ s.employment }}</td>
+                                <td>{{ s.email_id|default:"–" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'student:student_detail' s.pk %}"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-arrow-right me-1"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                {% else %}
+                    <div class="card-body">
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-people" style="font-size:2.5rem;"></i>
+                            <p class="mt-2 mb-0">Keine Nachwuchskräfte zugeordnet.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Tab: Kursakte ────────────────────────────────────────────────────── #}
+        {% if can_view_akte %}
+        <div class="tab-pane fade" id="akte" role="tabpanel">
+            <div class="d-flex flex-wrap gap-2 mb-3 align-items-center justify-content-between">
+                <div class="d-flex gap-2 align-items-center" style="flex: 1 1 auto; min-width: 0;">
+                    <input type="search" id="akteSearch" class="kern-form-input__input"
+                           placeholder="Im Dokumententext suchen …" autocomplete="off"
+                           style="flex: 1 1 auto; min-width: 0;">
+                    <span class="text-muted small" id="akteSearchHint"></span>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="kernDialogOpen('uploadModal')">
+                    <i class="bi bi-upload me-1"></i> Hochladen
+                </button>
+            </div>
+
+            {% if paperless_docs %}
+            <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle mb-0" id="akteTable" style="width:100%">
+                <thead class="table-light">
+                    <tr>
+                        <th>Titel</th>
+                        <th>ASN</th>
+                        <th>Typ</th>
+                        <th>Datum</th>
+                        <th></th>
+                        <th>docid</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in paperless_docs %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-file-earmark-text text-muted me-1"></i>
+                            <span id="doc-title-{{ doc.id }}">{{ doc.title }}</span>
+                        </td>
+                        <td>
+                            {% if doc.archive_serial_number %}
+                            <span class="badge text-bg-secondary font-monospace" title="Archiv-Seriennummer">
+                                <i class="bi bi-upc me-1"></i> {{ doc.archive_serial_number }}
+                            </span>
+                            {% else %}–{% endif %}
+                        </td>
+                        <td>{{ doc.document_type_name|default:"–" }}</td>
+                        <td id="doc-created-td-{{ doc.id }}" data-order="{{ doc.created|slice:':10'|default:'0000-00-00' }}">
+                            <span id="doc-created-{{ doc.id }}">{% if doc.created %}{{ doc.created|slice:"8:10" }}.{{ doc.created|slice:"5:7" }}.{{ doc.created|slice:":4" }}{% else %}–{% endif %}</span>
+                        </td>
+                        <td class="text-end" style="white-space:nowrap;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary doc-edit-btn"
+                                    data-doc-id="{{ doc.id }}"
+                                    data-url="{% url 'services:document_update' doc.id %}"
+                                    data-title="{{ doc.title|escapejs }}"
+                                    data-created="{{ doc.created|slice:':10' }}"
+                                    title="Metadaten bearbeiten">
+                                <i class="bi bi-pencil me-1"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary doc-preview-btn"
+                                    data-doc-id="{{ doc.id }}"
+                                    data-doc-title="{{ doc.title }}">
+                                <i class="bi bi-eye me-1"></i> Öffnen
+                            </button>
+                        </td>
+                        <td>{{ doc.id }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-folder2-open" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Keine Dokumente vorhanden.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# ── Tab: Kurs-Checklisten ────────────────────────────────────────── #}
+        {% if can_manage_checklists %}
+        <div class="tab-pane fade {% if request.GET.tab == 'kurs-checklisten' %}show active{% endif %}"
+             id="kurs-checklisten" role="tabpanel">
+
+            {# Neue Kurs-Checkliste anlegen #}
+            {% if checklist_templates %}
+            <form method="post" action="{% url 'course:course_checklist_create' course.pk %}"
+                  class="d-flex gap-2 align-items-end mb-4">
+                {% csrf_token %}
+                <div>
+                    <label class="kern-label">Neue Kurs-Checkliste anlegen</label>
+                    <select name="template" class="kern-form-input__input" style="min-width:260px;" required>
+                        <option value="">Vorlage wählen …</option>
+                        {% for t in checklist_templates %}
+                        <option value="{{ t.pk }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Anlegen
+                </button>
+            </form>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-clipboard-check" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Keine Checklisten-Vorlagen vorhanden.</p>
+            </div>
+            {% endif %}
+
+            {# Bestehende Kurs-Checklisten #}
+            {% if course_checklists %}
+            <div class="row g-3">
+                {% for cl in course_checklists %}
+                <div class="col-12 col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <span class="fw-semibold">{{ cl.name }}</span>
+                                <span class="ms-2 badge {% if cl.progress == 100 %}bg-success{% elif cl.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ cl.done_count }}/{{ cl.total_count }}
+                                </span>
+                            </div>
+                            <form method="post" action="{% url 'course:course_checklist_delete' course.pk cl.pk %}"
+                                  onsubmit="return confirm('Checkliste „{{ cl.name }}" wirklich löschen?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Löschen">
+                                    <i class="bi bi-trash3 me-1"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="progress" style="height:4px;border-radius:0;">
+                                <div class="progress-bar {% if cl.progress == 100 %}bg-success{% elif cl.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}"
+                                     style="width:{{ cl.progress }}%;"></div>
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                {% for item in cl.items.all %}
+                                <li class="list-group-item d-flex align-items-center gap-2 py-2">
+                                    <form method="post"
+                                          action="{% url 'course:course_checklist_item_toggle' course.pk cl.pk item.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="btn btn-sm p-0 border-0 {% if item.completed %}text-success{% else %}text-secondary{% endif %}"
+                                                title="{% if item.completed %}Als offen markieren{% else %}Als erledigt markieren{% endif %}">
+                                            <i class="bi {% if item.completed %}bi-check-circle-fill{% else %}bi-circle{% endif %} fs-5"></i>
+                                        </button>
+                                    </form>
+                                    <span class="{% if item.completed %}text-decoration-line-through text-muted{% endif %} small flex-grow-1">
+                                        {{ item.text }}
+                                    </span>
+                                    {% if item.completed and item.completed_by %}
+                                    <span class="text-muted" style="font-size:.72rem;" title="{{ item.completed_at|date:'d.m.Y H:i' }}">
+                                        {{ item.completed_by.get_full_name|default:item.completed_by.username }}
+                                    </span>
+                                    {% endif %}
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item text-muted small">Keine Punkte.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% if cl.created_by %}
+                        <div class="card-footer text-muted" style="font-size:.75rem;">
+                            Erstellt von {{ cl.created_by.get_full_name|default:cl.created_by.username }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-clipboard-check" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Keine Kurs-Checklisten vorhanden.</p>
+            </div>
+            {% endif %}
+
+        </div>
+        {% endif %}
+
+        {# ── Tab: NK-Checklisten ──────────────────────────────────────────── #}
+        {% if can_manage_checklists %}
+        <div class="tab-pane fade {% if request.GET.tab == 'checklisten' %}show active{% endif %}"
+             id="checklisten" role="tabpanel">
+
+            {# Vorlage für alle NK anlegen #}
+            {% if checklist_templates %}
+            <form method="post" action="{% url 'course:course_checklist_bulk_create' course.pk %}"
+                  class="d-flex gap-2 align-items-end mb-4">
+                {% csrf_token %}
+                <div>
+                    <label class="kern-label">Checkliste für alle NK anlegen</label>
+                    <select name="template" class="kern-form-input__input" style="min-width:260px;" required>
+                        <option value="">Vorlage wählen …</option>
+                        {% for t in checklist_templates %}
+                        <option value="{{ t.pk }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-people me-1"></i> Für alle {{ students|length }} NK anlegen
+                </button>
+            </form>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-check2-square" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Keine Checklisten-Vorlagen vorhanden.</p>
+            </div>
+            {% endif %}
+
+            {# Übersichtstabelle pro NK #}
+            {% if students_with_checklists %}
+            <div class="table-responsive">
+            <table class="table table-bordered table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:220px;">Nachwuchskraft</th>
+                        <th>Checklisten &amp; Fortschritt</th>
+                        <th style="width:120px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in students_with_checklists %}
+                    <tr>
+                        <td class="fw-semibold">{{ row.student.first_name }} {{ row.student.last_name }}</td>
+                        <td>
+                            {% if row.checklists %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for cl in row.checklists %}
+                                <div class="d-flex align-items-center gap-1" title="{{ cl.name }}">
+                                    <span class="small text-muted" style="max-width:140px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">{{ cl.name }}</span>
+                                    <div class="progress" style="width:70px;height:8px;" title="{{ cl.progress }}%">
+                                        <div class="progress-bar {% if cl.progress == 100 %}bg-success{% elif cl.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}"
+                                             style="width:{{ cl.progress }}%;"></div>
+                                    </div>
+                                    <span class="small text-muted">{{ cl.progress }}%</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">–</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'student:student_detail' row.student.pk %}?tab=checklisten"
+                               class="btn btn-outline-secondary btn-sm py-0 px-2">
+                                <i class="bi bi-arrow-right me-1"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-people" style="font-size:2.5rem;"></i>
+                <p class="mt-2 mb-0">Keine Nachwuchskräfte vorhanden.</p>
+            </div>
+            {% endif %}
+
+        </div>
+        {% endif %}
+
+    </div>
+
+<script>
+$(document).ready(function () {
+    // Tab per URL-Parameter aktivieren (?tab=akte)
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get('tab');
+    if (activeTab) {
+        const tabEl = document.querySelector(`[data-bs-target="#${activeTab}"]`);
+        if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
+    }
+
+    {% if can_view_akte %}
+    const dtOptions = {
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+        columnDefs: [{ orderable: false, targets: -1 }],
+    };
+    let akteTable = null;
+    const searchUrl = "{% url 'services:paperless_search_course' course.pk %}";
+
+    {% if paperless_docs %}
+    $('#akte-tab').one('shown.bs.tab', function () {
+        akteTable = $('#akteTable').DataTable($.extend({}, dtOptions, {
+            order: [[3, 'desc']],
+            searching: true,
+            columnDefs: [
+                { orderable: false, targets: 4 },
+                { visible: false, searchable: true, targets: 5 },
+            ],
+        }));
+    });
+    {% endif %}
+
+    let searchTimer = null;
+    $('#akteSearch').on('input', function () {
+        const query = $(this).val().trim();
+        clearTimeout(searchTimer);
+
+        if (query.length === 0) {
+            $('#akteSearchHint').text('');
+            if (akteTable) {
+                akteTable.rows().every(function () { this.child.hide(); });
+                akteTable.column(5).search('').draw();
+            }
+            return;
+        }
+
+        if (query.length < 2) return;
+
+        searchTimer = setTimeout(function () {
+            $('#akteSearchHint').html('<span class="spinner-border spinner-border-sm"></span>');
+            $.getJSON(searchUrl, { q: query }, function (data) {
+                const hits = data.results;
+                const hitMap = new Map(hits.map(d => [d.id, d]));
+
+                if (akteTable) {
+                    akteTable.rows().every(function () { this.child.hide(); });
+
+                    const regex = hits.length > 0
+                        ? '^(' + hits.map(d => d.id).join('|') + ')$'
+                        : '^$____no_match____$';
+                    akteTable.column(5).search(regex, true, false).draw();
+
+                    akteTable.rows({ search: 'applied' }).every(function () {
+                        const docId = parseInt(this.data()[4]);
+                        const hit = hitMap.get(docId);
+                        if (hit) {
+                            const text = hit.highlights
+                                ? '<i class="bi bi-quote me-1"></i>' + hit.highlights
+                                : '<i class="bi bi-check-circle me-1 text-success"></i><span class="text-muted">Dokument enthält den Suchbegriff.</span>';
+                            this.child(
+                                $('<tr><td colspan="4" class="py-2 px-3 bg-warning-subtle small fst-italic akte-highlight-row">' + text + '</td></tr>')
+                            ).show();
+                        }
+                    });
+                }
+
+                $('#akteSearchHint').text(hits.length + ' Treffer');
+            }).fail(function () {
+                $('#akteSearchHint').text('Suche fehlgeschlagen.');
+            });
+        }, 400);
+    });
+    {% endif %}
+});
+</script>
+
+{# ── Dialog: Dokument hochladen ─────────────────────────────────────────── #}
+{% if can_view_akte %}
+<dialog class="kern-dialog" id="uploadModal" aria-labelledby="uploadModal_heading">
+    <form method="post" enctype="multipart/form-data"
+          action="{% url 'course:course_document_upload' course.pk %}" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="uploadModal_heading">
+                <i class="bi bi-upload me-1"></i> Dokument hochladen
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <div class="kern-form-input">
+                <label class="kern-label" for="uploadTitle">Titel <span class="text-danger">*</span></label>
+                <input type="text" name="title" id="uploadTitle" class="kern-form-input__input" required
+                       placeholder="z. B. Lehrgangsunterlagen 2026">
+            </div>
+            <div class="kern-form-input">
+                <label class="kern-label" for="uploadFile">Datei <span class="text-danger">*</span></label>
+                <div class="kern-hint" id="uploadFile-hint"><i class="bi bi-info-circle me-1"></i>Das Dokument wird direkt in Paperless gespeichert und erscheint danach in der Kursakte. Der Upload kann einige Sekunden dauern.</div>
+                <input type="file" name="file" id="uploadFile" class="kern-form-input__input" required aria-describedby="uploadFile-hint">
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--upload" aria-hidden="true"></span>
+                <span class="kern-label">Hochladen</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+{# ── Modal: Dokumentvorschau ────────────────────────────────────────────── #}
+{% include "document/_document_preview_block.html" %}
+
+{# ── Dialog: Dokument bearbeiten ────────────────────────────────────────── #}
+<dialog class="kern-dialog" id="editDocModal" aria-labelledby="editDocModal_heading">
+    <header class="kern-dialog__header">
+        <h2 class="kern-title kern-title--large" id="editDocModal_heading">
+            <i class="bi bi-pencil me-1"></i> Dokument bearbeiten
+        </h2>
+        <button type="button" class="kern-btn kern-btn--tertiary"
+                onclick="kernDialogClose(this)" aria-label="Schließen">
+            <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+            <span class="kern-label kern-sr-only">Schließen</span>
+        </button>
+    </header>
+    <section class="kern-dialog__body">
+        <input type="hidden" id="editCsrf" value="{{ csrf_token }}">
+        <div class="kern-form-input">
+            <label class="kern-label" for="editDocTitle">Titel</label>
+            <input type="text" id="editDocTitle" class="kern-form-input__input">
+        </div>
+        <div class="kern-form-input">
+            <label class="kern-label" for="editDocDate">Datum</label>
+            <input type="date" id="editDocDate" class="kern-form-input__input">
+        </div>
+    </section>
+    <footer class="kern-dialog__footer">
+        <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+            <span class="kern-label">Abbrechen</span>
+        </button>
+        <button type="button" id="editDocSaveBtn" class="kern-btn kern-btn--primary">
+            <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+            <span class="kern-label">Speichern</span>
+        </button>
+    </footer>
+</dialog>
+<script>
+(function () {
+    const editDocModal = document.getElementById('editDocModal');
+    let _url = null, _id = null;
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.doc-edit-btn');
+        if (!btn) return;
+        _url = btn.dataset.url; _id = btn.dataset.docId;
+        document.getElementById('editDocTitle').value = btn.dataset.title;
+        document.getElementById('editDocDate').value = btn.dataset.created || '';
+        editDocModal.showModal();
+    });
+    document.getElementById('editDocSaveBtn').addEventListener('click', function () {
+        const title = document.getElementById('editDocTitle').value.trim();
+        const created = document.getElementById('editDocDate').value;
+        const btn = this;
+        btn.disabled = true; btn.querySelector('.kern-label').textContent = '…';
+        fetch(_url, {
+            method: 'POST',
+            headers: {'X-CSRFToken': document.getElementById('editCsrf').value, 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+            body: `title=${encodeURIComponent(title)}&created=${encodeURIComponent(created)}`,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                const titleEl = document.getElementById('doc-title-' + _id);
+                if (titleEl) titleEl.textContent = title;
+                const createdEl = document.getElementById('doc-created-' + _id);
+                if (createdEl) {
+                    createdEl.textContent = fmtDate(created);
+                    const td = document.getElementById('doc-created-td-' + _id);
+                    if (td) td.setAttribute('data-order', created || '');
+                }
+                document.querySelector(`.doc-edit-btn[data-doc-id="${_id}"]`).dataset.title = title;
+                document.querySelector(`.doc-edit-btn[data-doc-id="${_id}"]`).dataset.created = created;
+                editDocModal.close();
+            } else { alert('Fehler beim Speichern.'); }
+        })
+        .catch(() => alert('Netzwerkfehler.'))
+        .finally(() => { btn.disabled = false; btn.querySelector('.kern-label').textContent = 'Speichern'; });
+    });
+    function fmtDate(iso) { if (!iso) return '–'; const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
+})();
+</script>
+{% endif %}
+{% endblock %}

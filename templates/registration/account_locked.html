@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Konto vorübergehend gesperrt{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="text-center mb-4">
+            <img src="{% url 'services:logo_svg' %}" alt="{{ brand_name }}" height="64">
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-lock me-1"></i> Konto vorübergehend gesperrt
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="kern-alert kern-alert--warning mb-3" role="alert">
+                    <div class="kern-alert__header">
+                        <span class="kern-icon kern-icon--warning" aria-hidden="true"></span>
+                        <span class="kern-title">Zu viele fehlgeschlagene Anmeldeversuche</span>
+                    </div>
+                </div>
+
+                <p>
+                    Aus Sicherheitsgründen wurde der Zugang nach mehreren
+                    fehlgeschlagenen Anmeldeversuchen vorübergehend gesperrt.
+                </p>
+                <p>
+                    Bitte versuchen Sie es in <strong>ca. 15 Minuten</strong> erneut.
+                </p>
+                <p class="text-muted small mb-0">
+                    Bei fortbestehenden Problemen wenden Sie sich bitte an die
+                    Ausbildungskoordination.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

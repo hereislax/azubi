@@ -1,0 +1,79 @@
+{
+  "realm": "behoerde-a",
+  "displayName": "Behörde A (Test)",
+  "enabled": true,
+  "registrationAllowed": false,
+  "rememberMe": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+
+  "clients": [
+    {
+      "clientId": "azubi-portal",
+      "name": "Azubi-Portal (Test)",
+      "enabled": true,
+      "secret": "azubi-test-secret-only-for-dev",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:8080/sso/oidc/behoerde-a/login/callback/",
+        "http://localhost:8000/sso/oidc/behoerde-a/login/callback/",
+        "http://127.0.0.1:8080/sso/oidc/behoerde-a/login/callback/",
+        "http://127.0.0.1:8000/sso/oidc/behoerde-a/login/callback/"
+      ],
+      "webOrigins": [
+        "http://localhost:8080",
+        "http://localhost:8000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8000"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      },
+      "fullScopeAllowed": true
+    }
+  ],
+
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "testuser@behoerde-a.test",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Testpass1!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-behoerde-a"]
+    },
+    {
+      "username": "fremde-domain",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Fremde",
+      "lastName": "Domain",
+      "email": "extern@anderswo.example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Testpass1!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-behoerde-a"]
+    }
+  ]
+}

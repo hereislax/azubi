@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Ausbildungsnachweis KW {{ record.calendar_week }}/{{ record.week_start.year }} – {{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'student:student_detail' student.pk %}">{{ student.first_name }} {{ student.last_name }}</a></li>
+        <li class="breadcrumb-item active">Nachweis KW {{ record.calendar_week }}/{{ record.week_start.year }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0">
+            <i class="bi bi-journal-text me-1"></i>
+            KW {{ record.calendar_week }}/{{ record.week_start.year }}
+        </h2>
+        <span class="text-muted">{{ student.first_name }} {{ student.last_name }}</span>
+        &middot;
+        <span class="text-muted small">{{ record.week_start|date:"d.m.Y" }} – {{ record.week_end|date:"d.m.Y" }}</span>
+        <span class="badge bg-{{ record.status_color }} ms-2">{{ record.get_status_display }}</span>
+    </div>
+    {% if can_review and record.status == 'submitted' %}
+    <div class="d-flex gap-2">
+        <form method="post" action="{% url 'proofoftraining:admin_record_approve' student_pk=student.pk public_id=record.public_id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-check-lg me-1"></i> Annehmen
+            </button>
+        </form>
+        <button type="button" class="btn btn-warning btn-sm"
+                onclick="kernDialogOpen('rejectModal')">
+            <i class="bi bi-arrow-return-left me-1"></i> Korrekturbedarf
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+{% if record.status == 'approved' %}
+<div class="kern-alert kern-alert--success mb-3" role="alert">
+    <div class="kern-alert__header">
+        <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+        <span class="kern-title">
+            Angenommen von {{ record.reviewed_by.get_full_name|default:record.reviewed_by.username }}
+            am {{ record.reviewed_at|date:"d.m.Y H:i" }}.
+        </span>
+    </div>
+</div>
+{% elif record.status == 'rejected' %}
+<div class="kern-alert kern-alert--warning mb-3" role="alert">
+    <div class="kern-alert__header">
+        <span class="kern-icon kern-icon--warning" aria-hidden="true"></span>
+        <span class="kern-title">
+            <strong>Korrekturbedarf gemeldet</strong>
+            von {{ record.reviewed_by.get_full_name|default:record.reviewed_by.username }}
+            am {{ record.reviewed_at|date:"d.m.Y H:i" }}:
+        </span>
+    </div>
+    <div class="kern-alert__body" style="padding: 0 1rem 0.75rem 2.5rem;">
+        {{ record.rejection_reason|linebreaksbr }}
+    </div>
+</div>
+{% elif record.status == 'submitted' %}
+<div class="kern-alert kern-alert--info mb-3" role="alert">
+    <div class="kern-alert__header">
+        <span class="kern-icon kern-icon--info" aria-hidden="true"></span>
+        <span class="kern-title">Eingereicht am {{ record.submitted_at|date:"d.m.Y H:i" }} – wartet auf Prüfung.</span>
+    </div>
+</div>
+{% elif record.status == 'draft' %}
+<div class="kern-alert kern-alert--info mb-3" role="alert">
+    <div class="kern-alert__header">
+        <span class="kern-icon kern-icon--info" aria-hidden="true"></span>
+        <span class="kern-title">Entwurf – noch nicht eingereicht.</span>
+    </div>
+</div>
+{% endif %}
+
+{% for day in record.days.all %}
+<div class="card mb-3">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+        <strong>{{ day.weekday_name }}, {{ day.date|date:"d.m.Y" }}</strong>
+        <span class="badge bg-light text-dark border">{{ day.get_day_type_display }}</span>
+    </div>
+    <div class="card-body py-2">
+        {% if day.content %}
+        <p class="mb-0" style="white-space:pre-line;">{{ day.content }}</p>
+        {% else %}
+        <span class="text-muted fst-italic small">Keine Beschreibung eingetragen.</span>
+        {% endif %}
+        {% if day.correction_note %}
+        <div class="kern-alert kern-alert--warning mt-2" role="alert" style="padding: 0.5rem 0.75rem;">
+            <div class="kern-alert__header">
+                <span class="kern-icon kern-icon--warning" aria-hidden="true"></span>
+                <span class="kern-title"><strong>Korrekturhinweis:</strong> {{ day.correction_note|linebreaksbr }}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<a href="{% url 'student:student_detail' student.pk %}?tab=ausbildungsnachweise"
+   class="btn btn-outline-secondary btn-sm mt-1">
+    <i class="bi bi-arrow-left me-1"></i> Zurück zur Übersicht
+</a>
+
+{% if can_review and record.status == 'submitted' %}
+<dialog class="kern-dialog kern-dialog--lg" id="rejectModal"
+        aria-labelledby="rejectModal_heading">
+    <form method="post"
+          action="{% url 'proofoftraining:admin_record_reject' student_pk=student.pk public_id=record.public_id %}"
+          style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="rejectModal_heading">
+                Korrekturbedarf melden
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            {% if reject_form %}
+            <div class="kern-form-input">
+                <label class="kern-label" for="id_rejection_reason">
+                    {{ reject_form.rejection_reason.label }}
+                    <span class="kern-label__optional">– allgemein</span>
+                </label>
+                {{ reject_form.rejection_reason }}
+            </div>
+            <hr>
+            <p class="small text-muted mb-3">Optionale Hinweise pro Tag:</p>
+            {% for day in record.days.all %}
+            <div class="kern-form-input">
+                <label class="kern-label" for="day_{{ day.pk }}">
+                    {{ day.weekday_name }}, {{ day.date|date:"d.m.Y" }}
+                    <span class="kern-label__optional">– Optional</span>
+                </label>
+                <textarea class="kern-form-input__input" id="day_{{ day.pk }}"
+                          name="day_correction_{{ day.pk }}" rows="2"
+                          placeholder="Korrekturhinweis für diesen Tag …">{{ day.correction_note }}</textarea>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-label">Korrekturbedarf melden</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+{% endif %}
+{% endblock %}

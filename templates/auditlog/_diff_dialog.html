@@ -1,0 +1,79 @@
+{# Diff-Dialog für einen AuditLogEntry. Erwartet `entry` im Kontext. #}
+<dialog class="kern-dialog kern-dialog--lg" id="auditDiff-{{ entry.pk }}"
+        aria-labelledby="auditDiff-{{ entry.pk }}-heading">
+    <header class="kern-dialog__header">
+        <h2 class="kern-title kern-title--large" id="auditDiff-{{ entry.pk }}-heading">
+            <i class="bi {{ entry.action_icon }} me-1"></i>
+            {{ entry.get_action_display }}: {{ entry.model_verbose_name }}
+        </h2>
+        <button type="button" class="kern-btn kern-btn--tertiary"
+                onclick="kernDialogClose(this)" aria-label="Schließen">
+            <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+            <span class="kern-label kern-sr-only">Schließen</span>
+        </button>
+    </header>
+    <section class="kern-dialog__body">
+        <dl class="row mb-3 small">
+            <dt class="col-sm-3 text-muted">Objekt</dt>
+            <dd class="col-sm-9">{{ entry.object_repr }}</dd>
+            <dt class="col-sm-3 text-muted">Zeitpunkt</dt>
+            <dd class="col-sm-9">{{ entry.timestamp|date:"d.m.Y H:i:s" }}</dd>
+            <dt class="col-sm-3 text-muted">Benutzer</dt>
+            <dd class="col-sm-9">
+                {% if entry.user %}
+                    {{ entry.user.get_full_name|default:entry.user.username }}
+                {% else %}
+                    <span class="text-muted">– (System)</span>
+                {% endif %}
+            </dd>
+        </dl>
+
+        {% if entry.changes %}
+        <div class="table-responsive">
+            <table class="table table-sm align-top mb-0 audit-diff-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 25%">Feld</th>
+                        <th style="width: 37.5%">Vorher</th>
+                        <th style="width: 37.5%">Nachher</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for field, diff in entry.changes.items %}
+                    <tr>
+                        <td class="fw-semibold">{{ field }}</td>
+                        <td>
+                            {% if diff.old %}
+                                <span class="audit-diff-old">{{ diff.old|linebreaksbr }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if diff.new %}
+                                <span class="audit-diff-new">{{ diff.new|linebreaksbr }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">
+            {% if entry.action == 'delete' %}
+                Eintrag wurde gelöscht – keine Feld-Änderungen aufgezeichnet.
+            {% else %}
+                Keine Feld-Änderungen aufgezeichnet.
+            {% endif %}
+        </p>
+        {% endif %}
+    </section>
+    <footer class="kern-dialog__footer">
+        <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+            <span class="kern-label">Schließen</span>
+        </button>
+    </footer>
+</dialog>

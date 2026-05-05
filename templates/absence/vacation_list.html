@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Urlaubsanträge{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">Urlaubsanträge</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-calendar-check me-1"></i> Urlaubsanträge</h2>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'absence:vacation_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Antrag erfassen
+        </a>
+        <a href="{% url 'absence:vacation_create' %}?type=cancellation" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x-circle me-1"></i> Stornierung erfassen
+        </a>
+    </div>
+</div>
+
+{% if pending_count %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    <strong>{{ pending_count }}</strong> Antrag/Anträge warten auf Genehmigung.
+</div>
+{% endif %}
+
+{# ── Filter ────────────────────────────────────────────────────────────────── #}
+<form method="get" class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <div class="kern-form-input">
+                    <label for="filter-status" class="kern-label">Status</label>
+                    <div class="kern-form-input__select-wrapper">
+                        <select id="filter-status" name="status" class="kern-form-input__select">
+                            {% for val, label in status_choices %}
+                            <option value="{{ val }}" {% if val == status_filter %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kern-form-input">
+                    <label for="filter-kind" class="kern-label">Art</label>
+                    <div class="kern-form-input__select-wrapper">
+                        <select id="filter-kind" name="kind" class="kern-form-input__select">
+                            <option value="" {% if not kind_filter %}selected{% endif %}>Urlaub & Stornierung</option>
+                            <option value="vacation" {% if kind_filter == 'vacation' %}selected{% endif %}>Nur Urlaub</option>
+                            <option value="cancellation" {% if kind_filter == 'cancellation' %}selected{% endif %}>Nur Stornierungen</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kern-form-input">
+                    <label for="filter-student" class="kern-label">Nachwuchskraft</label>
+                    <input type="text" id="filter-student" name="student" class="kern-form-input__input"
+                           placeholder="Name suchen …" value="{{ student_filter }}">
+                </div>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="bi bi-search me-1"></i> Filtern
+                </button>
+                {% if status_filter or kind_filter or student_filter %}
+                <a href="{% url 'absence:vacation_list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</form>
+
+{% if page_obj.object_list %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Nachwuchskraft</th>
+                    <th>Kurs</th>
+                    <th>Art</th>
+                    <th>Von</th>
+                    <th>Bis</th>
+                    <th>Arbeitstage</th>
+                    <th>Status</th>
+                    <th>Eingereicht</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vr in page_obj %}
+                <tr>
+                    <td>
+                        <a href="{% url 'student:student_detail' vr.student_id %}">
+                            {{ vr.student.last_name }}, {{ vr.student.first_name }}
+                        </a>
+                    </td>
+                    <td>{{ vr.student.course|default:"–" }}</td>
+                    <td>
+                        {% if vr.is_cancellation %}
+                        <span class="badge bg-dark"><i class="bi bi-x me-1"></i> Stornierung</span>
+                        {% else %}
+                        <span class="badge bg-info text-dark"><i class="bi bi-sun me-1"></i> Urlaub</span>
+                        {% endif %}
+                        {% if vr.submitted_via_portal %}
+                        <span class="badge bg-light text-secondary border ms-1" title="Im Portal eingereicht">Portal</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ vr.start_date|date:"d.m.Y" }}</td>
+                    <td>{{ vr.end_date|date:"d.m.Y" }}</td>
+                    <td class="text-center">{{ vr.effective_working_days }}</td>
+                    <td>
+                        <span class="badge bg-{{ vr.status_badge }}">{{ vr.get_status_display }}</span>
+                    </td>
+                    <td class="text-muted small">{{ vr.created_at|date:"d.m.Y" }}</td>
+                    <td class="text-end">
+                        {% if vr.status == 'pending' %}
+                        <a href="{% url 'absence:vacation_decide' vr.public_id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-check-circle me-1"></i> Entscheiden
+                        </a>
+                        {% else %}
+                        <a href="{% url 'absence:vacation_detail' vr.public_id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── Pagination ────────────────────────────────────────────────────────────── #}
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&kind={{ kind_filter }}&student={{ student_filter }}">&laquo;</a>
+        </li>
+        {% endif %}
+        <li class="page-item disabled">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&kind={{ kind_filter }}&student={{ student_filter }}">&raquo;</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar-check" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Keine Anträge gefunden.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Meine Daten{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item active">Meine Daten</li>
+    </ol>
+</nav>
+
+<h2 class="mb-4"><i class="bi bi-person-vcard me-1"></i> Meine Daten</h2>
+
+<div class="row g-4">
+
+    {# ── Persönliche Daten ────────────────────────────────────────────────── #}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-person me-1"></i> Persönliche Daten
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Anrede</dt>
+                    <dd class="col-sm-7">{{ student.gender|default:"–" }}</dd>
+
+                    <dt class="col-sm-5">Vorname</dt>
+                    <dd class="col-sm-7">{{ student.first_name }}</dd>
+
+                    <dt class="col-sm-5">Nachname</dt>
+                    <dd class="col-sm-7">{{ student.last_name }}</dd>
+
+                    <dt class="col-sm-5">Geburtsdatum</dt>
+                    <dd class="col-sm-7">{{ student.date_of_birth|date:"d.m.Y"|default:"–" }}</dd>
+
+                    <dt class="col-sm-5">Geburtsort</dt>
+                    <dd class="col-sm-7">{{ student.place_of_birth|default:"–" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {# ── Kontakt ──────────────────────────────────────────────────────────── #}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-envelope me-1"></i> Kontakt
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Telefon</dt>
+                    <dd class="col-sm-7">{{ student.phone_number|default:"–" }}</dd>
+
+                    <dt class="col-sm-5">E-Mail (privat)</dt>
+                    <dd class="col-sm-7">
+                        {% if student.email_private %}
+                        <a href="mailto:{{ student.email_private }}">{{ student.email_private }}</a>
+                        {% else %}–{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">E-Mail (dienstlich)</dt>
+                    <dd class="col-sm-7">
+                        {% if student.email_id %}
+                        <a href="mailto:{{ student.email_id }}">{{ student.email_id }}</a>
+                        {% else %}–{% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {# ── Ausbildung ───────────────────────────────────────────────────────── #}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-journals me-1"></i> Ausbildung
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Kurs</dt>
+                    <dd class="col-sm-7">{{ student.course|default:"–" }}</dd>
+
+                    {% if student.course %}
+                    <dt class="col-sm-5">Kursbeginn</dt>
+                    <dd class="col-sm-7">{{ student.course.start_date|date:"d.m.Y" }}</dd>
+
+                    <dt class="col-sm-5">Kursende</dt>
+                    <dd class="col-sm-7">{{ student.course.end_date|date:"d.m.Y" }}</dd>
+                    {% endif %}
+
+                    {% if student.course.job_profile %}
+                    <dt class="col-sm-5">Berufsbild</dt>
+                    <dd class="col-sm-7">{{ student.course.job_profile.job_profile }}</dd>
+
+                    <dt class="col-sm-5">Abschluss</dt>
+                    <dd class="col-sm-7">{{ student.course.job_profile.degree|default:"–" }}</dd>
+                    {% endif %}
+
+                    <dt class="col-sm-5">Beschäftigungsart</dt>
+                    <dd class="col-sm-7">{{ student.employment|default:"–" }}</dd>
+
+                    <dt class="col-sm-5">Status</dt>
+                    <dd class="col-sm-7">
+                        {% if student.status %}
+                        <span class="badge bg-{{ student.status.color }}">{{ student.status }}</span>
+                        {% else %}–{% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {# ── Adresse ──────────────────────────────────────────────────────────── #}
+    {% if student.address %}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-house me-1"></i> Adresse
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Straße / Nr.</dt>
+                    <dd class="col-sm-7">{{ student.address.street|default:"–" }} {{ student.address.house_number|default:"" }}</dd>
+
+                    <dt class="col-sm-5">PLZ / Ort</dt>
+                    <dd class="col-sm-7">{{ student.address.zip_code|default:"" }} {{ student.address.city|default:"–" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Benutzerdefinierte Felder ─────────────────────────────────────────── #}
+    {% if custom_fields %}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-sliders me-1"></i> Weitere Angaben
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    {% for fv in custom_fields %}
+                    <dt class="col-sm-3">{{ fv.field.name }}</dt>
+                    <dd class="col-sm-9">{{ fv.value|default:"–" }}</dd>
+                    {% endfor %}
+                </dl>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<div class="mt-4 d-flex align-items-center gap-3">
+    <a href="{% url 'portal:daten_bearbeiten' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Telefonnummer / Adresse ändern
+    </a>
+    <span class="text-muted small">
+        <i class="bi bi-info-circle me-1"></i>
+        Weitere Änderungen können nur durch das Ausbildungsreferat vorgenommen werden.
+    </span>
+</div>
+{% endblock %}

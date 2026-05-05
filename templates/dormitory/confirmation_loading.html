@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Reservierungsbestätigung wird generiert…{% endblock %}
+
+{% block content %}
+<style>
+    .loading-card {
+        max-width: 480px;
+        margin: 8rem auto;
+    }
+    .spinner-ring {
+        width: 64px;
+        height: 64px;
+        border: 6px solid #dee2e6;
+        border-top-color: #0d6efd;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-icon { font-size: 2.5rem; color: #dc3545; }
+</style>
+
+<div class="loading-card card shadow-sm border-0">
+    <div class="card-body text-center p-5" id="state-loading">
+        <div class="spinner-ring mx-auto mb-4"></div>
+        <h5 class="mb-1">Reservierungsbestätigung wird generiert…</h5>
+        <p class="text-muted mb-0" style="font-size:0.88rem;">
+            Das Dokument wird generiert und zu der Akte hinzugefügt.<br>
+            Dieser Prozess kann einige Sekunden dauern... Bitte warten.
+        </p>
+    </div>
+
+    <div class="card-body text-center p-5 d-none" id="state-error">
+        <div class="error-icon mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i></div>
+        <h5 class="mb-2">Ups... Da ist etwas schief gelaufen.</h5>
+        <p class="text-muted mb-4" id="error-message" style="font-size:0.88rem;"></p>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Zurück
+        </a>
+    </div>
+</div>
+
+<script>
+    fetch("{% url 'dormitory:confirmation_generate' assignment.public_id %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Accept": "application/json",
+        },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.preview_url) {
+            window.location.href = data.preview_url;
+        } else {
+            document.getElementById("state-loading").classList.add("d-none");
+            document.getElementById("state-error").classList.remove("d-none");
+            document.getElementById("error-message").textContent = data.error || "Unknown error.";
+        }
+    })
+    .catch(() => {
+        document.getElementById("state-loading").classList.add("d-none");
+        document.getElementById("state-error").classList.remove("d-none");
+        document.getElementById("error-message").textContent = "Network error. Please try again.";
+    });
+</script>
+{% endblock %}

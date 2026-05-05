@@ -1,0 +1,53 @@
+<div class="kern-form-input mb-3">
+    <label class="kern-label" for="{{ prefix }}name">
+        Bezeichnung <span class="text-danger">*</span>
+    </label>
+    <input type="text" name="name" id="{{ prefix }}name"
+           class="kern-form-input__input" required
+           placeholder="z. B. Fördergespräch, Abmahnung …">
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6">
+        <div class="kern-form-input">
+            <label class="kern-label" for="{{ prefix }}escalation_level">Eskalationsstufe</label>
+            <select name="escalation_level" id="{{ prefix }}escalation_level" class="kern-form-input__input">
+                <option value="1">1 – Niedrig</option>
+                <option value="2">2 – Mittel</option>
+                <option value="3">3 – Hoch</option>
+                <option value="4">4 – Kritisch</option>
+            </select>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="kern-form-input">
+            <label class="kern-label" for="{{ prefix }}color">Farbe</label>
+            <select name="color" id="{{ prefix }}color" class="kern-form-input__input">
+                <option value="secondary">Grau</option>
+                <option value="primary">Blau</option>
+                <option value="info">Hellblau</option>
+                <option value="success">Grün</option>
+                <option value="warning">Gelb</option>
+                <option value="danger">Rot</option>
+                <option value="dark">Dunkel</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex gap-4">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox"
+               name="requires_followup" id="{{ prefix }}requires_followup">
+        <label class="form-check-label" for="{{ prefix }}requires_followup">
+            Folgetermin erforderlich
+        </label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox"
+               name="is_active" id="{{ prefix }}is_active" checked>
+        <label class="form-check-label" for="{{ prefix }}is_active">
+            Aktiv
+        </label>
+    </div>
+</div>

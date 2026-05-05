@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Anmeldung nicht möglich{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="text-center mb-4">
+            <img src="{% url 'services:logo_svg' %}" alt="{{ brand_name }}" height="64">
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-exclamation me-1"></i> Anmeldung nicht möglich
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="kern-alert kern-alert--warning mb-3" role="alert">
+                    <div class="kern-alert__header">
+                        <span class="kern-icon kern-icon--warning" aria-hidden="true"></span>
+                        <span class="kern-title">Anmeldung über Identity-Provider abgelehnt</span>
+                    </div>
+                </div>
+
+                <p>{{ message }}</p>
+
+                <div class="d-flex gap-2 mt-4">
+                    <a href="{% url 'login' %}" class="kern-btn kern-btn--secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        <span class="kern-label">Zurück zur Anmeldung</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

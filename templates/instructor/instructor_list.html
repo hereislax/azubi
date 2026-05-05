@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Praxistutoren{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">Praxistutoren</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-person-badge me-1"></i> Praxistutoren</h2>
+    </div>
+    <a href="{% url 'instructor:instructor_create' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Hinzufügen
+    </a>
+</div>
+
+<div class="table-responsive">
+<table id="instructorTable" class="table table-hover table-bordered align-middle" style="width:100%">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>E-Mail</th>
+            <th>Organisationseinheit</th>
+            <th>Berufsbilder</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for instructor in instructors %}
+        <tr>
+            <td>
+                <a href="{% url 'instructor:instructor_detail' instructor.public_id %}" class="text-decoration-none fw-semibold">
+                    {{ instructor.salutation }} {{ instructor.first_name }} {{ instructor.last_name }}
+                </a>
+            </td>
+            <td><a href="mailto:{{ instructor.email }}">{{ instructor.email }}</a></td>
+            <td>
+                {% if instructor.unit %}
+                    <a href="{% url 'organisation:unit_detail' instructor.unit.public_id %}" class="text-decoration-none">
+                        {{ instructor.unit.name }}
+                    </a>
+                {% else %}
+                    <span class="text-muted">–</span>
+                {% endif %}
+            </td>
+            <td>
+                {% for jp in instructor.job_profiles.all %}
+                    <span class="badge bg-secondary me-1">{{ jp.job_profile }}</span>
+                {% empty %}
+                    <span class="text-muted">–</span>
+                {% endfor %}
+            </td>
+            <td>
+                {% if instructor.status == 'pending' %}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Ausstehend</span>
+                {% else %}
+                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Bestätigt</span>
+                {% endif %}
+            </td>
+            <td class="text-end" style="white-space:nowrap">
+                {% if instructor.status == 'pending' and can_confirm %}
+                <a href="{% url 'instructor:instructor_confirm' instructor.public_id %}" class="btn btn-sm btn-success" title="Bestätigen">
+                    <i class="bi bi-check-lg me-1"></i>
+                </a>
+                {% endif %}
+                <a href="{% url 'instructor:instructor_edit' instructor.public_id %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i>
+                </a>
+                <a href="{% url 'instructor:instructor_delete' instructor.public_id %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash me-1"></i>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<script>
+$(document).ready(function () {
+    $('#instructorTable').DataTable({
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+        order: [[0, 'asc']],
+    });
+});
+</script>
+{% endblock %}

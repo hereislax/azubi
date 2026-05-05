@@ -1,0 +1,137 @@
+<div class="timeline-item d-flex gap-3 mb-0">
+    <!-- Linie + Punkt -->
+    <div class="timeline-line d-flex flex-column align-items-center" style="width: 24px; flex-shrink: 0;">
+        <div class="rounded-circle {{ dot_class }} border"
+             style="width: 14px; height: 14px; margin-top: 4px; flex-shrink: 0;
+                     {% if state == 'active' %}box-shadow: 0 0 0 4px rgba(25,135,84,.2);{% endif %}">
+        </div>
+        {% if not forloop.last %}
+            <div style="width: 2px; flex-grow: 1; background: #dee2e6; margin-top: 4px;"></div>
+        {% endif %}
+    </div>
+
+    <!-- Inhalt -->
+    <div class="pb-4 flex-grow-1" style="{% if forloop.last %}padding-bottom: 0 !important;{% endif %}">
+        <div class="d-flex justify-content-between align-items-start">
+            <!-- Name + Status-Badge -->
+            <div>
+                <span class="fw-semibold {% if state == 'active' %}text-success{% elif state == 'done' %}text-muted{% endif %}">
+                    {{ schedule_block.name }}
+                </span>
+            </div>
+
+            <!-- Aktionen -->
+            <div class="d-flex gap-1 ms-2">
+                {% if schedule_block.is_internship %}
+                    <a href="{% url 'course:internship_calendar' course.pk schedule_block.public_id %}"
+                       class="btn btn-outline-primary btn-sm py-0 px-2" title="Praktikumsplanung">
+                        <i class="bi bi-calendar3 me-1"></i> Praktikumsplanung
+                    </a>
+                {% endif %}
+
+                {% if is_training_director or is_training_office %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm py-0 px-2 dropdown-toggle"
+                                data-bs-toggle="dropdown" aria-expanded="false" title="Dokumente erstellen">
+                            <i class="bi bi-file-earmark-text me-1"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if schedule_block.is_internship %}
+                                <li>
+                                    <a class="dropdown-item small"
+                                       href="{% url 'course:internship_plan_create' course.pk schedule_block.public_id %}">
+                                        <i class="bi bi-map me-2"></i>Praktikumspläne
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item small"
+                                       href="{% url 'course:station_letter_create' course.pk schedule_block.public_id %}">
+                                        <i class="bi bi-building-check me-2"></i>Stationsschreiben
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li>
+                                    <a class="dropdown-item small"
+                                       href="{% url 'course:block_letter_create' course.pk schedule_block.public_id %}">
+                                        <i class="bi bi-envelope-plus me-2"></i>Zuweisungsschreiben
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <a href="{% url 'course:schedule_block_edit' course.pk schedule_block.public_id %}"
+                   class="btn btn-outline-secondary btn-sm py-0 px-1" title="Bearbeiten">
+                    <i class="bi bi-pencil me-1"></i>
+                </a>
+                <a href="{% url 'course:schedule_block_delete' course.pk schedule_block.public_id %}"
+                   class="btn btn-outline-danger btn-sm py-0 px-1" title="Löschen">
+                    <i class="bi bi-trash me-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Datum, Ort + Dokument-Status-Icons -->
+        <div class="text-muted small mt-1">
+            <span>
+                <i class="bi bi-calendar3 me-2"></i>
+                {{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}
+            </span>
+            {% if schedule_block.location %}
+                <br>
+                <span>
+                    <i class="bi bi-geo-alt me-2"></i> {{ schedule_block.location }}
+                </span>
+            {% endif %}
+
+            {% for letter in schedule_block.letters.all %}
+                {% if letter.status == 'pending_approval' %}
+                    <br>
+                    <a href="{% url 'course:block_letter_approve' course.pk schedule_block.public_id letter.pk %}"
+                       class="text-warning text-decoration-none" title="Zuweisungsschreiben: Freigabe ausstehend">
+                        <i class="bi bi-envelope-exclamation-fill me-2"></i> Zuweisungsschreiben: Freigabe ausstehend
+                    </a>
+                {% else %}
+                    <br>
+                    <a href="{% url 'course:block_letter_detail' course.pk schedule_block.public_id letter.pk %}"
+                       class="text-success text-decoration-none" title="Zuweisungsschreiben erfolgreich versendet">
+                        <i class="bi bi-envelope-check-fill me-2"></i> Zuweisungsschreiben erfolgreich versendet
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% for letter in schedule_block.plan_letters.all %}
+                {% if letter.status == 'pending_approval' %}
+                    <br>
+                    <a href="{% url 'course:internship_plan_approve' course.pk schedule_block.public_id letter.pk %}"
+                       class="text-warning text-decoration-none" title="Praktikumspläne: Freigabe ausstehend">
+                        <i class="bi bi-map-fill me-2" style="color: inherit;"></i> Praktikumspläne: Freigabe ausstehend
+                    </a>
+                {% else %}
+                    <br>
+                    <a href="{% url 'course:internship_plan_detail' course.pk schedule_block.public_id letter.pk %}"
+                       class="text-success text-decoration-none" title="Praktikumspläne erfolgreich versendet">
+                        <i class="bi bi-map-fill me-2"></i> Praktikumspläne erfolgreich versendet
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% for letter in schedule_block.station_letters.all %}
+                {% if letter.status == 'pending_approval' %}
+                    <br>
+                    <a href="{% url 'course:station_letter_approve' course.pk schedule_block.public_id letter.pk %}"
+                       class="text-warning text-decoration-none" title="Stationsschreiben: Freigabe ausstehend">
+                        <i class="bi bi-building-exclamation-fill me-2"></i> Stationsschreiben: Freigabe ausstehend
+                    </a>
+                {% else %}
+                    <br>
+                    <a href="{% url 'course:station_letter_detail' course.pk schedule_block.public_id letter.pk %}"
+                       class="text-success text-decoration-none" title="Stationsschreiben erfolgreich versendet">
+                        <i class="bi bi-building-check me-2"></i> Stationsschreiben erfolgreich versendet
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>

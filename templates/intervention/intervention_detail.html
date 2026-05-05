@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Maßnahme – {{ intervention.category }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'intervention:list' %}">Maßnahmen</a></li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'student:student_detail' intervention.student.pk %}?tab=massnahmen">
+                {{ intervention.student.first_name }} {{ intervention.student.last_name }}
+            </a>
+        </li>
+        <li class="breadcrumb-item active">{{ intervention.category }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-1">
+            <i class="bi bi-shield-exclamation me-1"></i>
+            {{ intervention.category }}
+        </h2>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <span class="badge bg-{{ intervention.status_badge }} fs-6">
+                {{ intervention.get_status_display }}
+            </span>
+            <span class="badge bg-{{ intervention.category.color }}">
+                Stufe {{ intervention.category.escalation_level }} – {{ intervention.category.escalation_label }}
+            </span>
+            <span class="text-muted small">
+                <i class="bi bi-calendar me-1"></i>{{ intervention.date|date:"d.m.Y" }}
+            </span>
+        </div>
+    </div>
+    {% if can_delete %}
+    <form method="post" action="{% url 'intervention:delete' intervention.public_id %}"
+          onsubmit="return confirm('Maßnahme wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash3 me-1"></i> Löschen
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+
+    {# Linke Spalte: Kern-Infos #}
+    <div class="col-lg-8">
+
+        {# Auslöser #}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi {{ intervention.trigger_icon }} me-1"></i> Auslöser
+            </div>
+            <div class="card-body">
+                <p class="mb-1 fw-semibold">{{ intervention.get_trigger_type_display }}</p>
+                {% if intervention.trigger_sick_leave %}
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-thermometer-high me-1"></i>
+                    Krankmeldung: {{ intervention.trigger_sick_leave.start_date|date:"d.m.Y" }}
+                    {% if intervention.trigger_sick_leave.end_date %}
+                    – {{ intervention.trigger_sick_leave.end_date|date:"d.m.Y" }}
+                    {% else %}(offen){% endif %}
+                </p>
+                {% endif %}
+                {% if intervention.trigger_assessment %}
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-clipboard-check me-1"></i>
+                    Beurteilung: {{ intervention.trigger_assessment.assignment.unit }}
+                    <a href="{% url 'assessment:detail' intervention.trigger_assessment.public_id %}"
+                       class="ms-1 btn btn-sm btn-outline-secondary py-0 px-1">
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Beschreibung #}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-chat-text me-1"></i> Beschreibung / Gesprächsinhalt
+            </div>
+            <div class="card-body">
+                <p style="white-space:pre-wrap;">{{ intervention.description }}</p>
+            </div>
+        </div>
+
+        {# Vereinbarungen #}
+        {% if intervention.agreement %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-check2-square me-1"></i> Getroffene Vereinbarungen
+            </div>
+            <div class="card-body">
+                <p style="white-space:pre-wrap;" class="mb-0">{{ intervention.agreement }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Ergebnis (wird nur angezeigt, wenn Maßnahme abgeschlossen) #}
+        {% if intervention.status == 'closed' and intervention.outcome %}
+        <div class="card shadow-sm mb-3 border-success">
+            <div class="card-header bg-success text-white fw-semibold">
+                <i class="bi bi-check-circle me-1"></i> Ergebnis / Abschlussbemerkung
+            </div>
+            <div class="card-body">
+                <p style="white-space:pre-wrap;" class="mb-0">{{ intervention.outcome }}</p>
+                <p class="text-muted small mt-2 mb-0">
+                    Abgeschlossen am {{ intervention.closed_at|date:"d.m.Y H:i" }}
+                    von {{ intervention.closed_by.get_full_name|default:intervention.closed_by.username }}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Vorgänger / Nachfolger (Eskalationskette) #}
+        {% if intervention.predecessor or intervention.follow_up %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-arrow-left-right me-1"></i> Verkettung
+            </div>
+            <div class="card-body d-flex flex-column gap-2">
+                {% if intervention.predecessor %}
+                <div>
+                    <span class="text-muted small">Vorgänger-Maßnahme:</span><br>
+                    <a href="{% url 'intervention:detail' intervention.predecessor.public_id %}">
+                        {{ intervention.predecessor.category }}
+                        – {{ intervention.predecessor.date|date:"d.m.Y" }}
+                    </a>
+                    <span class="badge bg-{{ intervention.predecessor.status_badge }} ms-1">
+                        {{ intervention.predecessor.get_status_display }}
+                    </span>
+                </div>
+                {% endif %}
+                {% if intervention.follow_up %}
+                <div>
+                    <span class="text-muted small">Folge-Maßnahme:</span><br>
+                    <a href="{% url 'intervention:detail' intervention.follow_up.public_id %}">
+                        {{ intervention.follow_up.category }}
+                        – {{ intervention.follow_up.date|date:"d.m.Y" }}
+                    </a>
+                    <span class="badge bg-{{ intervention.follow_up.status_badge }} ms-1">
+                        {{ intervention.follow_up.get_status_display }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    {# Rechte Spalte: Metadaten + Aktionen #}
+    <div class="col-lg-4">
+
+        {# Metadaten #}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-info-circle me-1"></i> Details
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-5">Nachwuchskraft</dt>
+                    <dd class="col-7">
+                        <a href="{% url 'student:student_detail' intervention.student.pk %}">
+                            {{ intervention.student.first_name }} {{ intervention.student.last_name }}
+                        </a>
+                    </dd>
+
+                    <dt class="col-5">Erstellt von</dt>
+                    <dd class="col-7">
+                        {{ intervention.created_by.get_full_name|default:intervention.created_by.username }}
+                        <br><span class="text-muted">{{ intervention.created_at|date:"d.m.Y H:i" }}</span>
+                    </dd>
+
+                    {% if intervention.participants.all %}
+                    <dt class="col-5">Beteiligte</dt>
+                    <dd class="col-7">
+                        {% for u in intervention.participants.all %}
+                        <span class="badge bg-light text-dark border">
+                            {{ u.get_full_name|default:u.username }}
+                        </span>
+                        {% endfor %}
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        {# Frist #}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-calendar-event me-1"></i> Folgetermin / Frist
+            </div>
+            <div class="card-body">
+                {% if intervention.followup_date %}
+                    {% if intervention.followup_date < today and intervention.is_open %}
+                    <p class="text-danger fw-semibold mb-1">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i>
+                        {{ intervention.followup_date|date:"d.m.Y" }}
+                        <span class="small fw-normal">(überfällig)</span>
+                    </p>
+                    {% else %}
+                    <p class="mb-1 fw-semibold">{{ intervention.followup_date|date:"d.m.Y" }}</p>
+                    {% endif %}
+                {% else %}
+                <p class="text-muted mb-1">Kein Folgetermin gesetzt.</p>
+                {% endif %}
+
+                {% if intervention.is_open %}
+                <form method="post" class="mt-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_followup_date">
+                    <div class="input-group input-group-sm">
+                        <input type="date" name="followup_date" class="kern-form-input__input"
+                               value="{{ intervention.followup_date|date:'Y-m-d'|default:'' }}">
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-check me-1"></i>
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Status-Aktion #}
+        {% if intervention.is_open %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-arrow-repeat me-1"></i> Status ändern
+            </div>
+            <div class="card-body d-flex flex-column gap-2">
+
+                {# In Bearbeitung #}
+                {% if intervention.status != 'in_progress' %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="set_status">
+                    <input type="hidden" name="new_status" value="in_progress">
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-arrow-right-circle me-1"></i> In Bearbeitung setzen
+                    </button>
+                </form>
+                {% endif %}
+
+                {# Eskaliert #}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="set_status">
+                    <input type="hidden" name="new_status" value="escalated">
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="bi bi-arrow-up-circle me-1"></i> Als eskaliert markieren
+                    </button>
+                </form>
+
+                {# Abschließen #}
+                <button type="button" class="btn btn-outline-success btn-sm w-100"
+                        onclick="kernDialogOpen('closeModal')">
+                    <i class="bi bi-check-circle me-1"></i> Abschließen
+                </button>
+
+                {# Folge-Maßnahme #}
+                <a href="{% url 'intervention:create' %}?student={{ intervention.student.pk }}"
+                   class="btn btn-outline-warning btn-sm w-100">
+                    <i class="bi bi-plus-circle me-1"></i> Folge-Maßnahme anlegen
+                </a>
+
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+{# Dialog: Abschließen #}
+{% if intervention.is_open %}
+<dialog class="kern-dialog kern-dialog--lg" id="closeModal" aria-labelledby="closeModal_heading">
+    <form method="post" style="display:contents;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="set_status">
+        <input type="hidden" name="new_status" value="closed">
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="closeModal_heading">
+                <i class="bi bi-check-circle me-1"></i> Maßnahme abschließen
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <div class="kern-form-input">
+                <label class="kern-label" for="outcome">
+                    Ergebnis / Abschlussbemerkung
+                    <span class="text-muted fw-normal small">(optional)</span>
+                </label>
+                <textarea id="outcome" name="outcome" class="kern-form-input__input" rows="4"
+                          placeholder="Was wurde erreicht? Wie wurde die Situation gelöst?"></textarea>
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Abschließen</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+{% endif %}
+
+{% endblock %}

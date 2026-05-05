@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Stationsbeurteilung – {{ assignment.student.first_name }} {{ assignment.student.last_name }}</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-icons.min.css' %}" rel="stylesheet">
+    <style>
+        .criterion-card { border-left: 4px solid #0d6efd; }
+        .grade-radio-group .form-check { display: inline-block; margin-right: .75rem; }
+        .grade-radio-group .form-check-label { font-size: .9rem; cursor: pointer; }
+        .category-header { background: #f8f9fa; border-radius: .375rem; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-light bg-white border-bottom mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-semibold">
+            <i class="bi bi-clipboard-check text-primary"></i> Stationsbeurteilung
+        </span>
+    </div>
+</nav>
+
+<div class="container pb-5" style="max-width: 780px;">
+
+    {# Kontextbox #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-person-badge"></i> Beurteilung für den Praxisabschnitt</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0 small">
+                <dt class="col-sm-4">Nachwuchskraft</dt>
+                <dd class="col-sm-8 fw-semibold">{{ assignment.student.first_name }} {{ assignment.student.last_name }}</dd>
+
+                <dt class="col-sm-4">Organisationseinheit</dt>
+                <dd class="col-sm-8">{{ assignment.unit }}</dd>
+
+                <dt class="col-sm-4">Zeitraum</dt>
+                <dd class="col-sm-8">{{ assignment.start_date|date:"d.m.Y" }} – {{ assignment.end_date|date:"d.m.Y" }}</dd>
+
+                <dt class="col-sm-4">Block</dt>
+                <dd class="col-sm-8 mb-0">{{ assignment.schedule_block.name }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    {% if template.instructions_assessor %}
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        {{ template.instructions_assessor|linebreaksbr }}
+    </div>
+    {% endif %}
+
+    {% if template.rating_scale == 'grade' %}
+    <div class="alert alert-secondary small mb-4 py-2">
+        <i class="bi bi-rulers me-1"></i>
+        <strong>Bewertungsskala:</strong> Notenskala (1,0 = sehr gut · 6,0 = ungenügend)
+    </div>
+    {% else %}
+    <div class="alert alert-secondary small mb-4 py-2">
+        <i class="bi bi-rulers me-1"></i>
+        <strong>Bewertungsskala:</strong> Punkteskala (0–15 Punkte)
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        {# Kriterien – gruppiert nach Kategorie #}
+        {% with prev_category=None %}
+        {% for tc, rating_field, comment_field in form.get_criterion_pairs %}
+
+            {% if tc.criterion.category and tc.criterion.category != prev_category %}
+            <div class="category-header px-3 py-2 mb-3 fw-semibold text-secondary small">
+                <i class="bi bi-tag me-1"></i> {{ tc.criterion.category }}
+            </div>
+            {% endif %}
+            {% with prev_category=tc.criterion.category %}{% endwith %}
+
+            <div class="card criterion-card shadow-sm mb-3">
+                <div class="card-body pb-2">
+                    <div class="fw-semibold mb-1">{{ rating_field.label }}</div>
+                    {% if rating_field.help_text %}
+                    <div class="text-muted small mb-2">{{ rating_field.help_text }}</div>
+                    {% endif %}
+
+                    {% if template.rating_scale == 'grade' %}
+                    <div class="grade-radio-group mb-2">
+                        {% for radio in rating_field %}
+                        <div class="form-check form-check-inline">
+                            {{ radio.tag }}
+                            <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="mb-2 d-flex align-items-center gap-2">
+                        {{ rating_field }}
+                        <span class="text-muted small">Punkte (0–15)</span>
+                    </div>
+                    {% endif %}
+
+                    {% if rating_field.errors %}
+                    <span class="kern-error">
+                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ rating_field.errors|join:", " }}
+                    </span>
+                    {% endif %}
+
+                    <details class="mt-1">
+                        <summary class="text-muted small" style="cursor:pointer;">Kommentar hinzufügen</summary>
+                        <div class="mt-2">
+                            {{ comment_field }}
+                        </div>
+                    </details>
+                </div>
+            </div>
+        {% endfor %}
+        {% endwith %}
+
+        {# Gesamtkommentar #}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <label class="fw-semibold mb-1" for="{{ form.overall_comment.id_for_label }}">
+                    <i class="bi bi-chat-text me-1"></i> Gesamtkommentar / Anmerkungen
+                </label>
+                {{ form.overall_comment }}
+                <div class="text-muted small mt-1">Optional – allgemeine Beobachtungen zum Praxisabschnitt.</div>
+            </div>
+        </div>
+
+        <div class="alert alert-warning small">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <strong>Bitte prüfen Sie Ihre Angaben vor dem Absenden.</strong>
+            Nach der Einreichung können keine Änderungen mehr vorgenommen werden.
+        </div>
+
+        <div class="d-grid">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-send-check"></i> Beurteilung einreichen
+            </button>
+        </div>
+    </form>
+
+</div>
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

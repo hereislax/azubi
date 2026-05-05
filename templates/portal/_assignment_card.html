@@ -1,0 +1,99 @@
+<div class="col-12 col-md-6 col-lg-4">
+    <div class="card shadow-sm h-100 {% if highlight %}border-primary{% elif past %}opacity-75{% endif %}">
+        <div class="card-header py-2 {% if highlight %}bg-primary text-white{% else %}bg-light{% endif %}">
+            <div class="fw-semibold small">{{ assignment.unit }}</div>
+            {% if assignment.location %}
+            <div class="{% if highlight %}text-white-50{% else %}text-muted{% endif %}" style="font-size:.75rem;">
+                <i class="bi bi-building me-1"></i> {{ assignment.location }}
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-body py-2">
+            <div class="small text-muted mb-2">
+                <i class="bi bi-calendar3 me-1"></i>
+                {{ assignment.start_date|date:"d.m.Y" }} – {{ assignment.end_date|date:"d.m.Y" }}
+            </div>
+
+            {% if assignment.instructor %}
+            <div class="small mb-1">
+                <i class="bi bi-person-badge text-secondary me-1"></i>
+                <strong>Praxistutor:</strong>
+                {{ assignment.instructor.first_name }} {{ assignment.instructor.last_name }}
+            </div>
+            {% if assignment.instructor.email %}
+            <div class="small mb-1 ms-3">
+                <a href="mailto:{{ assignment.instructor.email }}" class="text-decoration-none">
+                    <i class="bi bi-envelope me-1"></i> {{ assignment.instructor.email }}
+                </a>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            {% if assignment.status == 'rejected' %}
+            <div class="mt-2">
+                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Abgelehnt</span>
+                {% if assignment.rejection_reason %}
+                <div class="text-muted small mt-1">{{ assignment.rejection_reason }}</div>
+                {% endif %}
+            </div>
+            {% elif assignment.status == 'pending' %}
+            <div class="mt-2">
+                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Ausstehend</span>
+            </div>
+            {% endif %}
+
+            {% with assessment=assignment.assessment %}
+            {% if assessment and assessment.status == 'confirmed' %}
+            <div class="mt-2 pt-2 border-top d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-success"><i class="bi bi-clipboard-check me-1"></i> Beurteilung bestätigt</span>
+                {% with avg=assessment.average_grade %}
+                {% if avg %}<span class="badge bg-light text-dark border">Ø {{ avg }}</span>{% endif %}
+                {% endwith %}
+                <a href="{% url 'portal:beurteilung_view' assignment.pk %}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:.75rem;">
+                    <i class="bi bi-eye me-1"></i> Ansehen
+                </a>
+            </div>
+            {% elif assessment and assessment.status == 'submitted' %}
+            <div class="mt-2 pt-2 border-top">
+                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Beurteilung eingereicht</span>
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            {# Selbstbeurteilung-Link während und nach dem Einsatz #}
+            {% if past or highlight %}
+            {% with sa=assignment.self_assessment %}
+            <div class="mt-2 {% if not assignment.assessment %}pt-2 border-top{% endif %}">
+                {% if sa and sa.status == 'submitted' %}
+                <span class="badge bg-secondary"><i class="bi bi-person-check me-1"></i> Selbstbeurteilung eingereicht</span>
+                {% else %}
+                <a href="{% url 'portal:beurteilung_self' assignment.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
+                    <i class="bi bi-pencil-square me-1"></i> Selbstbeurteilung
+                </a>
+                {% endif %}
+            </div>
+            {% endwith %}
+
+            {# Anonyme Stationsbewertung #}
+            <div class="mt-1">
+                {% if assignment.station_feedback_submitted %}
+                <span class="badge bg-info text-dark" title="Anonyme Stationsbewertung wurde abgegeben">
+                    <i class="bi bi-star-fill me-1"></i> Stationsbewertung abgegeben
+                </span>
+                {% else %}
+                <a href="{% url 'portal:station_feedback' assignment.pk %}" class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:.75rem;">
+                    <i class="bi bi-star me-1"></i> Station bewerten
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% if assignment.schedule_block %}
+        <div class="card-footer py-1 bg-transparent">
+            <span class="text-muted" style="font-size:.72rem;">
+                <i class="bi bi-journals me-1"></i> {{ assignment.schedule_block.course }} · {{ assignment.schedule_block.name }}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,497 @@
+{% extends 'base.html' %}
+
+{% block title %}Startseite{% endblock %}
+
+{% block content %}
+<div class="py-4">
+
+{% if show_leitung_dashboard %}
+
+    {# ── Summary-Zahlen (immer sichtbar) ───────────────────────────────────── #}
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a href="{% url 'student:student_list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-primary bg-opacity-10 p-2 flex-shrink-0">
+                        <i class="bi bi-people fs-4 text-primary me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 text-body">{{ active_students }}</div>
+                        <div class="text-muted small">Nachwuchskräfte</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'course:course_list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-primary bg-opacity-10 p-2 flex-shrink-0">
+                        <i class="bi bi-journals fs-4 text-primary me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 text-body">{{ active_courses }}</div>
+                        <div class="text-muted small">Aktive Kurse</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'absence:vacation_list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if pending_vacation_count %}bg-warning bg-opacity-15{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-calendar2-check fs-4 {% if pending_vacation_count %}text-warning{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if pending_vacation_count %}text-warning{% else %}text-body{% endif %}">{{ pending_vacation_count }}</div>
+                        <div class="text-muted small">Urlaubsanträge offen</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'studyday:request_list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if pending_studyday_count %}bg-warning bg-opacity-15{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-book fs-4 {% if pending_studyday_count %}text-warning{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if pending_studyday_count %}text-warning{% else %}text-body{% endif %}">{{ pending_studyday_count }}</div>
+                        <div class="text-muted small">Lerntage ausstehend</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'assessment:list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if pending_assessment_count %}bg-warning bg-opacity-15{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-star-half fs-4 {% if pending_assessment_count %}text-warning{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if pending_assessment_count %}text-warning{% else %}text-body{% endif %}">{{ pending_assessment_count }}</div>
+                        <div class="text-muted small">Beurteilungen offen</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'intervention:list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if open_interventions_count %}bg-danger bg-opacity-10{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-exclamation-triangle fs-4 {% if open_interventions_count %}text-danger{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if open_interventions_count %}text-danger{% else %}text-body{% endif %}">{{ open_interventions_count }}</div>
+                        <div class="text-muted small">Maßnahmen offen</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'student:student_inquiry_list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if open_inquiry_count %}bg-info bg-opacity-15{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-chat-left-text fs-4 {% if open_inquiry_count %}text-info{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if open_inquiry_count %}text-info{% else %}text-body{% endif %}">{{ open_inquiry_count }}</div>
+                        <div class="text-muted small">Anfragen offen</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'student:student_list' %}" class="text-decoration-none">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if pending_training_count %}bg-warning bg-opacity-15{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-journal-text fs-4 {% if pending_training_count %}text-warning{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if pending_training_count %}text-warning{% else %}text-body{% endif %}">{{ pending_training_count }}</div>
+                        <div class="text-muted small">Nachweise eingereicht</div>
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+    </div>
+
+    {# ── Konfig-Button ─────────────────────────────────────────────────────── #}
+    <div class="d-flex justify-content-end mb-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="dashConfigBtn">
+            <i class="bi bi-gear me-1"></i> Dashboard anpassen
+        </button>
+    </div>
+
+    {# ── Widgets (sortierbar) ──────────────────────────────────────────────── #}
+    <div class="row g-3 mb-3" id="dashWidgetContainer">
+
+        {% for w in widget_config %}
+
+        {# ── Geburtstage ─────────────────────────────────────────────────── #}
+        {% if w.id == 'birthdays' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="birthdays" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_birthdays.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Anstehende Blöcke ───────────────────────────────────────────── #}
+        {% if w.id == 'upcoming_blocks' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="upcoming_blocks" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_upcoming_blocks.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Ausstehende Schreiben ───────────────────────────────────────── #}
+        {% if w.id == 'pending_letters' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="pending_letters" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_pending_letters.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Fehlzeiten-Ampel ────────────────────────────────────────────── #}
+        {% if w.id == 'fehlzeiten' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="fehlzeiten" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_fehlzeiten.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Kursfortschritt ─────────────────────────────────────────────── #}
+        {% if w.id == 'course_progress' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="course_progress" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_course_progress.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Ablaufende Einsätze ─────────────────────────────────────────── #}
+        {% if w.id == 'ending_soon' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="ending_soon" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_ending_soon.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Wohnheim-Belegung ───────────────────────────────────────────── #}
+        {% if w.id == 'dormitory' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="dormitory" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_dormitory.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Stationsauslastung ──────────────────────────────────────────── #}
+        {% if w.id == 'station_utilization' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="station_utilization" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_station_utilization.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Ausstehende Einsätze ────────────────────────────────────────── #}
+        {% if w.id == 'pending_internships' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="pending_internships" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_pending_internships.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Offene Maßnahmen ────────────────────────────────────────────── #}
+        {% if w.id == 'open_interventions' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="open_interventions" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_open_interventions.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Offene Anfragen ─────────────────────────────────────────────── #}
+        {% if w.id == 'open_inquiries' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="open_inquiries" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_open_inquiries.html" %}
+        </div>
+        {% endif %}
+
+        {# ── Abgelehnte Nachweise ────────────────────────────────────────── #}
+        {% if w.id == 'recently_rejected' %}
+        <div class="col-12 col-md-6 col-xl-4" data-widget-id="recently_rejected" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_recently_rejected.html" %}
+        </div>
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+
+{% elif show_koord_dashboard %}
+
+    {# ── Koord KPI-Zeile ────────────────────────────────────────────────────── #}
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-primary bg-opacity-10 p-2 flex-shrink-0">
+                        <i class="bi bi-people fs-4 text-primary me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 text-body">{{ koord_student_count }}</div>
+                        <div class="text-muted small">Meine NKs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if koord_pending_count %}bg-warning bg-opacity-15{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-briefcase fs-4 {% if koord_pending_count %}text-warning{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if koord_pending_count %}text-warning{% else %}text-body{% endif %}">{{ koord_pending_count }}</div>
+                        <div class="text-muted small">Einsätze ausstehend</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if koord_training_count %}bg-warning bg-opacity-15{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-journal-text fs-4 {% if koord_training_count %}text-warning{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if koord_training_count %}text-warning{% else %}text-body{% endif %}">{{ koord_training_count }}</div>
+                        <div class="text-muted small">Nachweise eingereicht</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 {% if koord_red_count %}bg-danger bg-opacity-10{% else %}bg-primary bg-opacity-10{% endif %} p-2 flex-shrink-0">
+                        <i class="bi bi-activity fs-4 {% if koord_red_count %}text-danger{% else %}text-primary{% endif %} me-1"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold lh-1 {% if koord_red_count %}text-danger{% else %}text-body{% endif %}">{{ koord_red_count }}</div>
+                        <div class="text-muted small">Hohe Fehlzeiten</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Konfig-Button ─────────────────────────────────────────────────────── #}
+    <div class="d-flex justify-content-end mb-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="dashConfigBtn">
+            <i class="bi bi-gear me-1"></i> Dashboard anpassen
+        </button>
+    </div>
+
+    {# ── Koord Widgets (sortierbar) ────────────────────────────────────────── #}
+    <div class="row g-3" id="dashWidgetContainer">
+        {% for w in widget_config %}
+
+        {% if w.id == 'birthdays' %}
+        <div class="col-12 col-md-6 col-lg-4" data-widget-id="birthdays" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_birthdays.html" %}
+        </div>
+        {% endif %}
+
+        {% if w.id == 'koord_training' %}
+        <div class="col-12 col-md-6 col-lg-4" data-widget-id="koord_training" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_koord_training.html" %}
+        </div>
+        {% endif %}
+
+        {% if w.id == 'koord_pending' %}
+        <div class="col-12 col-md-6 col-lg-4" data-widget-id="koord_pending" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_koord_pending.html" %}
+        </div>
+        {% endif %}
+
+        {% if w.id == 'koord_ending_soon' %}
+        <div class="col-12 col-md-6 col-lg-4" data-widget-id="koord_ending_soon" {% if not w.visible %}style="display:none;"{% endif %}>
+            {% include "index/_widget_koord_ending_soon.html" %}
+        </div>
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+{% elif show_ps_dashboard %}
+
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-journal-check text-muted me-1"></i>
+                    <span class="fw-semibold small">Offene Ausbildungsnachweise</span>
+                    {% if ps_training %}
+                    <span class="badge bg-warning text-dark rounded-pill ms-auto">{{ ps_training|length }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if ps_training %}
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>Nachwuchskraft</th><th>Kalenderwoche</th><th>Eingereicht am</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            {% for record in ps_training %}
+                            <tr>
+                                <td class="fw-semibold small">{{ record.student.first_name }} {{ record.student.last_name }}</td>
+                                <td class="small text-muted">KW {{ record.calendar_week }}/{{ record.week_start.year }}</td>
+                                <td class="small text-muted">{{ record.submitted_at|date:"d.m.Y" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'proofoftraining:admin_record_detail' record.student_id record.public_id %}" class="btn btn-outline-secondary btn-sm py-0 px-2">Ansehen</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted small p-3 mb-0">Keine offenen Ausbildungsnachweise.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+    <h1>Willkommen bei {{ brand_name }}!</h1>
+
+{% endif %}
+
+</div>
+
+{# ── Dashboard-Konfigurationsmodal ──────────────────────────────────────── #}
+{% if widget_config %}
+<dialog id="dashConfigModal" class="border rounded shadow-lg p-0" style="max-width:420px;width:100%;">
+    <div class="card border-0">
+        <div class="card-header d-flex align-items-center gap-2 py-2">
+            <i class="bi bi-gear text-muted me-1"></i>
+            <span class="fw-semibold small">Dashboard anpassen</span>
+            <button type="button" class="btn-close ms-auto" id="dashConfigClose" style="font-size:.6rem;"></button>
+        </div>
+        <div class="card-body p-0">
+            <p class="text-muted small px-3 pt-3 mb-2">Widgets ein-/ausblenden und per Drag & Drop sortieren.</p>
+            <ul class="list-group list-group-flush" id="dashConfigList">
+                {% for w in widget_config %}
+                <li class="list-group-item d-flex align-items-center gap-2 px-3 py-2" data-config-id="{{ w.id }}" draggable="true">
+                    <i class="bi bi-grip-vertical text-muted" style="cursor:grab;"></i>
+                    <i class="bi {{ w.icon }} text-muted"></i>
+                    <span class="small flex-grow-1">{{ w.label }}</span>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input dash-toggle" type="checkbox" data-widget="{{ w.id }}"
+                               {% if w.visible %}checked{% endif %}>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2 py-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="dashConfigReset">Zurücksetzen</button>
+            <button type="button" class="btn btn-sm btn-primary" id="dashConfigSave">
+                <i class="bi bi-check-lg me-1"></i> Speichern
+            </button>
+        </div>
+    </div>
+</dialog>
+
+<script>
+(function() {
+    const btn = document.getElementById('dashConfigBtn');
+    const modal = document.getElementById('dashConfigModal');
+    if (!btn || !modal) return;
+    const closeBtn = document.getElementById('dashConfigClose');
+    const saveBtn = document.getElementById('dashConfigSave');
+    const resetBtn = document.getElementById('dashConfigReset');
+    const list = document.getElementById('dashConfigList');
+    const container = document.getElementById('dashWidgetContainer');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                      || document.cookie.match(/azubi_csrftoken=([^;]+)/)?.[1] || '';
+
+    btn.addEventListener('click', () => modal.showModal());
+    closeBtn.addEventListener('click', () => modal.close());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
+
+    // Drag & Drop
+    let dragItem = null;
+    list.addEventListener('dragstart', e => {
+        dragItem = e.target.closest('li');
+        if (dragItem) dragItem.style.opacity = '0.5';
+    });
+    list.addEventListener('dragend', () => {
+        if (dragItem) dragItem.style.opacity = '';
+        dragItem = null;
+    });
+    list.addEventListener('dragover', e => {
+        e.preventDefault();
+        const target = e.target.closest('li');
+        if (target && target !== dragItem) {
+            const rect = target.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            if (e.clientY < mid) {
+                list.insertBefore(dragItem, target);
+            } else {
+                list.insertBefore(dragItem, target.nextSibling);
+            }
+        }
+    });
+
+    // Save
+    saveBtn.addEventListener('click', () => {
+        const items = list.querySelectorAll('li[data-config-id]');
+        const order = [];
+        const hidden = [];
+        items.forEach(li => {
+            const id = li.dataset.configId;
+            order.push(id);
+            const toggle = li.querySelector('.dash-toggle');
+            if (!toggle.checked) hidden.push(id);
+        });
+
+        fetch('{% url "dashboard_config_save" %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
+            body: JSON.stringify({widget_order: order, hidden_widgets: hidden}),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                // DOM sofort aktualisieren
+                order.forEach(id => {
+                    const widget = container.querySelector(`[data-widget-id="${id}"]`);
+                    if (widget) {
+                        container.appendChild(widget);
+                        widget.style.display = hidden.includes(id) ? 'none' : '';
+                    }
+                });
+                modal.close();
+            }
+        });
+    });
+
+    // Reset
+    resetBtn.addEventListener('click', () => {
+        fetch('{% url "dashboard_config_save" %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
+            body: JSON.stringify({widget_order: [], hidden_widgets: []}),
+        })
+        .then(r => r.json())
+        .then(data => { if (data.ok) location.reload(); });
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

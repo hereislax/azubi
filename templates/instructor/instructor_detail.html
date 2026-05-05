@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}{{ instructor }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'instructor:instructor_list' %}">Praxistutoren</a></li>
+        <li class="breadcrumb-item active">{{ instructor }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-person-badge me-1"></i> {{ instructor }}</h2>
+        {% if instructor.status == 'pending' %}
+        <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Ausstehend – wartet auf Bestätigung</span>
+        {% else %}
+        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Bestätigt</span>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if instructor.status == 'pending' and can_confirm %}
+        <a href="{% url 'instructor:instructor_confirm' instructor.public_id %}" class="btn btn-success btn-sm">
+            <i class="bi bi-check-lg me-1"></i> Bestätigen
+        </a>
+        {% endif %}
+        <a href="{% url 'instructor:instructor_edit' instructor.public_id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i> Bearbeiten
+        </a>
+        <a href="{% url 'instructor:instructor_delete' instructor.public_id %}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash me-1"></i>
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-person-lines-fill me-1"></i> Kontaktdaten
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Anrede</dt>
+            <dd class="col-sm-9">{{ instructor.salutation }}</dd>
+
+            <dt class="col-sm-3">Vorname</dt>
+            <dd class="col-sm-9">{{ instructor.first_name }}</dd>
+
+            <dt class="col-sm-3">Nachname</dt>
+            <dd class="col-sm-9">{{ instructor.last_name }}</dd>
+
+            <dt class="col-sm-3">Dienstliche E-Mail</dt>
+            <dd class="col-sm-9"><a href="mailto:{{ instructor.email }}">{{ instructor.email }}</a></dd>
+
+            <dt class="col-sm-3">Organisationseinheit</dt>
+            <dd class="col-sm-9">
+                {% if instructor.unit %}
+                    <a href="{% url 'organisation:unit_detail' instructor.unit.public_id %}">{{ instructor.unit.name }}</a>
+                {% else %}
+                    <span class="text-muted">–</span>
+                {% endif %}
+            </dd>
+
+            <dt class="col-sm-3">Standort</dt>
+            <dd class="col-sm-9">
+                {% if instructor.location %}
+                    <i class="bi bi-geo-alt text-muted me-1"></i>
+                    {{ instructor.location.name }}
+                    {% if instructor.location.address %}
+                        <span class="text-muted ms-1 small">{{ instructor.location.address }}</span>
+                    {% endif %}
+                {% else %}
+                    <span class="text-muted">–</span>
+                {% endif %}
+            </dd>
+
+            <dt class="col-sm-3">Berufsbilder</dt>
+            <dd class="col-sm-9">
+                {% for jp in instructor.job_profiles.all %}
+                    <span class="badge bg-secondary me-1">{{ jp }}</span>
+                {% empty %}
+                    <span class="text-muted">–</span>
+                {% endfor %}
+            </dd>
+        </dl>
+    </div>
+</div>
+
+{# ── Assignments tabs ──────────────────────────────────────────────────────── #}
+<div class="tabs-scroll-wrapper">
+    <button class="tabs-scroll-btn tabs-scroll-btn--left" aria-label="Tabs nach links scrollen" hidden>
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <button class="tabs-scroll-btn tabs-scroll-btn--right" aria-label="Tabs nach rechts scrollen" hidden>
+        <i class="bi bi-chevron-right"></i>
+    </button>
+    <ul class="nav nav-tabs mt-4" id="assignmentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab">
+                Aktuell{% if current_assignments %} <span class="badge bg-primary ms-1">{{ current_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="future-tab" data-bs-toggle="tab" data-bs-target="#future" type="button" role="tab">
+                Künftig{% if future_assignments %} <span class="badge bg-secondary ms-1">{{ future_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">
+                Vergangen{% if past_assignments %} <span class="badge bg-secondary ms-1">{{ past_assignments|length }}</span>{% endif %}
+            </button>
+        </li>
+    </ul>
+</div>
+
+<div class="tab-content border border-top-0 rounded-bottom p-4 mb-4" id="assignmentTabContent">
+
+    <div class="tab-pane fade show active" id="current" role="tabpanel">
+        {% if current_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-current" style="width:100%">
+            <thead class="table-light">
+                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th></tr>
+            </thead>
+            <tbody>
+            {% for a in current_assignments %}
+            <tr>
+                <td><a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a></td>
+                <td>{{ a.unit.name }}{% if a.unit.label %} <span class="text-muted">({{ a.unit.label }})</span>{% endif %}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine aktuellen Einsätze.</p>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="future" role="tabpanel">
+        {% if future_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-future" style="width:100%">
+            <thead class="table-light">
+                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th></tr>
+            </thead>
+            <tbody>
+            {% for a in future_assignments %}
+            <tr>
+                <td><a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a></td>
+                <td>{{ a.unit.name }}{% if a.unit.label %} <span class="text-muted">({{ a.unit.label }})</span>{% endif %}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine künftigen Einsätze.</p>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="past" role="tabpanel">
+        {% if past_assignments %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="table-past" style="width:100%">
+            <thead class="table-light">
+                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th></tr>
+            </thead>
+            <tbody>
+            {% for a in past_assignments %}
+            <tr>
+                <td><a href="{% url 'student:student_detail' a.student.pk %}" class="text-decoration-none fw-semibold">{{ a.student }}</a></td>
+                <td>{{ a.unit.name }}{% if a.unit.label %} <span class="text-muted">({{ a.unit.label }})</span>{% endif %}</td>
+                <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                <td>{{ a.end_date|date:"d.m.Y" }}</td>
+                <td>{{ a.schedule_block.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Keine vergangenen Einsätze.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+$(document).ready(function () {
+    const dtOptions = {
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+        columnDefs: [{ orderable: false, targets: -1 }],
+    };
+    {% if current_assignments %}$('#table-current').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));{% endif %}
+    {% if future_assignments %}
+    $('#future-tab').one('shown.bs.tab', function () {
+        $('#table-future').DataTable($.extend({}, dtOptions, { order: [[2, 'asc']] }));
+    });
+    {% endif %}
+    {% if past_assignments %}
+    $('#past-tab').one('shown.bs.tab', function () {
+        $('#table-past').DataTable($.extend({}, dtOptions, { order: [[3, 'desc']] }));
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

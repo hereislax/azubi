@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Maßnahmen-Kategorien{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'intervention:list' %}">Maßnahmen</a></li>
+        <li class="breadcrumb-item active">Kategorien</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-tags me-1"></i> Maßnahmen-Kategorien</h2>
+        <p class="text-muted small mb-0">Konfigurieren Sie die verfügbaren Kategorien für Maßnahmen und Interventionen.</p>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" onclick="kernDialogOpen('createModal')">
+        <i class="bi bi-plus-lg me-1"></i> Neue Kategorie
+    </button>
+</div>
+
+{% if categories %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Bezeichnung</th>
+                    <th>Eskalationsstufe</th>
+                    <th>Farbe</th>
+                    <th>Folgetermin</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for cat in categories %}
+            <tr>
+                <td class="fw-semibold">{{ cat.name }}</td>
+                <td>
+                    <span class="badge bg-secondary">{{ cat.escalation_level }} – {{ cat.escalation_label }}</span>
+                </td>
+                <td>
+                    <span class="badge bg-{{ cat.color }}">{{ cat.get_color_display }}</span>
+                </td>
+                <td>
+                    {% if cat.requires_followup %}
+                    <i class="bi bi-check-circle-fill text-success me-1"></i> Pflicht
+                    {% else %}
+                    <span class="text-muted">–</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if cat.is_active %}
+                    <span class="badge bg-success">Aktiv</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inaktiv</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            onclick="openEditModal({{ cat.pk }}, '{{ cat.name|escapejs }}', {{ cat.escalation_level }}, '{{ cat.color }}', {{ cat.requires_followup|yesno:'true,false' }}, {{ cat.is_active|yesno:'true,false' }})">
+                        <i class="bi bi-pencil me-1"></i>
+                    </button>
+                    <form method="post" action="{% url 'intervention:category_delete' cat.public_id %}" class="d-inline"
+                          onsubmit="return confirm('Kategorie „{{ cat.name }}" wirklich löschen?')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                {% if cat.interventions.exists %}disabled title="Wird von Maßnahmen verwendet"{% endif %}>
+                            <i class="bi bi-trash3 me-1"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-tags" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Noch keine Kategorien angelegt.</p>
+</div>
+{% endif %}
+
+{# ── Dialog: Neue Kategorie ───────────────────────────────────────────────── #}
+<dialog class="kern-dialog" id="createModal" aria-labelledby="createModal_heading">
+    <form method="post" action="{% url 'intervention:category_create' %}" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="createModal_heading">
+                <i class="bi bi-plus-circle me-1"></i> Neue Kategorie
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            {% include "intervention/_category_form_fields.html" with prefix="" %}
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Erstellen</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+{# ── Dialog: Kategorie bearbeiten ─────────────────────────────────────────── #}
+<dialog class="kern-dialog" id="editModal" aria-labelledby="editModal_heading">
+    <form method="post" id="editForm" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="editModal_heading">
+                <i class="bi bi-pencil me-1"></i> Kategorie bearbeiten
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            {% include "intervention/_category_form_fields.html" with prefix="edit_" %}
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Speichern</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+<script>
+function openEditModal(pk, name, level, color, requiresFollowup, isActive) {
+    const form = document.getElementById('editForm');
+    form.action = '/massnahmen/kategorien/' + pk + '/bearbeiten/';
+
+    document.getElementById('edit_name').value             = name;
+    document.getElementById('edit_escalation_level').value = level;
+    document.getElementById('edit_color').value            = color;
+    document.getElementById('edit_requires_followup').checked = requiresFollowup;
+    document.getElementById('edit_is_active').checked        = isActive;
+
+    kernDialogOpen('editModal');
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Nachwuchskraft {{ action }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+        {% if student %}
+        <li class="breadcrumb-item">
+            <a href="{% url 'student:student_detail' student.pk %}">{{ student.first_name }} {{ student.last_name }}</a>
+        </li>
+        {% endif %}
+        <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+
+        {# Schritt-Anzeige #}
+        <div class="d-flex align-items-center mb-4 gap-0" id="wizard-steps">
+            <div class="wizard-step active" data-step="0">
+                <div class="wizard-circle">1</div>
+                <div class="wizard-label">Persönliche Daten</div>
+            </div>
+            <div class="wizard-connector flex-grow-1"></div>
+            <div class="wizard-step" data-step="1">
+                <div class="wizard-circle">2</div>
+                <div class="wizard-label">Kontakt & Adresse</div>
+            </div>
+            <div class="wizard-connector flex-grow-1"></div>
+            <div class="wizard-step" data-step="2">
+                <div class="wizard-circle">3</div>
+                <div class="wizard-label">Ausbildung & Status</div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-vcard me-1"></i>
+                    Nachwuchskraft {{ action }}
+                </h5>
+            </div>
+            <div class="card-body">
+
+                {% if form.non_field_errors %}
+                <span class="kern-error">
+                    <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </span>
+                {% endif %}
+
+                <form method="post" id="wizard-form">
+                    {% csrf_token %}
+
+                    {# ── Schritt 1: Persönliche Daten ───────────────────────── #}
+                    <div class="wizard-pane" id="pane-0">
+                        <div class="row g-3">
+                            <div class="col-md-2">
+                                <label class="kern-label">{{ form.gender.label }}</label>
+                                {{ form.gender }}
+                                {% if form.gender.errors %}<span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ form.gender.errors|join:", " }}</span>{% endif %}
+                            </div>
+                            <div class="col-md-5">
+                                <label class="kern-label">{{ form.first_name.label }}</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}<span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ form.first_name.errors|join:", " }}</span>{% endif %}
+                            </div>
+                            <div class="col-md-5">
+                                <label class="kern-label">{{ form.last_name.label }}</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}<span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ form.last_name.errors|join:", " }}</span>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="kern-label">{{ form.date_of_birth.label }}</label>
+                                {{ form.date_of_birth }}
+                                {% if form.date_of_birth.errors %}<span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ form.date_of_birth.errors|join:", " }}</span>{% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <label class="kern-label">{{ form.place_of_birth.label }}</label>
+                                {{ form.place_of_birth }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ── Schritt 2: Kontakt & Adresse ───────────────────────── #}
+                    <div class="wizard-pane d-none" id="pane-1">
+                        <h6 class="text-muted mb-3 border-bottom pb-1">Kontakt</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="kern-label">{{ form.phone_number.label }}</label>
+                                {{ form.phone_number }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="kern-label">{{ form.email_private.label }}</label>
+                                {{ form.email_private }}
+                                {% if form.email_private.errors %}<span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ form.email_private.errors|join:", " }}</span>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="kern-label">{{ form.email_id.label }}</label>
+                                {{ form.email_id }}
+                            </div>
+                        </div>
+
+                        <h6 class="text-muted mb-3 border-bottom pb-1">Adresse <span class="fw-normal">(optional)</span></h6>
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="kern-label">{{ address_form.street.label }}</label>
+                                {{ address_form.street }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="kern-label">{{ address_form.house_number.label }}</label>
+                                {{ address_form.house_number }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="kern-label">{{ address_form.zip_code.label }}</label>
+                                {{ address_form.zip_code }}
+                            </div>
+                            <div class="col-md-9">
+                                <label class="kern-label">{{ address_form.city.label }}</label>
+                                {{ address_form.city }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ── Schritt 3: Ausbildung & Status ─────────────────────── #}
+                    <div class="wizard-pane d-none" id="pane-2">
+                        <h6 class="text-muted mb-3 border-bottom pb-1">Ausbildung & Status</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="kern-label">{{ form.employment.label }}</label>
+                                {{ form.employment }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="kern-label">{{ form.course.label }}</label>
+                                {{ form.course }}
+                            </div>
+                        </div>
+
+                        {% if custom_fields %}
+                        <h6 class="text-muted mb-3 border-bottom pb-1">Benutzerdefinierte Felder</h6>
+                        <div class="row g-3">
+                            {% for defn, value in custom_fields %}
+                            <div class="col-md-6">
+                                <label class="kern-label">{{ defn.name }}</label>
+                                {% if defn.field_type == 'boolean' %}
+                                <select name="custom_{{ defn.pk }}" class="kern-form-input__input">
+                                    <option value="">–</option>
+                                    <option value="Ja" {% if value == "Ja" %}selected{% endif %}>Ja</option>
+                                    <option value="Nein" {% if value == "Nein" %}selected{% endif %}>Nein</option>
+                                </select>
+                                {% elif defn.field_type == 'date' %}
+                                <input type="date" name="custom_{{ defn.pk }}" class="kern-form-input__input" value="{{ value }}">
+                                {% elif defn.field_type == 'number' %}
+                                <input type="number" name="custom_{{ defn.pk }}" class="kern-form-input__input" value="{{ value }}">
+                                {% else %}
+                                <input type="text" name="custom_{{ defn.pk }}" class="kern-form-input__input" value="{{ value }}">
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {# ── Navigation ─────────────────────────────────────────── #}
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-outline-secondary" id="btn-prev">
+                            <i class="bi bi-arrow-left me-1"></i> Zurück
+                        </button>
+                        <div class="d-flex gap-2">
+                            {% if student %}
+                            <a href="{% url 'student:student_detail' student.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i> Abbrechen
+                            </a>
+                            {% else %}
+                            <a href="{% url 'student:student_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i> Abbrechen
+                            </a>
+                            {% endif %}
+                            <button type="button" class="btn btn-primary" id="btn-next">
+                                Weiter <i class="bi bi-arrow-right me-1"></i>
+                            </button>
+                            <button type="submit" class="btn btn-success d-none" id="btn-submit">
+                                <i class="bi bi-check-circle me-1"></i> Speichern
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    #wizard-steps {
+        position: relative;
+    }
+    .wizard-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+    .wizard-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #dee2e6;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: background 0.2s, color 0.2s;
+    }
+    .wizard-step.active .wizard-circle {
+        background: var(--bs-primary);
+        color: #fff;
+    }
+    .wizard-step.done .wizard-circle {
+        background: #198754;
+        color: #fff;
+    }
+    .wizard-step.has-error .wizard-circle {
+        background: var(--bs-danger);
+        color: #fff;
+    }
+    .wizard-label {
+        font-size: 0.78rem;
+        color: #6c757d;
+        white-space: nowrap;
+    }
+    .wizard-step.active .wizard-label {
+        color: var(--bs-primary);
+        font-weight: 600;
+    }
+    .wizard-connector {
+        height: 2px;
+        background: #dee2e6;
+        margin-bottom: 18px;
+        min-width: 24px;
+        transition: background 0.2s;
+    }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const panes = document.querySelectorAll('.wizard-pane');
+    const steps = document.querySelectorAll('.wizard-step');
+    const connectors = document.querySelectorAll('.wizard-connector');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const btnSubmit = document.getElementById('btn-submit');
+    const total = panes.length;
+    let current = 0;
+
+    // Bei Servervalidierungsfehler: ersten Schritt mit Fehlern anzeigen
+    const errorPaneIndex = (() => {
+        for (let i = 0; i < panes.length; i++) {
+            if (panes[i].querySelector('.kern-error')) return i;
+        }
+        return -1;
+    })();
+    if (errorPaneIndex >= 0) current = errorPaneIndex;
+
+    function update() {
+        panes.forEach((p, i) => p.classList.toggle('d-none', i !== current));
+
+        steps.forEach((s, i) => {
+            s.classList.remove('active', 'done');
+            if (i === current) s.classList.add('active');
+            else if (i < current) s.classList.add('done');
+        });
+
+        connectors.forEach((c, i) => {
+            c.style.background = i < current ? '#198754' : '#dee2e6';
+        });
+
+        btnPrev.classList.toggle('invisible', current === 0);
+        btnNext.classList.toggle('d-none', current === total - 1);
+        btnSubmit.classList.toggle('d-none', current !== total - 1);
+    }
+
+    btnNext.addEventListener('click', () => {
+        if (current < total - 1) { current++; update(); }
+    });
+
+    btnPrev.addEventListener('click', () => {
+        if (current > 0) { current--; update(); }
+    });
+
+    // Fehler-Steps markieren
+    steps.forEach((s, i) => {
+        if (panes[i] && panes[i].querySelector('.kern-error')) {
+            s.classList.add('has-error');
+        }
+    });
+
+    update();
+});
+
+// Telefonnummer-Maske: xxxx xxxx xxxx
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-phone-mask]').forEach(function (input) {
+        function format() {
+            let digits = input.value.replace(/\D/g, '').slice(0, 14);
+            input.value = digits.match(/.{1,4}/g)?.join(' ') ?? '';
+        }
+        input.addEventListener('input', format);
+        if (input.value) format();
+    });
+});
+</script>
+{% endblock %}

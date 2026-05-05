@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load kern %}
+
+{% block title %}Schulungs-Typ {{ action }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'mandatorytraining:overview' %}">Pflichtschulungen</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'mandatorytraining:type_list' %}">Schulungs-Typen</a></li>
+        <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+</nav>
+<h2 class="mb-3"><i class="bi bi-shield-check me-1"></i> Schulungs-Typ {{ action }}</h2>
+
+<div class="card"><div class="card-body">
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+        <div data-field="{{ field.name }}">
+            {% kern_field field %}
+        </div>
+        {% endfor %}
+        <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'mandatorytraining:type_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Speichern</button>
+        </div>
+    </form>
+</div></div>
+
+<script>
+(function(){
+    const recurrence = document.querySelector('[name="recurrence"]');
+    if (!recurrence) return;
+
+    const fldValidity   = document.querySelector('[data-field="validity_months"]');
+    const fldFixedMonth = document.querySelector('[data-field="fixed_deadline_month"]');
+    const fldFixedDay   = document.querySelector('[data-field="fixed_deadline_day"]');
+    const fldFixedYears = document.querySelector('[data-field="fixed_recurrence_years"]');
+    const fldReminder   = document.querySelector('[data-field="reminder_days_before"]');
+
+    function apply() {
+        const r = recurrence.value;
+        if (fldValidity)   fldValidity.style.display   = (r === 'rolling') ? '' : 'none';
+        if (fldFixedMonth) fldFixedMonth.style.display = (r === 'fixed')   ? '' : 'none';
+        if (fldFixedDay)   fldFixedDay.style.display   = (r === 'fixed')   ? '' : 'none';
+        if (fldFixedYears) fldFixedYears.style.display = (r === 'fixed')   ? '' : 'none';
+        if (fldReminder)   fldReminder.style.display   = (r === 'one_time') ? 'none' : '';
+    }
+    recurrence.addEventListener('change', apply);
+    apply();
+})();
+</script>
+{% endblock %}

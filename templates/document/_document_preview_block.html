@@ -1,0 +1,51 @@
+{# Wiederverwendbarer Dokumentvorschau-Dialog (kern-dialog) #}
+<dialog class="kern-dialog kern-dialog--xl" id="docPreviewModal"
+        aria-labelledby="docPreviewTitle" style="max-width:90vw;">
+    <header class="kern-dialog__header">
+        <h2 class="kern-title kern-title--large" id="docPreviewTitle"
+            style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%; font-size:1rem;">
+            <i class="bi bi-file-earmark-text text-muted me-1"></i>
+        </h2>
+        <a id="docPreviewDownload" href="#" class="kern-btn kern-btn--tertiary me-1">
+            <span class="kern-icon kern-icon--download" aria-hidden="true"></span>
+            <span class="kern-label">Original herunterladen</span>
+        </a>
+        <button type="button" class="kern-btn kern-btn--tertiary"
+                onclick="document.getElementById('docPreviewModal').close()"
+                aria-label="Schließen">
+            <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+            <span class="kern-label kern-sr-only">Schließen</span>
+        </button>
+    </header>
+    <section class="kern-dialog__body" style="padding:0; height:85vh;">
+        <iframe id="docPreviewFrame" src="" title="Dokumentvorschau"
+                style="width:100%; height:100%; border:none; display:block;"></iframe>
+    </section>
+</dialog>
+
+<script>
+(function () {
+    const modal  = document.getElementById('docPreviewModal');
+    const frame  = document.getElementById('docPreviewFrame');
+    const title  = document.getElementById('docPreviewTitle');
+    const dlBtn  = document.getElementById('docPreviewDownload');
+    const previewUrl  = (id) => "{% url 'services:paperless_preview' 99999 %}".replace('99999', id);
+    const downloadUrl = (id) => "{% url 'document:document_download_original' 99999 %}".replace('99999', id);
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.doc-preview-btn');
+        if (!btn) return;
+        const id = btn.dataset.docId;
+        title.innerHTML = '<i class="bi bi-file-earmark-text text-muted me-1"></i>' + btn.dataset.docTitle;
+        dlBtn.href = downloadUrl(id);
+        frame.src  = previewUrl(id);
+        modal.showModal();
+    });
+
+    modal.addEventListener('close', function () {
+        frame.src = '';
+        title.innerHTML = '<i class="bi bi-file-earmark-text text-muted me-1"></i>';
+        dlBtn.href = '#';
+    });
+})();
+</script>

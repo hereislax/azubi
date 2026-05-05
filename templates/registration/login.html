@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Anmelden{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="text-center mb-4">
+            <img src="{% url 'services:logo_svg' %}" alt="{{ brand_name }}" height="64">
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Anmelden
+                </h5>
+            </div>
+            <div class="card-body p-4">
+
+                {% if sso_required %}
+                <div class="kern-alert kern-alert--info mb-3" role="alert">
+                    <div class="kern-alert__header">
+                        <span class="kern-icon kern-icon--info" aria-hidden="true"></span>
+                        <span class="kern-title">Anmeldung über Identity-Provider</span>
+                    </div>
+                    <p class="mb-2">
+                        Für Ihr Konto ist die Anmeldung über
+                        <strong>{{ sso_provider_name }}</strong> vorgesehen.
+                        Bitte nutzen Sie den entsprechenden Button unten.
+                    </p>
+                    {% if sso_provider_id %}
+                    <a href="{% url 'sso_start' sso_provider_id %}"
+                       class="kern-btn kern-btn--primary kern-btn--block">
+                        <i class="bi bi-shield-lock me-1"></i>
+                        <span class="kern-label">Anmelden mit {{ sso_provider_name }}</span>
+                    </a>
+                    {% endif %}
+                </div>
+                {% elif form.errors %}
+                <div class="kern-alert kern-alert--danger mb-3" role="alert">
+                    <div class="kern-alert__header">
+                        <span class="kern-icon kern-icon--error" aria-hidden="true"></span>
+                        <span class="kern-title">Benutzername oder Passwort ist falsch.</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="id_username">Benutzername</label>
+                        <input class="kern-form-input__input" type="text"
+                               name="username" id="id_username"
+                               value="{{ form.username.value|default:'' }}"
+                               autofocus required autocomplete="username">
+                    </div>
+
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="id_password">Passwort</label>
+                        <input class="kern-form-input__input" type="password"
+                               name="password" id="id_password"
+                               required autocomplete="current-password">
+                    </div>
+
+                    <input type="hidden" name="next" value="{{ next }}">
+
+                    <button type="submit" class="kern-btn kern-btn--primary kern-btn--block mt-2">
+                        <span class="kern-label">Anmelden</span>
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <a href="{% url 'password_reset' %}" class="text-muted small">
+                        <i class="bi bi-key me-1"></i> Passwort vergessen?
+                    </a>
+                </div>
+
+                {% if available_idps %}
+                <div class="d-flex align-items-center my-4">
+                    <hr class="flex-grow-1 m-0">
+                    <span class="px-3 text-muted small">oder</span>
+                    <hr class="flex-grow-1 m-0">
+                </div>
+
+                <div class="d-grid gap-2">
+                    {% for idp in available_idps %}
+                    <a href="{% url 'sso_start' idp.provider_id %}"
+                       class="kern-btn {% if idp.provider_id == last_idp_provider_id %}kern-btn--primary{% else %}kern-btn--secondary{% endif %} kern-btn--block">
+                        <i class="bi bi-shield-lock me-1"></i>
+                        <span class="kern-label">Anmelden mit {{ idp.name }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

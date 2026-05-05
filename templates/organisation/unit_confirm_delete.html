@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Organisationseinheit löschen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'organisation:unit_list' %}">Organisationsstruktur</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'organisation:unit_detail' unit.public_id %}">{{ unit.name }}</a></li>
+        <li class="breadcrumb-item active">Löschen</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-trash me-1"></i> Organisationseinheit löschen</h5>
+            </div>
+            <div class="card-body">
+                <p>Soll <strong>„{{ unit.name }}"</strong> wirklich gelöscht werden?</p>
+
+                {% if unit.children.exists %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Diese Einheit hat noch <strong>{{ unit.children.count }} untergeordnete Einheit(en)</strong>.
+                    Sie kann erst gelöscht werden, wenn alle Untereinheiten entfernt oder verschoben wurden.
+                </div>
+                {% endif %}
+
+                <dl class="row mb-4">
+                    <dt class="col-sm-4">Typ</dt>
+                    <dd class="col-sm-8">{{ unit.get_unit_type_display }}</dd>
+                    {% if unit.parent %}
+                    <dt class="col-sm-4">Übergeordnet</dt>
+                    <dd class="col-sm-8">{{ unit.parent }}</dd>
+                    {% endif %}
+                    {% if unit.children.exists %}
+                    <dt class="col-sm-4">Untereinheiten</dt>
+                    <dd class="col-sm-8">
+                        {% for child in unit.children.all %}
+                            <span class="badge bg-secondary">{{ child.name }}</span>
+                        {% endfor %}
+                    </dd>
+                    {% endif %}
+                </dl>
+
+                <form method="post" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" {% if unit.children.exists %}disabled{% endif %}>
+                        <i class="bi bi-trash me-1"></i> Ja, löschen
+                    </button>
+                    <a href="{% url 'organisation:unit_detail' unit.public_id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Abbrechen
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

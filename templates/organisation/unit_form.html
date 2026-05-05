@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Organisationseinheit {{ action }}{% endblock %}
+
+{% block extra_head %}
+<script src="/static/js/tom-select.complete.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'organisation:unit_list' %}">Organisationsstruktur</a></li>
+        {% if unit %}
+        <li class="breadcrumb-item">
+            <a href="{% url 'organisation:unit_detail' unit.public_id %}">{{ unit.name }}</a>
+        </li>
+        {% endif %}
+        <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-diagram-3 me-1"></i>
+                    Organisationseinheit {{ action }}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    {% if field.name == "locations" %}
+                    <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="kern-label">
+                                {{ field.label }}
+                            </label>
+                            <a href="{% url 'organisation:location_create' %}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                                <i class="bi bi-plus-circle me-1"></i> Neuer Standort
+                            </a>
+                        </div>
+                        {{ field }}
+                        {% if field.errors %}
+                        <span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ field.errors|join:", " }}</span>
+                        {% endif %}
+                    </div>
+                    {% elif field.name == "competences" %}
+                    <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
+                        <label class="kern-label">
+                            {{ field.label }}
+                            {% if not field.field.required %}
+                                <span class="kern-label__optional">(optional)</span>
+                            {% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <small class="text-muted d-block mt-1">{{ field.help_text }}</small>
+                        {% endif %}
+                        {% if field.errors %}
+                        <span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ field.errors|join:", " }}</span>
+                        {% endif %}
+                    </div>
+                    {% elif field.field.widget.input_type == 'checkbox' %}
+                    <div class="mb-3 form-check">
+                        {{ field }}
+                        <label for="{{ field.id_for_label }}" class="form-check-label fw-semibold">
+                            {{ field.label }}
+                        </label>
+                        {% if field.errors %}
+                        <span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ field.errors|join:", " }}</span>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
+                        <label for="{{ field.id_for_label }}" class="kern-label">
+                            {{ field.label }}
+                            {% if not field.field.required %}
+                                <span class="kern-label__optional">(optional)</span>
+                            {% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <span class="kern-error"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ field.errors|join:", " }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i> Speichern
+                        </button>
+                        {% if unit %}
+                        <a href="{% url 'organisation:unit_detail' unit.public_id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Abbrechen
+                        </a>
+                        {% else %}
+                        <a href="{% url 'organisation:unit_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Abbrechen
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+new TomSelect('#id_locations', {
+    plugins: ['remove_button'],
+    placeholder: 'Standort suchen …',
+    maxOptions: null,
+});
+if (document.getElementById('id_competences')) {
+    new TomSelect('#id_competences', {
+        plugins: ['remove_button'],
+        placeholder: 'Kompetenz suchen …',
+        maxOptions: null,
+    });
+}
+</script>
+{% endblock %}

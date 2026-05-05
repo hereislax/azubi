@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Krankmeldungen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">Krankmeldungen</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-thermometer-high me-1"></i> Krankmeldungen
+            {% if open_count %}
+            <span class="badge bg-danger ms-2 fs-6">{{ open_count }} offen</span>
+            {% endif %}
+        </h2>
+    </div>
+    <a href="{% url 'absence:sick_leave_create' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> Krankmeldung erfassen
+    </a>
+</div>
+
+{# ── Filter ────────────────────────────────────────────────────────────────── #}
+<form method="get" class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <div class="kern-form-input">
+                    <label for="filter-open" class="kern-label">Status</label>
+                    <div class="kern-form-input__select-wrapper">
+                        <select id="filter-open" name="open" class="kern-form-input__select">
+                            <option value="" {% if not open_filter %}selected{% endif %}>Alle</option>
+                            <option value="1" {% if open_filter == '1' %}selected{% endif %}>Nur offene</option>
+                            <option value="0" {% if open_filter == '0' %}selected{% endif %}>Nur geschlossene</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="kern-form-input">
+                    <label for="filter-student" class="kern-label">Nachwuchskraft</label>
+                    <input type="text" id="filter-student" name="student" class="kern-form-input__input"
+                           placeholder="Name suchen …" value="{{ student_filter }}">
+                </div>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="bi bi-search me-1"></i> Filtern
+                </button>
+                {% if open_filter or student_filter %}
+                <a href="{% url 'absence:sick_leave_list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</form>
+
+{% if page_obj.object_list %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Nachwuchskraft</th>
+                    <th>Kurs</th>
+                    <th>Art</th>
+                    <th>Erster Krankheitstag</th>
+                    <th>Letzter Krankheitstag</th>
+                    <th>Arbeitstage</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sl in page_obj %}
+                <tr {% if sl.is_open %}class="table-warning"{% endif %}>
+                    <td>
+                        <a href="{% url 'student:student_detail' sl.student_id %}">
+                            {{ sl.student.last_name }}, {{ sl.student.first_name }}
+                        </a>
+                    </td>
+                    <td>{{ sl.student.course|default:"–" }}</td>
+                    <td>
+                        <span class="badge bg-{{ sl.sick_type_badge }}">{{ sl.get_sick_type_display }}</span>
+                    </td>
+                    <td>{{ sl.start_date|date:"d.m.Y" }}</td>
+                    <td>
+                        {% if sl.end_date %}
+                        {{ sl.end_date|date:"d.m.Y" }}
+                        {% else %}
+                        <span class="text-danger fw-semibold"><i class="bi bi-clock me-1"></i> offen</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ sl.duration_working_days }}</td>
+                    <td>
+                        {% if sl.is_open %}
+                        <span class="badge bg-danger">Offen</span>
+                        {% else %}
+                        <span class="badge bg-success">Geschlossen</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if sl.is_open %}
+                        <a href="{% url 'absence:sick_leave_close' sl.public_id %}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-check2 me-1"></i> Gesundmelden
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── Pagination ────────────────────────────────────────────────────────────── #}
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&open={{ open_filter }}&student={{ student_filter }}">&laquo;</a>
+        </li>
+        {% endif %}
+        <li class="page-item disabled">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&open={{ open_filter }}&student={{ student_filter }}">&raquo;</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-thermometer-sun" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Keine Krankmeldungen gefunden.</p>
+</div>
+{% endif %}
+{% endblock %}

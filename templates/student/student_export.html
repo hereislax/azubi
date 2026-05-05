@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}CSV-Export{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+        <li class="breadcrumb-item active" aria-current="page">CSV-Export</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV-Export</h2>
+    <a href="{% url 'student:student_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Zurück zur Liste
+    </a>
+</div>
+
+<form method="post" id="exportForm">
+    {% csrf_token %}
+    <div class="row g-4">
+
+        {# ── Linke Spalte: Nachwuchskräfte ────────────────────────────────── #}
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-people me-1"></i> Nachwuchskräfte auswählen</span>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="selectAll">Alle auswählen</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAll">Alle abwählen</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {# Filter #}
+                    <div class="p-3 border-bottom bg-light d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="text-muted small" style="min-width:3.5rem;">Status:</span>
+                            <div class="btn-group btn-group-sm" role="group">
+                                {% for s in all_statuses %}
+                                <a href="?status={{ s.description }}&course={{ course_filter }}"
+                                   class="btn {% if status_filter == s.description %}btn-{{ s.color }}{% else %}btn-outline-{{ s.color }}{% endif %}">
+                                    {{ s.description }}
+                                </a>
+                                {% endfor %}
+                                <a href="?status=kein&course={{ course_filter }}"
+                                   class="btn {% if status_filter == 'kein' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                                    Kein Status
+                                </a>
+                                <a href="?status=alle&course={{ course_filter }}"
+                                   class="btn {% if status_filter == 'alle' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                                    Alle
+                                </a>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted small" style="min-width:3.5rem;">Kurs:</span>
+                            <select class="kern-form-input__input"
+                                    onchange="location.href='?status={{ status_filter }}&course='+encodeURIComponent(this.value)">
+                                <option value="" {% if course_filter == '' %}selected{% endif %}>Alle Kurse</option>
+                                {% for c in all_courses %}
+                                <option value="{{ c.title }}" {% if course_filter == c.title %}selected{% endif %}>{{ c.title }}</option>
+                                {% endfor %}
+                                <option value="kein" {% if course_filter == 'kein' %}selected{% endif %}>Kein Kurs</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span class="text-muted small">{{ students|length }} Einträge</span>
+                        </div>
+                    </div>
+
+                    {# Tabelle #}
+                    <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 2.5rem;">
+                                        <input type="checkbox" id="checkAll" class="form-check-input">
+                                    </th>
+                                    <th>Name</th>
+                                    <th>Kurs</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in students %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="student_ids" value="{{ s.pk }}"
+                                               class="form-check-input student-check">
+                                    </td>
+                                    <td>{{ s.last_name }}, {{ s.first_name }}</td>
+                                    <td class="text-muted small">{{ s.course|default:"–" }}</td>
+                                    <td>
+                                        {% if s.status %}
+                                        <span class="badge bg-{{ s.status.color }}">{{ s.status }}</span>
+                                        {% else %}
+                                        <span class="text-muted">–</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4">
+                                        <div class="text-center py-5 text-muted">
+                                            <i class="bi bi-people" style="font-size:2.5rem;"></i>
+                                            <p class="mt-2 mb-0">Keine Nachwuchskräfte gefunden.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── Rechte Spalte: Datenfelder ───────────────────────────────────── #}
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-layout-text-window-reverse me-1"></i> Datenfelder auswählen</span>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="selectAllFields">Alle</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAllFields">Keine</button>
+                    </div>
+                </div>
+                <div class="card-body" style="max-height: 480px; overflow-y: auto;">
+                    {% for group_label, group_fields in export_field_groups %}
+                    <p class="text-muted small fw-semibold mb-1 mt-2">{{ group_label }}</p>
+                    {% for key, label in group_fields %}
+                    <div class="form-check">
+                        <input class="form-check-input field-check" type="checkbox" name="fields"
+                               value="{{ key }}" id="field_{{ key }}"
+                               {% if key in 'last_name,first_name' %}checked{% endif %}>
+                        <label class="form-check-label" for="field_{{ key }}">{{ label }}</label>
+                    </div>
+                    {% endfor %}
+                    {% endfor %}
+
+                    {% if custom_field_defs %}
+                    <p class="text-muted small fw-semibold mb-1 mt-2">Benutzerdefinierte Felder</p>
+                    {% for cfield in custom_field_defs %}
+                    <div class="form-check">
+                        <input class="form-check-input field-check" type="checkbox" name="fields"
+                               value="custom_{{ cfield.pk }}" id="field_custom_{{ cfield.pk }}">
+                        <label class="form-check-label" for="field_custom_{{ cfield.pk }}">{{ cfield.name }}</label>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Export-Button ─────────────────────────────────────────────────────── #}
+    <div class="mt-4 d-flex align-items-center gap-3">
+        <button type="submit" class="btn btn-success" id="exportBtn">
+            <i class="bi bi-download me-1"></i> CSV herunterladen
+        </button>
+        <span class="text-muted small" id="selectionInfo"></span>
+    </div>
+</form>
+
+<script>
+(function () {
+    const studentChecks = () => document.querySelectorAll('.student-check');
+    const fieldChecks   = () => document.querySelectorAll('.field-check');
+
+    function updateInfo() {
+        const selected = [...studentChecks()].filter(c => c.checked).length;
+        const fields   = [...fieldChecks()].filter(c => c.checked).length;
+        document.getElementById('selectionInfo').textContent =
+            selected + ' Nachwuchskraft/-kräfte, ' + fields + ' Felder ausgewählt';
+    }
+
+    // Checkbox-Kopfzeile
+    document.getElementById('checkAll').addEventListener('change', function () {
+        studentChecks().forEach(c => c.checked = this.checked);
+        updateInfo();
+    });
+
+    // Schaltflächen
+    document.getElementById('selectAll').addEventListener('click', () => {
+        studentChecks().forEach(c => c.checked = true);
+        document.getElementById('checkAll').checked = true;
+        updateInfo();
+    });
+    document.getElementById('deselectAll').addEventListener('click', () => {
+        studentChecks().forEach(c => c.checked = false);
+        document.getElementById('checkAll').checked = false;
+        updateInfo();
+    });
+    document.getElementById('selectAllFields').addEventListener('click', () => {
+        fieldChecks().forEach(c => c.checked = true);
+        updateInfo();
+    });
+    document.getElementById('deselectAllFields').addEventListener('click', () => {
+        fieldChecks().forEach(c => c.checked = false);
+        updateInfo();
+    });
+
+    // Live-Update bei einzelnen Klicks
+    document.getElementById('exportForm').addEventListener('change', updateInfo);
+
+    // Validierung vor dem Absenden
+    document.getElementById('exportForm').addEventListener('submit', function (e) {
+        const noStudents = [...studentChecks()].every(c => !c.checked);
+        const noFields   = [...fieldChecks()].every(c => !c.checked);
+        if (noStudents || noFields) {
+            e.preventDefault();
+            alert(noStudents
+                ? 'Bitte mindestens eine Nachwuchskraft auswählen.'
+                : 'Bitte mindestens ein Datenfeld auswählen.');
+        }
+    });
+
+    updateInfo();
+})();
+</script>
+{% endblock %}

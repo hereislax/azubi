@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load static report_extras %}
+
+{% block title %}{{ report.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'auswertungen' %}">Auswertungen</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ report.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-table me-1"></i> {{ report.name }}
+            {% if saved_view %}<span class="badge bg-info text-dark ms-2"><i class="bi bi-bookmark"></i> {{ saved_view.name }}</span>{% endif %}
+        </h2>
+        <p class="text-muted mb-0">{{ report.description }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="?{{ query_string }}&export=xlsx" onclick="event.preventDefault(); window.location='{% url 'report_export' report.slug 'xlsx' %}?{{ query_string }}';" class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i> Excel
+        </a>
+        <a href="{% url 'report_export' report.slug 'csv' %}?{{ query_string }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-filetype-csv me-1"></i> CSV
+        </a>
+        <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#saveViewModal">
+            <i class="bi bi-bookmark-plus me-1"></i> Sicht speichern
+        </button>
+    </div>
+</div>
+
+{# ── Filter & Spaltenauswahl ───────────────────────────────────────────── #}
+<form method="get" class="card mb-3">
+    <div class="card-header bg-light"><i class="bi bi-funnel me-1"></i> Filter &amp; Spalten</div>
+    <div class="card-body">
+        <div class="row g-3">
+            {% for f in report.filters %}
+            <div class="col-md-4">
+                {% if f.type == 'date_range' %}
+                    <label class="kern-label">{{ f.label }}</label>
+                    <div class="input-group input-group-sm">
+                        <input type="date" name="{{ f.key }}_start" class="kern-form-input__input"
+                               value="{% with v=filter_values|get_item:f.key %}{% if v.0 %}{{ v.0|date:'Y-m-d' }}{% endif %}{% endwith %}">
+                        <span class="input-group-text">–</span>
+                        <input type="date" name="{{ f.key }}_end" class="kern-form-input__input"
+                               value="{% with v=filter_values|get_item:f.key %}{% if v.1 %}{{ v.1|date:'Y-m-d' }}{% endif %}{% endwith %}">
+                    </div>
+                {% elif f.type == 'date' %}
+                    <div class="kern-form-input">
+                        <label class="kern-label">{{ f.label }}</label>
+                        <input type="date" name="{{ f.key }}" class="kern-form-input__input"
+                               value="{% with v=filter_values|get_item:f.key %}{% if v %}{{ v|date:'Y-m-d' }}{% endif %}{% endwith %}">
+                    </div>
+                {% elif f.type == 'choice' %}
+                    <div class="kern-form-input">
+                        <label class="kern-label">{{ f.label }}</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select name="{{ f.key }}" class="kern-form-input__select">
+                                {% for v, label in f.choices %}
+                                <option value="{{ v }}" {% if filter_values|get_item:f.key|stringformat:'s' == v|stringformat:'s' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                {% elif f.type == 'model' %}
+                    <div class="kern-form-input">
+                        <label class="kern-label">{{ f.label }}</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select name="{{ f.key }}" class="kern-form-input__select">
+                                <option value="">— alle —</option>
+                                {% if f.queryset_factory %}
+                                {% for obj in f.queryset_factory %}
+                                <option value="{{ obj.pk }}" {% if filter_values|get_item:f.key|stringformat:'s' == obj.pk|stringformat:'s' %}selected{% endif %}>{{ obj }}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                {% elif f.type == 'bool' %}
+                    <label class="kern-label">{{ f.label }}</label>
+                    <div class="form-check">
+                        <input type="checkbox" name="{{ f.key }}" value="1" class="kern-form-check__checkbox"
+                               {% if filter_values|get_item:f.key %}checked{% endif %}>
+                    </div>
+                {% else %}
+                    <div class="kern-form-input">
+                        <label class="kern-label">{{ f.label }}</label>
+                        <input type="text" name="{{ f.key }}" class="kern-form-input__input"
+                               value="{{ filter_values|get_item:f.key|default:'' }}">
+                    </div>
+                {% endif %}
+                {% if f.help %}<div class="kern-hint">{{ f.help }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <hr>
+        <details>
+            <summary class="text-muted small mb-2"><i class="bi bi-columns me-1"></i> Sichtbare Spalten ({{ visible_cols|length }} / {{ all_columns|length }})</summary>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                {% for c in all_columns %}
+                <div class="form-check">
+                    <input class="kern-form-check__checkbox" type="checkbox" name="col" value="{{ c.key }}" id="col-{{ c.key }}"
+                           {% if c.key in visible_keys %}checked{% endif %}>
+                    <label class="form-check-label small" for="col-{{ c.key }}">{{ c.label }}</label>
+                </div>
+                {% endfor %}
+            </div>
+        </details>
+
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <a href="{% url 'report_detail' report.slug %}" class="btn btn-outline-secondary btn-sm">Zurücksetzen</a>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i> Anwenden</button>
+        </div>
+    </div>
+</form>
+
+{# ── Optional: Chart ───────────────────────────────────────────────────── #}
+{% if chart_data %}
+<div class="card mb-3">
+    <div class="card-header bg-light"><i class="bi bi-bar-chart me-1"></i> Diagramm (Top 50)</div>
+    <div class="card-body">
+        <canvas id="reportChart" style="max-height: 320px;"></canvas>
+    </div>
+</div>
+{% endif %}
+
+{# ── Tabelle ───────────────────────────────────────────────────────────── #}
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-table me-1"></i> {{ row_count }} Zeile{{ row_count|pluralize:"n" }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    {% for c in visible_cols %}
+                    <th class="text-{{ c.align }}">{{ c.label }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    {% for c in visible_cols %}
+                    <td class="text-{{ c.align }}">{{ row|cell_value:c.key|format_cell:c.type }}</td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ visible_cols|length }}" class="text-center text-muted py-3">Keine Daten für die gewählten Filter.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── Modal: Sicht speichern ────────────────────────────────────────────── #}
+<div class="modal fade" id="saveViewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'saved_view_save' report.slug %}" class="modal-content">
+            {% csrf_token %}
+            <input type="hidden" name="query" value="{{ query_string }}">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-bookmark-plus me-1"></i> Sicht speichern</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Speichert die aktuellen Filter und Spaltenauswahl unter einem Namen.</p>
+                <div class="kern-form-input mb-3">
+                    <label class="kern-label">Name *</label>
+                    <input type="text" name="name" class="kern-form-input__input" required>
+                </div>
+                <div class="kern-form-input mb-3">
+                    <label class="kern-label">Beschreibung</label>
+                    <textarea name="description" class="kern-form-input__input" rows="2"></textarea>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="shared" value="1" class="kern-form-check__checkbox" id="sv-shared">
+                    <label class="form-check-label" for="sv-shared">Mit anderen Power-Usern teilen</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if saved_view and saved_view.owner == request.user %}
+<div class="mt-3 small text-muted text-end">
+    <a href="{% url 'saved_view_delete' saved_view.pk %}" class="text-danger text-decoration-none">
+        <i class="bi bi-trash"></i> Diese Sicht löschen
+    </a>
+</div>
+{% endif %}
+
+{% if chart_data %}
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script>
+(function(){
+    const ctx = document.getElementById('reportChart');
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: '{{ chart_data.type }}',
+        data: {
+            labels: {{ chart_data.labels|safe }},
+            datasets: [{
+                label: '{{ chart_data.label|escapejs }}',
+                data:  {{ chart_data.data|safe }},
+                backgroundColor: '#0077B6',
+                borderColor: '#0077B6',
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

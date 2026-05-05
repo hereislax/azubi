@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Belegungsplan {{ month_label }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        {% if can_view_full %}
+        <li class="breadcrumb-item"><a href="{% url 'workspace:workspace_list' %}">Raumbuchung</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page">Belegungsplan</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2><i class="bi bi-calendar3 me-1"></i> Belegungsplan</h2>
+    <div class="d-flex align-items-center gap-2">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm" title="Vorheriger Monat">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <span class="fw-bold fs-5 px-2">{{ month_label }}</span>
+        <a href="?year={{ next_year }}&month={{ next_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm" title="Nächster Monat">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        <a href="?year={{ today_year }}&month={{ today_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm ms-1" title="Aktueller Monat">
+            <i class="bi bi-calendar-day me-1"></i> Heute
+        </a>
+        {% if can_view_full %}
+        <a href="{% url 'workspace:workspace_list' %}" class="btn btn-outline-primary btn-sm ms-2">
+            <i class="bi bi-door-open me-1"></i> Arbeitsplätze
+        </a>
+        <a href="{% url 'workspace:booking_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Buchung anlegen
+        </a>
+        <a href="{% url 'workspace:closure_create' %}" class="btn btn-warning btn-sm">
+            <i class="bi bi-slash-circle me-1"></i> Sperrung
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if anonymize %}
+<div class="alert alert-info py-2 small">
+    <i class="bi bi-info-circle me-1"></i>
+    Sie sehen eine reduzierte Ansicht – aus Datenschutzgründen werden hier nur „Belegt" / „Frei" angezeigt, keine Namen.
+</div>
+{% endif %}
+
+{% if all_locations %}
+<form method="get" class="d-flex align-items-center flex-wrap gap-2 mb-3 p-2 rounded border bg-light" style="font-size:0.85rem;">
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="month" value="{{ month }}">
+    <span class="fw-semibold text-muted me-1"><i class="bi bi-funnel me-1"></i> Standorte:</span>
+    {% for loc in all_locations %}
+    <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="locations" value="{{ loc.pk }}" id="loc_{{ loc.pk }}"
+            {% if not selected_loc_ids or loc.pk in selected_loc_ids %}checked{% endif %}>
+        <label class="form-check-label" for="loc_{{ loc.pk }}">{{ loc.name }}</label>
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-sm btn-outline-primary ms-1">Anwenden</button>
+    {% if selected_loc_ids %}
+    <a href="?year={{ year }}&month={{ month }}" class="btn btn-sm btn-outline-secondary">Alle anzeigen</a>
+    {% endif %}
+</form>
+{% endif %}
+
+<style>
+    .cal-outer {
+        display: flex; flex-direction: column;
+        font-size: 0.82rem;
+        border: 1px solid #dee2e6; border-radius: 6px;
+        overflow: hidden; min-width: 900px;
+    }
+    .cal-row { display: flex; align-items: stretch; border-bottom: 1px solid #ececec; }
+    .cal-row:last-child { border-bottom: none; }
+
+    .cal-label {
+        width: 220px; min-width: 220px; flex-shrink: 0;
+        padding: 0 8px;
+        display: flex; flex-direction: column; justify-content: center;
+        border-right: 2px solid #dee2e6;
+        background: #fff; overflow: hidden;
+    }
+    .cal-label.header-label { background: #f8f9fa; }
+    .cal-label.loc-label {
+        background: {{ color_chrome }};
+        color: #fff; font-weight: 600;
+        font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;
+        padding: 6px 8px;
+        border-right-color: {{ color_chrome_dark }};
+    }
+    .cal-tl { flex: 1; position: relative; overflow: hidden; }
+
+    /* ── Tagesleiste ───────────────────────────────────────────────────────── */
+    .day-strip { display: flex; height: 44px; background: #f8f9fa; border-bottom: 2px solid {{ color_chrome }}; }
+    .day-cell {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        overflow: hidden; white-space: nowrap;
+        border-right: 1px solid #e3e6ea;
+        font-size: 0.7rem; color: #495057;
+        line-height: 1.1;
+    }
+    .day-cell:last-child { border-right: none; }
+    .day-cell.weekend { background: #eef0f3; color: #868e96; }
+    .day-cell.today  { background: {{ color_today }}; color: #fff; font-weight: 700; }
+    .day-cell .day-num { font-size: 0.95rem; font-weight: 600; }
+    .day-cell .day-wd  { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.85; }
+
+    /* ── Standort-Header ───────────────────────────────────────────────────── */
+    .cal-row.loc-row { border-bottom: none; }
+    .loc-row .cal-tl {
+        background: {{ color_chrome }};
+        display: flex; align-items: center; padding: 0 8px;
+        color: #cfe2ff; font-size: 0.75rem;
+    }
+
+    /* ── Workspace-Zeilen ──────────────────────────────────────────────────── */
+    .cal-row.ws-row { min-height: 50px; }
+    .cal-row.ws-row:hover .cal-label, .cal-row.ws-row:hover .cal-tl { background: #f5f8ff; }
+    .cal-row.ws-row .cal-label { background: #fff; }
+    .cal-row.ws-row .cal-tl    { background: #fff; }
+
+    /* Wochenend-Streifen über die ganze Spalte */
+    .ws-row .weekend-stripe {
+        position: absolute; top: 0; bottom: 0;
+        background: rgba(110, 130, 150, 0.07);
+        pointer-events: none;
+    }
+    /* Tages-Gridlines */
+    .day-line {
+        position: absolute; top: 0; bottom: 0; width: 1px;
+        background: #eef0f3; pointer-events: none;
+    }
+    .today-line {
+        position: absolute; top: 0; bottom: 0; width: 2px;
+        background: {{ color_today }}; pointer-events: none; z-index: 5;
+    }
+
+    /* ── Buchungs-Bars ─────────────────────────────────────────────────────── */
+    .booking-bar {
+        position: absolute; height: 32px;
+        border-radius: 4px;
+        display: flex; align-items: center; justify-content: center;
+        padding: 2px 6px;
+        color: #fff; overflow: hidden; text-decoration: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+        z-index: 2;
+        transition: filter 0.12s, box-shadow 0.12s;
+    }
+    .booking-bar:hover { filter: brightness(1.12); box-shadow: 0 2px 6px rgba(0,0,0,0.28); color: #fff; z-index: 10; }
+    .booking-bar.disabled { pointer-events: none; cursor: default; }
+    .bar-name {
+        font-size: 0.74rem; font-weight: 600;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        line-height: 1.15; width: 100%; text-align: center;
+    }
+
+    /* ── Sperrungs-Bars ────────────────────────────────────────────────────── */
+    .closure-bar {
+        position: absolute; height: 32px;
+        border-radius: 4px;
+        background: repeating-linear-gradient(45deg, #dee2e6, #dee2e6 6px, #e9ecef 6px, #e9ecef 12px);
+        border: 1px solid #adb5bd;
+        display: flex; align-items: center; padding: 2px 6px;
+        color: #495057; overflow: hidden; text-decoration: none;
+        z-index: 2;
+    }
+    .closure-bar.disabled { pointer-events: none; cursor: default; }
+    .closure-bar .bar-name { color: #6c757d; }
+
+    .free-label {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        left: 8px; font-size: 0.72rem; color: #ced4da; font-style: italic;
+        pointer-events: none;
+    }
+
+    .cal-row.spacer { min-height: 6px; background: #f8f9fa; border-bottom: none; }
+</style>
+
+<div style="overflow-x: auto;">
+<div class="cal-outer">
+
+    {# ── Tagesleiste (Header) ────────────────────────────────────────────── #}
+    <div class="cal-row">
+        <div class="cal-label header-label">
+            <span class="text-muted" style="font-size:0.75rem;">Arbeitsplatz</span>
+        </div>
+        <div class="cal-tl" style="padding:0;">
+            <div class="day-strip">
+                {% for d in days_data %}
+                <div class="day-cell {% if d.is_today %}today{% elif d.is_weekend %}weekend{% endif %}"
+                     style="flex: 1 0 0%;"
+                     title="{{ d.date|date:'l, d.m.Y' }}">
+                    <span class="day-wd">{{ d.weekday }}</span>
+                    <span class="day-num">{{ d.day }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% for loc_data in calendar_data %}
+    {% if not forloop.first %}<div class="cal-row spacer"><div class="cal-label" style="background:#f8f9fa; border-right:2px solid #dee2e6;"></div><div class="cal-tl" style="background:#f8f9fa;"></div></div>{% endif %}
+
+    <div class="cal-row loc-row">
+        <div class="cal-label loc-label">
+            <i class="bi bi-geo-alt me-1"></i> {{ loc_data.location.name }}
+        </div>
+        <div class="cal-tl" style="background:{{ color_chrome }}; padding:0 8px; display:flex; align-items:center;">
+            <span style="color:#cfe2ff; font-size:0.75rem;">{{ loc_data.workspaces|length }} Arbeitsplätze</span>
+        </div>
+    </div>
+
+    {% for ws_data in loc_data.workspaces %}
+    <div class="cal-row ws-row" style="min-height:{{ ws_data.row_height }}px;">
+        <div class="cal-label">
+            {% if can_view_full %}
+            <a href="{% url 'workspace:workspace_detail' ws_data.workspace.public_id %}"
+               class="text-decoration-none text-dark fw-semibold" style="font-size:0.82rem;">
+                <i class="{{ ws_data.workspace.workspace_type.icon|default:'bi-door-closed' }} text-muted me-1"></i>{{ ws_data.workspace.name }}
+            </a>
+            {% else %}
+            <span class="fw-semibold" style="font-size:0.82rem;">
+                <i class="{{ ws_data.workspace.workspace_type.icon|default:'bi-door-closed' }} text-muted me-1"></i>{{ ws_data.workspace.name }}
+            </span>
+            {% endif %}
+            <span class="text-muted" style="font-size:0.68rem;">{{ ws_data.workspace.workspace_type.name }} · max. {{ ws_data.workspace.capacity }}</span>
+        </div>
+        <div class="cal-tl">
+            {# Wochenend-Streifen #}
+            {% for d in days_data %}{% if d.is_weekend %}
+            <div class="weekend-stripe" style="left:{{ d.offset }}%; width:{{ d.width }}%;"></div>
+            {% endif %}{% endfor %}
+
+            {# Tages-Gridlines (zwischen den Tagen) #}
+            {% for d in days_data %}{% if not forloop.first %}
+            <div class="day-line" style="left:{{ d.offset }}%;"></div>
+            {% endif %}{% endfor %}
+
+            {% if today_offset is not None %}
+            <div class="today-line" style="left:{{ today_offset }}%;"></div>
+            {% endif %}
+
+            {% if ws_data.items %}
+                {% for it in ws_data.items %}
+                {% if it.type == "closure" %}
+                {% if can_view_full %}
+                <a href="{% url 'workspace:closure_delete' it.closure.public_id %}"
+                   class="closure-bar"
+                   style="left:{{ it.offset }}%; width:{{ it.width }}%; top:{{ it.top_px }}px;"
+                   title="Gesperrt: {{ it.label }}&#10;{{ it.start_fmt }} – {{ it.end_fmt }}">
+                    <span class="bar-name"><i class="bi bi-slash-circle me-1"></i>{{ it.label }}</span>
+                </a>
+                {% else %}
+                <span class="closure-bar disabled"
+                      style="left:{{ it.offset }}%; width:{{ it.width }}%; top:{{ it.top_px }}px;"
+                      title="Gesperrt&#10;{{ it.start_fmt }} – {{ it.end_fmt }}">
+                    <span class="bar-name"><i class="bi bi-slash-circle me-1"></i>Gesperrt</span>
+                </span>
+                {% endif %}
+                {% else %}
+                {% if can_view_full %}
+                <a href="{% url 'workspace:booking_cancel' it.booking.public_id %}"
+                   class="booking-bar"
+                   style="left:{{ it.offset }}%; width:{{ it.width }}%; top:{{ it.top_px }}px; background:{{ it.color }};"
+                   title="{{ it.label }}&#10;{{ it.date_fmt }}">
+                    <span class="bar-name">{{ it.label }}</span>
+                </a>
+                {% else %}
+                <span class="booking-bar disabled"
+                      style="left:{{ it.offset }}%; width:{{ it.width }}%; top:{{ it.top_px }}px; background:{{ it.color }};"
+                      title="Belegt&#10;{{ it.date_fmt }}">
+                    <span class="bar-name">Belegt</span>
+                </span>
+                {% endif %}
+                {% endif %}
+                {% endfor %}
+            {% else %}
+                <span class="free-label">frei</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% empty %}
+    <div class="cal-row" style="padding:2rem; justify-content:center; color:#6c757d;">
+        Keine Arbeitsplätze gefunden. Anlegen über das <a href="/admin/workspace/workspace/">Admin-Portal</a>.
+    </div>
+    {% endfor %}
+
+</div>
+</div>
+
+<div class="mt-3 d-flex align-items-center gap-4 flex-wrap" style="font-size:0.78rem; color:#6c757d;">
+    <span><span style="display:inline-block;width:3px;height:14px;background:{{ color_today }};vertical-align:middle;border-radius:1px;" class="me-1"></span>Heute</span>
+    <span><span style="display:inline-block;width:28px;height:12px;background:{{ color_legend_occupied }};border-radius:3px;vertical-align:middle;" class="me-1"></span>Belegt</span>
+    <span><span style="display:inline-block;width:28px;height:12px;border-radius:3px;vertical-align:middle;background:repeating-linear-gradient(45deg,#dee2e6,#dee2e6 4px,#e9ecef 4px,#e9ecef 8px);border:1px solid #adb5bd;" class="me-1"></span>Gesperrt</span>
+    {% if can_view_full %}
+    <span class="fst-italic">Klick auf eine Buchung führt zur Stornierung.</span>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% with node.unit as u %}
+<li class="list-group-item py-2">
+    <div class="d-flex align-items-center gap-2">
+        <span>
+            {% if u.unit_type == "authority" %}<i class="bi bi-bank me-1"></i>
+            {% elif u.unit_type == "department" %}<i class="bi bi-building me-1"></i>
+            {% elif u.unit_type == "division_group" %}<i class="bi bi-folder2 me-1"></i>
+            {% else %}<i class="bi bi-file-text me-1"></i>
+            {% endif %}
+        </span>
+        <a href="{% url 'organisation:unit_detail' u.public_id %}" class="text-decoration-none fw-semibold">
+            {{ u.name }}
+        </a>
+        {% if u.label %}<span class="text-muted small">({{ u.label }})</span>{% endif %}
+        {% if not u.is_active %}<span class="badge bg-secondary ms-1">inaktiv</span>{% endif %}
+        <span class="badge bg-light text-dark border ms-1">{{ u.get_unit_type_display }}</span>
+    </div>
+    {% if node.children %}
+    <ul class="list-group list-group-flush ms-4 mt-1">
+        {% for child_node in node.children %}
+            {% with node=child_node %}
+                {% include "instructor/_unit_tree_node.html" %}
+            {% endwith %}
+        {% endfor %}
+    </ul>
+    {% endif %}
+</li>
+{% endwith %}

@@ -1,0 +1,43 @@
+<div class="card shadow-sm h-100">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-chat-left-text text-muted me-1"></i>
+        <span class="fw-semibold small">Offene Anfragen</span>
+        {% if open_inquiry_count %}
+        <span class="badge bg-info rounded-pill ms-auto">{{ open_inquiry_count }}</span>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        {% if open_inquiries %}
+        <ul class="list-group list-group-flush">
+            {% for inq in open_inquiries %}
+            <li class="list-group-item px-3 py-2">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div class="min-w-0">
+                        <div class="small fw-semibold text-truncate">
+                            <a href="{% url 'student:student_detail' inq.student.pk %}?tab=nachrichten" class="text-decoration-none text-body">
+                                {{ inq.student.first_name }} {{ inq.student.last_name }}
+                            </a>
+                        </div>
+                        <div class="text-muted text-truncate" style="font-size:.75rem;">{{ inq.subject }}</div>
+                    </div>
+                    <div class="flex-shrink-0 text-end">
+                        {% if inq.status == 'open' %}
+                        <span class="badge bg-warning text-dark" style="font-size:.65rem;">Offen</span>
+                        {% else %}
+                        <span class="badge bg-info" style="font-size:.65rem;">In Bearb.</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small p-3 mb-0">Keine offenen Anfragen.</p>
+        {% endif %}
+    </div>
+    <div class="card-footer bg-transparent py-1">
+        <a href="{% url 'student:student_inquiry_list' %}" class="text-muted small text-decoration-none">
+            <i class="bi bi-list-ul me-1"></i> Alle Anfragen ansehen
+        </a>
+    </div>
+</div>

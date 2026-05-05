@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'inventory:inventory_list' %}">Inventar</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'inventory:category_list' %}">Kategorien</a></li>
+        <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-tag me-1"></i> {{ action }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="kern-form-input">
+                        <label for="name" class="kern-label">Bezeichnung <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="name" class="kern-form-input__input"
+                               value="{{ category.name|default:'' }}" required>
+                    </div>
+                    <div class="kern-form-input">
+                        <label for="icon" class="kern-label">Bootstrap-Icon</label>
+                        <input type="text" name="icon" id="icon" class="kern-form-input__input"
+                               value="{{ category.icon|default:'bi-box' }}"
+                               placeholder="bi-laptop">
+                        <div class="mt-1">
+                            <i class="bi {{ category.icon|default:'bi-box' }} fs-4" id="iconEl"></i>
+                            <span class="text-muted small ms-1">Vorschau</span>
+                        </div>
+                        <div class="form-text">
+                            z. B. <code>bi-laptop</code>, <code>bi-credit-card-2-front</code>, <code>bi-key</code>, <code>bi-person-badge</code>.
+                            Alle Icons: <a href="https://icons.getbootstrap.com" target="_blank">icons.getbootstrap.com</a>
+                        </div>
+                    </div>
+                    <div class="kern-form-input">
+                        <label for="description" class="kern-label">Beschreibung</label>
+                        <textarea name="description" id="description" class="kern-form-input__input" rows="2">{{ category.description|default:'' }}</textarea>
+                    </div>
+                    <div class="kern-form-input">
+                        <label for="receipt_template" class="kern-label">Ausgabequittungs-Vorlage</label>
+                        <select name="receipt_template" id="receipt_template" class="kern-form-input__input">
+                            <option value="">Keine Vorlage</option>
+                            {% for tmpl in templates %}
+                            <option value="{{ tmpl.pk }}"
+                                {% if category and category.receipt_template_id == tmpl.pk %}selected{% endif %}>
+                                {{ tmpl.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="kern-hint">Vorlage, die bei der Ausgabe von Gegenständen dieser Kategorie verwendet wird.</span>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i> Speichern</button>
+                        <a href="{% url 'inventory:category_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-circle me-1"></i> Abbrechen</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('icon').addEventListener('input', function() {
+    document.getElementById('iconEl').className = 'bi ' + this.value.trim();
+});
+</script>
+{% endblock %}

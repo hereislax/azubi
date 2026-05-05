@@ -1,0 +1,48 @@
+{% for node in nodes %}
+<div class="org-node"
+     data-unit-id="{{ node.unit.pk }}"
+     data-unit-name="{{ node.unit.name|lower }}"
+     data-unit-label="{{ node.unit.label|lower }}"
+     data-unit-type="{{ node.unit.unit_type }}">
+    <div class="d-inline-flex align-items-center gap-1">
+        {% if node.children %}
+        <button class="tree-toggle btn btn-sm p-0 border-0 text-muted"
+                style="width:20px; line-height:1;"
+                aria-label="Auf-/Zuklappen"
+                onclick="toggleNode(this)">
+            <i class="bi bi-chevron-right" style="font-size:0.75rem;"></i>
+        </button>
+        {% else %}
+        <span style="width:20px; display:inline-block;"></span>
+        {% endif %}
+
+        <a href="{% url 'organisation:unit_detail' node.unit.public_id %}"
+           class="node-card type-{{ node.unit.unit_type }}{% if not node.unit.is_active %} inactive{% endif %}">
+            <span>
+                {% if node.unit.unit_type == "authority" %}<i class="bi bi-bank me-1"></i>
+                {% elif node.unit.unit_type == "department" %}<i class="bi bi-building me-1"></i>
+                {% elif node.unit.unit_type == "division_group" %}<i class="bi bi-folder2 me-1"></i>
+                {% else %}<i class="bi bi-file-text me-1"></i>
+                {% endif %}
+            </span>
+            <span class="node-name fw-semibold">{{ node.unit.name }}</span>
+            {% if node.unit.label %}
+                <span class="node-abbr">({{ node.unit.label }})</span>
+            {% endif %}
+            <span class="node-type">{{ node.unit.get_unit_type_display }}</span>
+            {% if node.children %}
+                <span class="node-abbr">{{ node.children|length }}</span>
+            {% endif %}
+            {% if not node.unit.is_active %}
+                <span class="badge bg-secondary" style="font-size:0.65rem;">inaktiv</span>
+            {% endif %}
+        </a>
+    </div>
+
+    {% if node.children %}
+    <div class="org-children tree-children" style="display:none;">
+        {% include "organisation/_tree_nodes.html" with nodes=node.children %}
+    </div>
+    {% endif %}
+</div>
+{% endfor %}

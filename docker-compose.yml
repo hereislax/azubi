@@ -1,0 +1,145 @@
+x-app-base: &app-base
+  build: .
+  restart: unless-stopped
+  env_file: .env
+  volumes:
+    - media_data:/app/media
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+
+  app:
+    <<: *app-base
+    ports:
+      - "80:8000"
+    environment:
+      DB_HOST: db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/2
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn Azubi.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+
+  celery_worker:
+    <<: *app-base
+    volumes:
+      - media_data:/app/media
+      - ${BACKUP_DIR:-./backups}:/backups
+      - paperless_data:/paperless/data:ro
+      - paperless_media:/paperless/media:ro
+      - paperless_export:/paperless/export
+      # restic-Schlüssel + ggf. SSH-Key für SFTP-Backend (siehe docs/backup.md)
+      - ${RESTIC_SECRETS_DIR:-./docker/restic-secrets}:/secrets:ro
+      # Für SMB/NFS-NAS: hier zusätzlich den Host-Mount-Pfad bind-mounten,
+      # z. B. via docker-compose.override.yml:
+      #   - /mnt/nas/azubi:/restic-target
+    environment:
+      DB_HOST: db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/2
+      BACKUP_DIR: /backups
+      PAPERLESS_DATA_DIR: /paperless/data
+      PAPERLESS_MEDIA_DIR: /paperless/media
+      PAPERLESS_EXPORT_DIR: /paperless/export
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-}
+      RESTIC_PASSWORD_FILE: ${RESTIC_PASSWORD_FILE:-}
+    command: celery -A Azubi worker --loglevel=info --concurrency=2
+
+  celery_beat:
+    <<: *app-base
+    environment:
+      DB_HOST: db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/2
+    command: celery -A Azubi beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+      tika:
+        condition: service_started
+    ports:
+      - "8001:8000"
+    volumes:
+      - paperless_data:/usr/src/paperless/data
+      - paperless_media:/usr/src/paperless/media
+      - paperless_consume:/usr/src/paperless/consume
+      - paperless_export:/usr/src/paperless/export
+    environment:
+      PAPERLESS_REDIS: redis://redis:6379/3
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBPORT: 5432
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: ${DB_USER}
+      PAPERLESS_DBPASS: ${DB_PASSWORD}
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_OCR_LANGUAGE: deu
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_URL: ${PAPERLESS_PUBLIC_URL:-http://localhost:8001}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:-admin}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      PAPERLESS_TIKA_ENABLED: 1
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+
+  gotenberg:
+    image: docker.io/gotenberg/gotenberg:8.20
+    restart: unless-stopped
+    volumes:
+      - ./docker/gotenberg-fonts:/usr/share/fonts/custom:ro
+    # The Gotenberg Chromium route is used to convert .eml files. We do not
+    # want to allow external content like tracking pixels or even javascript.
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+
+  tika:
+    image: docker.io/apache/tika:latest
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  media_data:
+  paperless_data:
+  paperless_media:
+  paperless_consume:
+  paperless_export:

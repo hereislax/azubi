@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Etiketten drucken{% endblock %}
+
+{% block content %}
+{# Dynamisches @page-Stylesheet wird per JavaScript je nach gewähltem Modus gesetzt #}
+<style id="dynamicPageStyle">@page { size: A4; margin: 10mm; }</style>
+
+<style>
+    /* ── Allgemeines Etiketten-Layout ──────────────────────────────────── */
+    .label__qr     { flex: 0 0 auto; }
+    .label__qr img { width: 100%; height: 100%; display: block; }
+    .label__body   { flex: 1; min-width: 0; overflow: hidden;
+                     font-size: var(--label-fs, 10pt); line-height: 1.15; }
+    .label__name     { font-weight: 600; font-size: calc(var(--label-fs, 10pt) + 1pt); word-break: break-word; }
+    .label__serial   { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+                       font-size: calc(var(--label-fs, 10pt) - 0.5pt); word-break: break-all; }
+    .label__category { color: #555; font-size: calc(var(--label-fs, 10pt) - 1pt); }
+
+    /* ── Modus „A4-Bogen" (Standard) ────────────────────────────────────── */
+    body.mode-sheet .label-sheet {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6mm;
+        max-width: 210mm;
+    }
+    body.mode-sheet .label {
+        border: 1px dashed #999;
+        border-radius: 4px;
+        padding: 4mm;
+        background: #fff;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        display: flex;
+        align-items: center;
+        gap: 4mm;
+        min-height: 32mm;
+    }
+    body.mode-sheet .label__qr { width: 26mm; height: 26mm; }
+
+    /* ── Modus „Etikettendrucker" – pro Etikett eigene Druckseite ──────── */
+    body.mode-thermal .label-sheet { display: block; }
+    body.mode-thermal .label {
+        box-sizing: border-box;
+        width:  var(--label-w, 62mm);
+        height: var(--label-h, 29mm);
+        padding: 2mm;
+        display: flex;
+        align-items: center;
+        gap: 2mm;
+        overflow: hidden;
+        page-break-after: always;
+        break-after: page;
+        background: #fff;
+    }
+    body.mode-thermal .label:last-child {
+        page-break-after: auto;
+        break-after: auto;
+    }
+    body.mode-thermal .label__qr {
+        width:  calc(var(--label-h, 29mm) - 4mm);
+        height: calc(var(--label-h, 29mm) - 4mm);
+    }
+    /* Bildschirm: Etiketten-Vorschau abgrenzen */
+    @media screen {
+        body.mode-thermal .label {
+            border: 1px dashed #ccc;
+            margin-bottom: 4mm;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+    }
+
+    /* ── Druck-Bereinigung ─────────────────────────────────────────────── */
+    @media print {
+        body { background: #fff !important; margin: 0 !important; }
+        nav, header, footer,
+        .kern-kopfzeile, .navbar, .app-sidebar, #sidebarBackdrop,
+        .label-toolbar, .breadcrumb, .messages, .no-print {
+            display: none !important;
+        }
+        /* Sidebar-Margin entfernen, damit die Etiketten am Seitenanfang beginnen */
+        body.has-sidebar .main-content,
+        body.has-sidebar.sidebar-closed .main-content { margin-left: 0 !important; }
+        .main-content, main, .container, .container-fluid {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: auto !important;
+            max-width: none !important;
+        }
+        body.mode-thermal .label { border: none; box-shadow: none; margin: 0; }
+        body.mode-thermal .label-sheet { gap: 0; }
+    }
+</style>
+
+<nav aria-label="breadcrumb" class="mt-3 no-print">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'inventory:inventory_list' %}">Inventar</a></li>
+        <li class="breadcrumb-item active">Etiketten</li>
+    </ol>
+</nav>
+
+<div class="label-toolbar no-print">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="mb-0">
+            <i class="bi bi-tags me-1"></i>
+            {% if single %}Etikett drucken{% else %}{{ items|length }} Etiketten drucken{% endif %}
+        </h2>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Drucken
+            </button>
+            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Zurück
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="formatMode">Druckformat</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select id="formatMode" class="kern-form-input__select">
+                                <option value="sheet">A4-Bogen (3 Spalten)</option>
+                                <option value="thermal">Etikettendrucker</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 thermal-only">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="presetSize">Vorlage</label>
+                        <div class="kern-form-input__select-wrapper">
+                            <select id="presetSize" class="kern-form-input__select">
+                                <option value="custom">— eigene Größe —</option>
+                                <option value="62x29">Brother DK-11209 (62 × 29 mm)</option>
+                                <option value="62x100">Brother DK-11202 (62 × 100 mm)</option>
+                                <option value="62x200">Brother DK-22205 Endlos 62 mm</option>
+                                <option value="89x36">Dymo Adress (89 × 36 mm)</option>
+                                <option value="54x25">Dymo Multi (54 × 25 mm)</option>
+                                <option value="50x30">Universal 50 × 30 mm</option>
+                                <option value="40x20">Universal 40 × 20 mm</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-auto thermal-only">
+                    <label class="kern-label" for="labelWidth">Breite</label>
+                    <div class="input-group input-group-sm" style="width:8.5rem;">
+                        <input id="labelWidth" type="number" min="10" max="300" step="0.5" class="kern-form-input__input">
+                        <span class="input-group-text">mm</span>
+                    </div>
+                </div>
+                <div class="col-auto thermal-only">
+                    <label class="kern-label" for="labelHeight">Höhe</label>
+                    <div class="input-group input-group-sm" style="width:8.5rem;">
+                        <input id="labelHeight" type="number" min="5" max="500" step="0.5" class="kern-form-input__input">
+                        <span class="input-group-text">mm</span>
+                    </div>
+                </div>
+                <div class="col-auto thermal-only">
+                    <label class="kern-label" for="labelFontSize">Schrift</label>
+                    <div class="input-group input-group-sm" style="width:7.5rem;">
+                        <input id="labelFontSize" type="number" min="5" max="20" step="0.5" class="kern-form-input__input">
+                        <span class="input-group-text">pt</span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-muted small mt-2 thermal-only">
+                <i class="bi bi-info-circle me-1"></i>
+                Beim Drucken auf einem Etikettendrucker im System-Druckdialog die <strong>Skalierung auf 100 %</strong>
+                und <strong>keine Ränder</strong> einstellen. Deine Auswahl wird im Browser gespeichert.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="label-sheet">
+    {% for item in items %}
+    <div class="label">
+        <div class="label__qr">
+            <img src="{% url 'inventory:item_qr_image' item.public_id %}" alt="QR-Code für {{ item.serial_number|default:item.name }}">
+        </div>
+        <div class="label__body">
+            <div class="label__name">{{ item.name }}</div>
+            {% if item.serial_number %}
+            <div class="label__serial">{{ item.serial_number }}</div>
+            {% endif %}
+            <div class="label__category">{{ item.category.name }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+(function() {
+    const STORAGE_KEY = 'inv_label_print_settings_v1';
+    const dyn       = document.getElementById('dynamicPageStyle');
+    const fmtSel    = document.getElementById('formatMode');
+    const presetSel = document.getElementById('presetSize');
+    const wIn       = document.getElementById('labelWidth');
+    const hIn       = document.getElementById('labelHeight');
+    const fsIn      = document.getElementById('labelFontSize');
+
+    const settings = {
+        mode:     'sheet',
+        width:    62,
+        height:   29,
+        fontSize: 9,
+    };
+
+    // Aus localStorage laden
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        Object.assign(settings, saved);
+    } catch (e) { /* ignore */ }
+
+    // URL-Parameter überschreiben (für Bookmarks / Tests)
+    const params = new URLSearchParams(window.location.search);
+    if (['sheet', 'thermal'].includes(params.get('mode'))) settings.mode = params.get('mode');
+    if (params.get('w')) settings.width  = parseFloat(params.get('w')) || settings.width;
+    if (params.get('h')) settings.height = parseFloat(params.get('h')) || settings.height;
+    if (params.get('fs')) settings.fontSize = parseFloat(params.get('fs')) || settings.fontSize;
+
+    function persist() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
+    }
+
+    function applyMode() {
+        document.body.classList.toggle('mode-thermal', settings.mode === 'thermal');
+        document.body.classList.toggle('mode-sheet',   settings.mode === 'sheet');
+        document.querySelectorAll('.thermal-only').forEach(el => {
+            el.style.display = settings.mode === 'thermal' ? '' : 'none';
+        });
+    }
+
+    function applyPageSize() {
+        if (settings.mode === 'thermal') {
+            const w = parseFloat(settings.width)  || 62;
+            const h = parseFloat(settings.height) || 29;
+            dyn.textContent = `@page { size: ${w}mm ${h}mm; margin: 0; }`;
+            document.documentElement.style.setProperty('--label-w', w + 'mm');
+            document.documentElement.style.setProperty('--label-h', h + 'mm');
+        } else {
+            dyn.textContent = '@page { size: A4; margin: 10mm; }';
+        }
+        document.documentElement.style.setProperty('--label-fs', (parseFloat(settings.fontSize) || 9) + 'pt');
+    }
+
+    function matchPreset() {
+        const cur = `${settings.width}x${settings.height}`;
+        const opt = Array.from(presetSel.options).find(o => o.value === cur);
+        presetSel.value = opt ? cur : 'custom';
+    }
+
+    function refreshUI() {
+        fmtSel.value = settings.mode;
+        wIn.value    = settings.width;
+        hIn.value    = settings.height;
+        fsIn.value   = settings.fontSize;
+        matchPreset();
+        applyMode();
+        applyPageSize();
+    }
+
+    refreshUI();
+
+    fmtSel.addEventListener('change', () => {
+        settings.mode = fmtSel.value;
+        persist(); applyMode(); applyPageSize();
+    });
+
+    presetSel.addEventListener('change', () => {
+        const v = presetSel.value;
+        if (v === 'custom') return;
+        const m = v.match(/^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/);
+        if (m) {
+            settings.width  = parseFloat(m[1]);
+            settings.height = parseFloat(m[2]);
+            wIn.value = settings.width;
+            hIn.value = settings.height;
+            persist(); applyPageSize();
+        }
+    });
+
+    [wIn, hIn].forEach(inp => {
+        inp.addEventListener('input', () => {
+            const w = parseFloat(wIn.value);
+            const h = parseFloat(hIn.value);
+            if (!isNaN(w) && w > 0) settings.width  = w;
+            if (!isNaN(h) && h > 0) settings.height = h;
+            matchPreset();
+            persist(); applyPageSize();
+        });
+    });
+
+    fsIn.addEventListener('input', () => {
+        const fs = parseFloat(fsIn.value);
+        if (!isNaN(fs) && fs > 0) settings.fontSize = fs;
+        persist(); applyPageSize();
+    });
+})();
+</script>
+{% endblock %}

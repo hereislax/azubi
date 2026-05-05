@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Kriterium löschen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:job_profile_list' %}">Berufsbilder</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:job_profile_config' profile.pk %}">{{ profile.description }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Löschen</li>
+    </ol>
+</nav>
+<div class="card"><div class="card-body">
+    <h2 class="card-title h5"><i class="bi bi-trash me-1 text-danger"></i> Kriterium löschen</h2>
+    <p>Möchtest du das Kriterium „<strong>{{ criterion.name }}</strong>" wirklich löschen?</p>
+    <p class="text-muted small">
+        Das Kriterium kann nicht gelöscht werden, wenn es bereits in Beurteilungen verwendet wird.
+    </p>
+    <form method="post" class="d-flex gap-2 justify-content-end">
+        {% csrf_token %}
+        <a href="{% url 'course:job_profile_config' profile.pk %}" class="btn btn-outline-secondary">Abbrechen</a>
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i> Löschen</button>
+    </form>
+</div></div>
+{% endblock %}

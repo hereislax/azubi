@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Ausbildungsnachweis KW {{ record.calendar_week }}/{{ record.week_start.year }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'proofoftraining:record_list' %}">Ausbildungsnachweise</a></li>
+        <li class="breadcrumb-item active">KW {{ record.calendar_week }}/{{ record.week_start.year }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0">
+            <i class="bi bi-journal-text me-1"></i>
+            KW {{ record.calendar_week }}/{{ record.week_start.year }}
+        </h2>
+        <span class="text-muted small">{{ record.week_start|date:"d.m.Y" }} – {{ record.week_end|date:"d.m.Y" }}</span>
+        <span class="badge bg-{{ record.status_color }} ms-2">{{ record.get_status_display }}</span>
+    </div>
+</div>
+
+{% if record.status == 'approved' %}
+<div class="alert alert-success small">
+    <i class="bi bi-check-circle-fill me-1"></i>
+    Angenommen von {{ record.reviewed_by.get_full_name|default:record.reviewed_by.username }}
+    am {{ record.reviewed_at|date:"d.m.Y" }}.
+</div>
+{% elif record.status == 'submitted' %}
+<div class="alert alert-info small">
+    <i class="bi bi-hourglass-split me-1"></i> Eingereicht am {{ record.submitted_at|date:"d.m.Y H:i" }} – wird geprüft.
+</div>
+{% endif %}
+
+{% for day in record.days.all %}
+<div class="card mb-3">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+        <strong>{{ day.weekday_name }}, {{ day.date|date:"d.m.Y" }}</strong>
+        <span class="badge bg-light text-dark border">{{ day.get_day_type_display }}</span>
+    </div>
+    <div class="card-body py-2">
+        {% if day.content %}
+        <p class="mb-0" style="white-space:pre-line;">{{ day.content }}</p>
+        {% else %}
+        <span class="text-muted fst-italic small">Keine Beschreibung eingetragen.</span>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<div class="d-flex gap-2 mt-1">
+    {% if record.status == 'rejected' %}
+    <a href="{% url 'proofoftraining:record_edit' public_id=record.public_id %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Bearbeiten &amp; erneut einreichen
+    </a>
+    {% endif %}
+    <a href="{% url 'proofoftraining:record_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Zurück
+    </a>
+</div>
+{% endblock %}

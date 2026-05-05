@@ -1,0 +1,28 @@
+<article class="kern-card h-100">
+    <div class="kern-card__container">
+        <header class="kern-card__header d-flex align-items-center gap-2">
+            <i class="bi bi-mortarboard me-1"></i>
+            <span>Noten</span>
+            <a href="{% url 'portal:noten' %}" class="ms-auto btn btn-outline-secondary btn-sm py-0 px-2" style="font-size:.75rem;">Alle ansehen</a>
+        </header>
+        <div class="kern-card__body p-0">
+            {% if grades %}
+            <ul class="list-group list-group-flush">
+                {% for grade in grades|slice:":5" %}
+                <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                    <span class="small">{{ grade.grade_type.name }}</span>
+                    <span class="kern-badge {% if grade.value %}kern-badge--info{% else %}kern-badge--neutral{% endif %}">
+                        <span class="kern-label kern-label--small">{{ grade.value|default:"–" }}</span>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% if grades|length > 5 %}
+            <div class="px-3 py-2 text-muted small">… und {{ grades|length|add:"-5" }} weitere</div>
+            {% endif %}
+            {% else %}
+            <p class="text-muted small p-3 mb-0">Noch keine Noten eingetragen.</p>
+            {% endif %}
+        </div>
+    </div>
+</article>

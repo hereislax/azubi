@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Kompetenzmatrix Kurs {{ course.title }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Kompetenzmatrix</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-grid-3x3 me-1"></i> Klassen-Kompetenzmatrix</h2>
+        <p class="text-muted mb-0">Kurs {{ course.title }}{% if job_profile %} · {{ job_profile.description }}{% endif %}</p>
+    </div>
+    <div class="btn-group btn-group-sm" role="group">
+        <input type="radio" class="btn-check" name="hm-source" id="hm-ext" autocomplete="off" checked>
+        <label class="btn btn-outline-primary" for="hm-ext">Fremd</label>
+        <input type="radio" class="btn-check" name="hm-source" id="hm-self" autocomplete="off">
+        <label class="btn btn-outline-primary" for="hm-self">Selbst</label>
+    </div>
+</div>
+
+{% if no_data %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-1"></i>
+    Für dieses Berufsbild sind noch keine Kompetenz-Endziele oder Kriterium-Mappings hinterlegt,
+    oder es gibt noch keine Nachwuchskräfte mit auswertbaren Beurteilungen.
+</div>
+{% else %}
+
+<div class="card mb-4">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width: 220px;">Nachwuchskraft</th>
+                    <th class="text-center" style="min-width: 90px;">Fortschritt</th>
+                    {% for c in competences %}
+                    <th class="text-center" style="font-size:0.78rem; min-width: 80px;" title="{{ c.name }}">
+                        {{ c.name }}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in students_rows %}
+                <tr>
+                    <td>
+                        <a href="{% url 'student:competence_matrix' row.student.pk %}" class="text-decoration-none fw-semibold">
+                            {{ row.student.first_name }} {{ row.student.last_name }}
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <div class="progress" style="height: 14px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width: {{ row.apprentice_progress_pct }}%; font-size: 0.65rem;">
+                                {{ row.apprentice_progress_pct }} %
+                            </div>
+                        </div>
+                    </td>
+                    {% for cell in row.cells %}
+                    <td class="text-center heatmap-cell"
+                        data-ext-value="{% if cell.value is not None %}{{ cell.value }}{% endif %}"
+                        data-self-value="{% if cell.self_value is not None %}{{ cell.self_value }}{% endif %}"
+                        data-target="{% if cell.target is not None %}{{ cell.target }}{% endif %}"
+                        data-coverage="{% if cell.coverage is not None %}{{ cell.coverage }}{% endif %}"
+                        title="">
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ competences|length|add:'2' }}" class="text-center text-muted py-3">
+                    Keine Nachwuchskräfte in diesem Kurs.
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex align-items-center gap-3 small text-muted">
+    <span>Skala:</span>
+    <span style="display:inline-block;width:30px;height:14px;background:rgb(255,233,232);border:1px solid #ccc;"></span> 0
+    <span style="display:inline-block;width:30px;height:14px;background:rgb(255,243,196);border:1px solid #ccc;"></span> 50
+    <span style="display:inline-block;width:30px;height:14px;background:rgb(196,238,209);border:1px solid #ccc;"></span> 100
+    <span class="ms-3 fst-italic">Klick auf einen Namen → Detailmatrix der Person</span>
+</div>
+
+{% endif %}
+
+<style>
+    .heatmap-cell { font-size: 0.78rem; min-width: 60px; cursor: help; }
+</style>
+
+<script>
+(function(){
+    function colorForValue(v) {
+        if (v === null || v === '' || isNaN(v)) return { bg: 'transparent', fg: '#adb5bd' };
+        const x = Math.max(0, Math.min(100, Number(v))) / 100;
+        const r = Math.round(192 + (255 - 192) * (x < 0.5 ? x * 2 : 1 - (x - 0.5) * 0.4));
+        const g = Math.round(0   + (255 - 0)   * (x < 0.5 ? x * 2 : 1));
+        const b = Math.round(60  + (60  - 0)   * (x < 0.5 ? x * 2 : 1 - x));
+        const lightR = Math.round(255 - (255 - r) * 0.55);
+        const lightG = Math.round(255 - (255 - g) * 0.55);
+        const lightB = Math.round(255 - (255 - b) * 0.55);
+        const fg = x > 0.55 ? '#1f3322' : '#5a1320';
+        return { bg: `rgb(${lightR},${lightG},${lightB})`, fg: fg };
+    }
+
+    function applySource(source) {
+        document.querySelectorAll('.heatmap-cell').forEach(cell => {
+            const valStr = source === 'self' ? cell.dataset.selfValue : cell.dataset.extValue;
+            const target = cell.dataset.target;
+            const coverage = cell.dataset.coverage;
+            const c = colorForValue(valStr);
+            cell.style.backgroundColor = c.bg;
+            cell.style.color = c.fg;
+            cell.textContent = valStr ? Math.round(Number(valStr)) : '';
+            const tip = [
+                source === 'self' ? `Selbst: ${valStr || '–'}` : `Fremd: ${valStr || '–'}`,
+                `Soll heute: ${target || '–'}`,
+                `Stationen: ${coverage ? coverage + ' %' : '–'}`,
+            ].join('\n');
+            cell.title = tip;
+        });
+    }
+
+    document.getElementById('hm-ext').addEventListener('change', () => applySource('external'));
+    document.getElementById('hm-self').addEventListener('change', () => applySource('self'));
+    applySource('external');
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Aufgaben-Konfiguration{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+        <li class="breadcrumb-item active">Automatische Aufgaben</li>
+    </ol>
+</nav>
+
+<h2 class="mb-1"><i class="bi bi-clock-history me-1"></i> Automatische Aufgaben</h2>
+<p class="text-muted mb-3">Fristen und Ausführungszeiten der täglichen Hintergrundaufgaben konfigurieren.</p>
+
+<div class="alert alert-info d-flex gap-2 align-items-start mb-4">
+    <i class="bi bi-info-circle-fill flex-shrink-0 mt-1 me-1"></i>
+    <div>
+        <strong>Hinweis:</strong>
+        Änderungen werden vom Hintergrund-Worker innerhalb weniger Sekunden
+        automatisch übernommen — kein Neustart erforderlich.
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    {# ── Praxiseinsatz-Erinnerungen ───────────────────────────────────────── #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-bell me-1"></i> Erinnerungen: Praxiseinsätze & Ausbildungsnachweise
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Praxistutoren erhalten eine Erinnerungsmail vor Beginn und Ende ihres Einsatzes.
+                Nachwuchskräfte erhalten eine Erinnerung, wenn der Ausbildungsnachweis der Vorwoche fehlt.
+                Alle drei Erinnerungen laufen täglich zum selben Zeitpunkt.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="reminder_days_before_start" class="kern-label">
+                        Vorlauf Einsatzbeginn <span class="kern-label__optional">(Tage)</span>
+                    </label>
+                    <input type="number" id="reminder_days_before_start"
+                           name="reminder_days_before_start"
+                           class="kern-form-input__input {% if errors.reminder_days_before_start %}is-invalid{% endif %}"
+                           value="{{ config.reminder_days_before_start }}"
+                           min="1" max="90" required>
+                    <span class="kern-hint">Wie viele Tage vor Beginn eines Einsatzes der Praxistutor erinnert wird.</span>
+                </div>
+                <div class="col-md-6">
+                    <label for="reminder_days_before_end" class="kern-label">
+                        Vorlauf Einsatzende <span class="kern-label__optional">(Tage)</span>
+                    </label>
+                    <input type="number" id="reminder_days_before_end"
+                           name="reminder_days_before_end"
+                           class="kern-form-input__input {% if errors.reminder_days_before_end %}is-invalid{% endif %}"
+                           value="{{ config.reminder_days_before_end }}"
+                           min="1" max="90" required>
+                    <span class="kern-hint">Wie viele Tage vor Ende eines Einsatzes der Praxistutor erinnert wird.</span>
+                </div>
+                <div class="col-md-6">
+                    <label class="kern-label">Ausführungszeit</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="number" name="reminder_hour"
+                               class="kern-form-input__input text-center {% if errors.reminder_hour %}is-invalid{% endif %}"
+                               value="{{ config.reminder_hour }}"
+                               min="0" max="23" required style="max-width: 80px;">
+                        <span class="text-muted">:</span>
+                        <input type="number" name="reminder_minute"
+                               class="kern-form-input__input text-center {% if errors.reminder_minute %}is-invalid{% endif %}"
+                               value="{{ config.reminder_minute }}"
+                               min="0" max="59" required style="max-width: 80px;">
+                        <span class="text-muted small">Uhr (täglich)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Eskalation Stationsbeurteilungen ─────────────────────────────────── #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-exclamation-triangle me-1"></i> Eskalation: Ausstehende Stationsbeurteilungen
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Wird eine Stationsbeurteilung von Praxistutoren nicht eingereicht, eskaliert das Portal
+                in drei Stufen. Die Tagesfristen werden ab Versand des Beurteilungs-Tokens gezählt.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="escalation_stage1_days" class="kern-label">
+                        Stufe 1: Erste Erinnerung <span class="kern-label__optional">(Tage)</span>
+                    </label>
+                    <input type="number" id="escalation_stage1_days"
+                           name="escalation_stage1_days"
+                           class="kern-form-input__input {% if errors.escalation_stage1_days %}is-invalid{% endif %}"
+                           value="{{ config.escalation_stage1_days }}"
+                           min="1" max="90" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="escalation_stage2_days" class="kern-label">
+                        Stufe 2: Dringende Erinnerung <span class="kern-label__optional">(Tage)</span>
+                    </label>
+                    <input type="number" id="escalation_stage2_days"
+                           name="escalation_stage2_days"
+                           class="kern-form-input__input {% if errors.escalation_stage2_days %}is-invalid{% endif %}"
+                           value="{{ config.escalation_stage2_days }}"
+                           min="1" max="90" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="escalation_final_days" class="kern-label">
+                        Stufe 3: Eskalation an Koordination <span class="kern-label__optional">(Tage)</span>
+                    </label>
+                    <input type="number" id="escalation_final_days"
+                           name="escalation_final_days"
+                           class="kern-form-input__input {% if errors.escalation_final_days %}is-invalid{% endif %}"
+                           value="{{ config.escalation_final_days }}"
+                           min="1" max="90" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="kern-label">Ausführungszeit Eskalationslauf</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="number" name="assessment_escalation_hour"
+                               class="kern-form-input__input text-center {% if errors.assessment_escalation_hour %}is-invalid{% endif %}"
+                               value="{{ config.assessment_escalation_hour }}"
+                               min="0" max="23" required style="max-width: 80px;">
+                        <span class="text-muted">:</span>
+                        <input type="number" name="assessment_escalation_minute"
+                               class="kern-form-input__input text-center {% if errors.assessment_escalation_minute %}is-invalid{% endif %}"
+                               value="{{ config.assessment_escalation_minute }}"
+                               min="0" max="59" required style="max-width: 80px;">
+                        <span class="text-muted small">Uhr (täglich)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Urlaubsantragspaket ──────────────────────────────────────────────── #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-envelope-paper me-1"></i> Urlaubsantragspaket an Urlaubsstelle
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Genehmigte Urlaubsanträge werden täglich gebündelt an die Urlaubsstelle gesendet.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="kern-label">Ausführungszeit</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="number" name="vacation_batch_hour"
+                               class="kern-form-input__input text-center {% if errors.vacation_batch_hour %}is-invalid{% endif %}"
+                               value="{{ config.vacation_batch_hour }}"
+                               min="0" max="23" required style="max-width: 80px;">
+                        <span class="text-muted">:</span>
+                        <input type="number" name="vacation_batch_minute"
+                               class="kern-form-input__input text-center {% if errors.vacation_batch_minute %}is-invalid{% endif %}"
+                               value="{{ config.vacation_batch_minute }}"
+                               min="0" max="59" required style="max-width: 80px;">
+                        <span class="text-muted small">Uhr (täglich)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Krankmeldungsbericht ─────────────────────────────────────────────── #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-thermometer-half me-1"></i> Krankmeldungsbericht an Urlaubsstelle
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Täglicher Bericht über neue Krank- und Gesundmeldungen an die Urlaubsstelle.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="kern-label">Ausführungszeit</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="number" name="sick_leave_report_hour"
+                               class="kern-form-input__input text-center {% if errors.sick_leave_report_hour %}is-invalid{% endif %}"
+                               value="{{ config.sick_leave_report_hour }}"
+                               min="0" max="23" required style="max-width: 80px;">
+                        <span class="text-muted">:</span>
+                        <input type="number" name="sick_leave_report_minute"
+                               class="kern-form-input__input text-center {% if errors.sick_leave_report_minute %}is-invalid{% endif %}"
+                               value="{{ config.sick_leave_report_minute }}"
+                               min="0" max="59" required style="max-width: 80px;">
+                        <span class="text-muted small">Uhr (täglich)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Anonymisierung ───────────────────────────────────────────────────── #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-shield-lock me-1"></i> Anonymisierung inaktiver Nachwuchskräfte
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Nachwuchskräfte, deren Status seit der konfigurierten Frist nicht mehr „aktiv" ist,
+                werden automatisch anonymisiert (DSGVO).
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="anonymization_months" class="kern-label">
+                        Anonymisierungsfrist <span class="kern-label__optional">(Monate)</span>
+                    </label>
+                    <input type="number" id="anonymization_months"
+                           name="anonymization_months"
+                           class="kern-form-input__input {% if errors.anonymization_months %}is-invalid{% endif %}"
+                           value="{{ config.anonymization_months }}"
+                           min="1" max="120" required>
+                    <span class="kern-hint">
+                        Ab wie vielen Monaten Inaktivität (Statuswechsel weg von „aktiv") eine
+                        Nachwuchskraft anonymisiert wird.
+                    </span>
+                </div>
+                <div class="col-md-6">
+                    <label class="kern-label">Ausführungszeit</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="number" name="anonymization_hour"
+                               class="kern-form-input__input text-center {% if errors.anonymization_hour %}is-invalid{% endif %}"
+                               value="{{ config.anonymization_hour }}"
+                               min="0" max="23" required style="max-width: 80px;">
+                        <span class="text-muted">:</span>
+                        <input type="number" name="anonymization_minute"
+                               class="kern-form-input__input text-center {% if errors.anonymization_minute %}is-invalid{% endif %}"
+                               value="{{ config.anonymization_minute }}"
+                               min="0" max="59" required style="max-width: 80px;">
+                        <span class="text-muted small">Uhr (täglich)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Paperless-Cache ──────────────────────────────────────────────────── #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-arrow-repeat me-1"></i> Paperless-Eingangskorb-Cache
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Der Cache des Paperless-Eingangskorbs wird in regelmäßigem Abstand aktualisiert,
+                damit unzugewiesene Dokumente schnell sichtbar werden.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="paperless_cache_interval_seconds" class="kern-label">
+                        Aktualisierungsintervall <span class="kern-label__optional">(Sekunden)</span>
+                    </label>
+                    <input type="number" id="paperless_cache_interval_seconds"
+                           name="paperless_cache_interval_seconds"
+                           class="kern-form-input__input {% if errors.paperless_cache_interval_seconds %}is-invalid{% endif %}"
+                           value="{{ config.paperless_cache_interval_seconds }}"
+                           min="30" max="3600" required>
+                    <span class="kern-hint">Empfohlen: 60–300 Sekunden.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        <i class="bi bi-check-lg me-1"></i> Speichern
+    </button>
+</form>
+{% endblock %}

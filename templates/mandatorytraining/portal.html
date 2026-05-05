@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Meine Pflichtschulungen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item active">Pflichtschulungen</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-shield-check me-1"></i> Meine Pflichtschulungen</h2>
+        <p class="text-muted mb-0">Übersicht und Status deiner Pflichtschulungen.</p>
+    </div>
+    {% if status.compliance_pct is not None %}
+    <div class="text-end">
+        <div class="text-muted small">Compliance</div>
+        <div class="progress" style="width: 220px; height: 18px;">
+            <div class="progress-bar bg-{% if status.overall_status == 'red' %}danger{% elif status.overall_status == 'yellow' %}warning{% else %}success{% endif %}"
+                 style="width: {{ status.compliance_pct }}%;">
+                {{ status.compliance_pct }} %
+            </div>
+        </div>
+        <div class="small text-muted mt-1">{{ status.mandatory_ok }} von {{ status.mandatory_total }} Pflichten erfüllt</div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light"><i class="bi bi-shield-check me-1"></i> Status pro Schulung</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>Schulung</th><th>Status</th><th>Absolviert</th><th>Gültig bis</th><th class="text-center">Resttage</th></tr>
+            </thead>
+            <tbody>
+                {% for r in status.rows %}
+                <tr>
+                    <td>
+                        <i class="{{ r.type.icon|default:'bi-shield-check' }} me-1"></i>
+                        <span class="fw-semibold">{{ r.type.name }}</span>
+                        {% if r.type.is_mandatory %}<span class="badge bg-light text-dark border ms-1">Pflicht</span>{% endif %}
+                        {% if r.type.description %}<div class="small text-muted">{{ r.type.description|truncatechars:120 }}</div>{% endif %}
+                    </td>
+                    <td><span class="badge bg-{{ r.badge }}">{{ r.status_label }}</span></td>
+                    <td>{% if r.latest %}{{ r.latest.completed_on|date:"d.m.Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td>{% if r.latest %}{{ r.latest.expires_on|date:"d.m.Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td class="text-center">
+                        {% if r.days_left is not None %}
+                            {% if r.days_left < 0 %}<span class="text-danger">{{ r.days_left }}</span>{% else %}{{ r.days_left }}{% endif %}
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Für deine Person sind keine Pflichtschulungen hinterlegt.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if history %}
+<div class="card">
+    <div class="card-header bg-light"><i class="bi bi-clock-history me-1"></i> Meine Historie</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>Schulung</th><th>Absolviert</th><th>Gültig bis</th><th>Zertifikat</th></tr>
+            </thead>
+            <tbody>
+                {% for c in history %}
+                <tr>
+                    <td>{{ c.training_type.name }}</td>
+                    <td>{{ c.completed_on|date:"d.m.Y" }}</td>
+                    <td>{{ c.expires_on|date:"d.m.Y" }}</td>
+                    <td>
+                        {% if c.certificate_paperless_id %}
+                        <a href="/dokumente/documents/{{ c.certificate_paperless_id }}/preview/" target="_blank" class="text-decoration-none">
+                            <i class="bi bi-file-earmark-pdf"></i> Anzeigen
+                        </a>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

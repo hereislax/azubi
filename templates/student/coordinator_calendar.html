@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Übersichtskalender{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+        <li class="breadcrumb-item active">Übersichtskalender</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <h2 class="mb-0"><i class="bi bi-calendar3 me-1"></i> Übersichtskalender</h2>
+</div>
+
+{# ── Filter ──────────────────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+            <label class="kern-label mb-0 text-muted small">Kurs</label>
+            <div class="kern-form-input__select-wrapper" style="max-width:260px;">
+                <select name="course" class="kern-form-input__select">
+                    <option value="">– Kurs wählen –</option>
+                    {% for c in courses %}
+                    <option value="{{ c.pk }}" {% if c == selected_course %}selected{% endif %}>
+                        {{ c.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <label class="kern-label mb-0 text-muted small ms-2">Jahr</label>
+            <input type="number" name="year" value="{{ year }}"
+                   class="kern-form-input__input" style="width:90px;"
+                   min="2000" max="2099">
+
+            <button type="submit" class="btn btn-sm btn-primary">
+                <i class="bi bi-funnel me-1"></i>Anzeigen
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if selected_course and course_cal %}
+
+{# ── Jahresnavigation ────────────────────────────────────────────────────────── #}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="?course={{ selected_course.pk }}&year={{ course_cal.prev_year }}"
+       class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-chevron-left me-1"></i>{{ course_cal.prev_year }}
+    </a>
+    <span class="fw-bold fs-5">{{ selected_course.title }} – {{ course_cal.year }}</span>
+    <a href="?course={{ selected_course.pk }}&year={{ course_cal.next_year }}"
+       class="btn btn-sm btn-outline-secondary">
+        {{ course_cal.next_year }}<i class="bi bi-chevron-right ms-1"></i>
+    </a>
+</div>
+
+{% if course_cal.has_data %}
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="unified-cal-scroll">
+        <div class="unified-cal-table p-3">
+
+            {# ── Monatskopfzeile ─────────────────────────────────────────────── #}
+            <div class="unified-cal-row mb-2">
+                <div class="unified-cal-label unified-cal-label--wide"></div>
+                <div class="unified-cal-timeline unified-cal-timeline--header">
+                    {% for m in course_cal.months_data %}
+                    <div class="unified-cal-month" style="width:{{ m.width }}%;">
+                        <span class="unified-cal-month-name d-none d-sm-block">{{ m.name }}</span>
+                        <span class="unified-cal-month-name d-sm-none">{{ m.short }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# ── Azubi-Gruppen ────────────────────────────────────────────────── #}
+            {% for sc in course_cal.student_cals %}
+
+            {# Azubi-Kopfzeile #}
+            <div class="unified-cal-row unified-cal-row--student mt-2">
+                <div class="unified-cal-label unified-cal-label--wide unified-cal-label--student">
+                    <a href="{% url 'student:student_detail' sc.student.pk %}"
+                       class="text-decoration-none fw-semibold text-dark">
+                        {{ sc.student.last_name }}, {{ sc.student.first_name }}
+                    </a>
+                </div>
+                <div class="unified-cal-timeline unified-cal-timeline--student-header">
+                    {% if course_cal.today_offset %}
+                    <div class="unified-cal-today" style="left:{{ course_cal.today_offset }}%;"></div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if sc.has_data %}
+            {% for row in sc.rows %}
+            <div class="unified-cal-row unified-cal-row--sub">
+                <div class="unified-cal-label unified-cal-label--wide unified-cal-label--sub"
+                     title="{{ row.label }}">
+                    <i class="bi {{ row.icon }} me-1"></i>{{ row.label }}
+                </div>
+                <div class="unified-cal-timeline">
+                    {% if course_cal.today_offset %}
+                    <div class="unified-cal-today" style="left:{{ course_cal.today_offset }}%;"></div>
+                    {% endif %}
+
+                    {% for event in row.events %}
+                    {% if event.url %}
+                    <a href="{{ event.url }}"
+                       class="unified-cal-bar{% if event.is_marker %} unified-cal-bar--marker{% endif %}"
+                       style="left:{{ event.offset }}%;width:{{ event.width }}%;background-color:{{ event.color }};"
+                       title="{{ event.label }}&#10;{{ event.start_fmt }}{% if event.end_fmt != event.start_fmt %} – {{ event.end_fmt }}{% endif %}">
+                        {% if not event.is_marker %}
+                        <span class="unified-cal-bar-label">{{ event.label }}</span>
+                        {% endif %}
+                    </a>
+                    {% else %}
+                    <div class="unified-cal-bar{% if event.is_marker %} unified-cal-bar--marker{% endif %}"
+                         style="left:{{ event.offset }}%;width:{{ event.width }}%;background-color:{{ event.color }};"
+                         title="{{ event.label }}&#10;{{ event.start_fmt }}{% if event.end_fmt != event.start_fmt %} – {{ event.end_fmt }}{% endif %}">
+                        {% if not event.is_marker %}
+                        <span class="unified-cal-bar-label">{{ event.label }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="unified-cal-row unified-cal-row--sub">
+                <div class="unified-cal-label unified-cal-label--wide unified-cal-label--sub text-muted fst-italic">
+                    Keine Ereignisse
+                </div>
+                <div class="unified-cal-timeline">
+                    {% if course_cal.today_offset %}
+                    <div class="unified-cal-today" style="left:{{ course_cal.today_offset }}%;"></div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% endfor %}{# /student_cals #}
+
+        </div>{# /.unified-cal-table #}
+        </div>{# /.unified-cal-scroll #}
+    </div>
+</div>
+
+{# ── Legende ─────────────────────────────────────────────────────────────────── #}
+<div class="unified-cal-legend mt-3">
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:#0077B6;"></span>Lehrphase
+    </span>
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:#007194;"></span>Praktikumsblock
+    </span>
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:#00818B;"></span>Einsatz
+    </span>
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:#00854A;"></span>Urlaub
+    </span>
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:#597C39;"></span>Lerntag
+    </span>
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:#C0003C;"></span>Krankmeldung
+    </span>
+    {% if course_cal.intervention_categories %}
+    {% for cat in course_cal.intervention_categories %}
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:{{ cat.color }};"></span>{{ cat.name }}
+    </span>
+    {% endfor %}
+    {% else %}
+    <span class="d-flex align-items-center gap-1">
+        <span class="unified-cal-legend-dot" style="background:#5F316E;"></span>Maßnahmen-Frist
+    </span>
+    {% endif %}
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar3" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Keine Azubis oder Ereignisse für {{ selected_course.title }} – {{ course_cal.year }}.</p>
+</div>
+{% endif %}
+
+{% elif selected_course %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar3" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Keine Daten für diesen Kurs gefunden.</p>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar3" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Bitte oben einen Kurs auswählen.</p>
+</div>
+{% endif %}
+
+{% endblock %}

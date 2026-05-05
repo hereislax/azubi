@@ -1,0 +1,95 @@
+{% extends "_public_base.html" %}
+
+{% block title %}Bearbeitung abgeschlossen{% endblock %}
+{% block navbar_label %}Urlaubsantragsportal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+
+        {% if already_processed %}
+        <div class="kern-alert kern-alert--warning mb-4" role="alert">
+            <div class="kern-alert__header">
+                <span class="kern-icon kern-icon--warning" aria-hidden="true"></span>
+                <span class="kern-title">Paket bereits bearbeitet</span>
+            </div>
+            <div class="kern-alert__content">
+                Dieses Paket wurde am {{ batch.processed_at|date:"d.m.Y H:i" }}
+                {% if batch.processed_by_name %}von {{ batch.processed_by_name }}{% endif %}
+                abgeschlossen.
+            </div>
+        </div>
+        {% else %}
+        <div class="kern-alert kern-alert--success mb-4" role="alert">
+            <div class="kern-alert__header">
+                <span class="kern-icon kern-icon--success" aria-hidden="true"></span>
+                <span class="kern-title">Bearbeitung abgeschlossen</span>
+            </div>
+            <div class="kern-alert__content">
+                Die Nachwuchskräfte wurden per E-Mail benachrichtigt. Der ursprüngliche
+                Aufruflink ist nicht mehr gültig.
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light fw-semibold">
+                Bearbeitete Anträge
+                <span class="text-muted fw-normal">– Paket vom {{ batch.sent_at|date:"d.m.Y H:i" }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nachwuchskraft</th>
+                                <th>Art</th>
+                                <th>Zeitraum</th>
+                                <th class="text-center">AT</th>
+                                <th class="text-center">Resturlaub aktuell</th>
+                                <th class="text-center">Resturlaub Vorjahr</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vr in requests %}
+                            <tr>
+                                <td>{{ vr.student.last_name }}, {{ vr.student.first_name }}</td>
+                                <td>
+                                    <span class="badge {% if vr.is_cancellation %}bg-dark{% else %}bg-info text-dark{% endif %}">
+                                        {% if vr.is_cancellation %}Stornierung{% else %}Urlaub{% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ vr.start_date|date:"d.m.Y" }} – {{ vr.end_date|date:"d.m.Y" }}</td>
+                                <td class="text-center">
+                                    {{ vr.effective_working_days }}
+                                    {% if vr.manual_working_days is not None %}
+                                    <span class="text-muted small" title="Berechnet: {{ vr.duration_working_days }}">
+                                        (manuell)
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ vr.remaining_days_current_year|default:"–" }}</td>
+                                <td class="text-center">{{ vr.remaining_days_previous_year|default:"–" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-muted text-center py-3">Keine Anträge</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if has_template %}
+        <form method="post" class="d-flex justify-content-end">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="download">
+            <button type="submit" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-word me-1"></i> Word-Dokument herunterladen
+            </button>
+        </form>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

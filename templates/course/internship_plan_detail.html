@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Praktikumspläne – {{ schedule_block.name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:internship_calendar' course.pk schedule_block.public_id %}">{{ schedule_block.name }}</a></li>
+        <li class="breadcrumb-item active">Praktikumspläne</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-map me-1"></i> Praktikumspläne</h2>
+        <p class="text-muted mb-0">{{ schedule_block.name }} &mdash; {{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if letter.status == 'pending_approval' and is_training_director %}
+            <a href="{% url 'course:internship_plan_approve' course.pk schedule_block.public_id letter.pk %}"
+               class="btn btn-warning"><i class="bi bi-send-check me-1"></i> Freigeben &amp; versenden</a>
+        {% endif %}
+        <a href="{% url 'course:internship_calendar' course.pk schedule_block.public_id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Zum Praktikumsplan
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-5">Status</dt>
+                    <dd class="col-sm-7">
+                        {% if letter.status == 'pending_approval' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i> Freigabe ausstehend</span>
+                        {% else %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Versendet</span>
+                        {% endif %}
+                    </dd>
+                    <dt class="col-sm-5">Erstellt von</dt>
+                    <dd class="col-sm-7">{{ letter.generated_by.get_full_name|default:letter.generated_by.username|default:"–" }}</dd>
+                    <dt class="col-sm-5">Erstellt am</dt>
+                    <dd class="col-sm-7">{{ letter.generated_at|date:"d.m.Y H:i" }}</dd>
+                    {% if letter.approved_by %}
+                        <dt class="col-sm-5">Freigegeben von</dt>
+                        <dd class="col-sm-7">{{ letter.approved_by.get_full_name|default:letter.approved_by.username }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light fw-semibold"><i class="bi bi-people me-1"></i> Nachwuchskräfte ({{ items|length }})</div>
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Name</th><th>E-Mail</th><th>Dokument</th><th>E-Mail gesendet</th>
+                {% if can_regenerate and letter.status != 'pending_approval' %}<th></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>{{ item.student.gender }} {{ item.student.first_name }} {{ item.student.last_name }}</td>
+                    <td class="text-muted small">{{ item.student.email_id|default:"–" }}</td>
+                    <td>
+                        {% if item.paperless_id %}
+                            <a href="{% url 'document:document_preview' item.paperless_id %}"
+                               onclick="window.open(this.href,'dok_{{ item.paperless_id }}','width=1100,height=800,resizable=yes');return false;"
+                               class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> Öffnen</a>
+                        {% else %}
+                            <span class="text-danger small"><i class="bi bi-exclamation-triangle me-1"></i> Fehler</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.email_sent %}
+                            <span class="text-success"><i class="bi bi-check-circle me-1"></i> Ja</span>
+                        {% elif not item.student.email_id %}
+                            <span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i> Keine E-Mail-Adresse</span>
+                        {% else %}
+                            <span class="text-danger"><i class="bi bi-x-circle me-1"></i> Fehlgeschlagen</span>
+                        {% endif %}
+                    </td>
+                    {% if can_regenerate and letter.status != 'pending_approval' %}
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                onclick="openRegenerateModal(this)"
+                                data-url="{% url 'course:internship_plan_item_regenerate' course.pk schedule_block.public_id letter.pk item.pk %}"
+                                data-name="{{ item.student.first_name }} {{ item.student.last_name }}"
+                                data-has-email="{{ item.student.email_id|yesno:'true,false' }}">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Neu erstellen
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+{% if can_regenerate and letter.status != 'pending_approval' %}
+<dialog class="kern-dialog" id="regenerateModal" aria-labelledby="regenerateModal_heading">
+    <form method="post" id="regenerateForm" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="regenerateModal_heading">
+                <i class="bi bi-arrow-clockwise me-1"></i> Praktikumsplan neu erstellen
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <p>Der Praktikumsplan für <strong id="regenerateName"></strong> wird neu generiert und in Paperless ersetzt.</p>
+            <div class="form-check" id="emailCheckWrapper">
+                <input class="form-check-input" type="checkbox" name="send_email" value="1" id="sendEmailCheck">
+                <label class="form-check-label" for="sendEmailCheck">E-Mail erneut versenden</label>
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-label">Neu erstellen</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+<script>
+function openRegenerateModal(btn) {
+    document.getElementById('regenerateForm').action = btn.dataset.url;
+    document.getElementById('regenerateName').textContent = btn.dataset.name;
+    const hasEmail = btn.dataset.hasEmail === 'true';
+    document.getElementById('emailCheckWrapper').style.display = hasEmail ? '' : 'none';
+    document.getElementById('sendEmailCheck').checked = false;
+    document.getElementById('regenerateModal').showModal();
+}
+</script>
+{% endif %}
+{% endblock %}

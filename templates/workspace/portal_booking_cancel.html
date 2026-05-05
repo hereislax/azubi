@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Buchung stornieren{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'workspace:portal_my_bookings' %}">Raumbuchung</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Stornieren</li>
+    </ol>
+</nav>
+<div class="card"><div class="card-body">
+    <h2 class="card-title h5"><i class="bi bi-x-circle me-1 text-danger"></i> Buchung stornieren</h2>
+    <p>Möchtest du folgende Buchung wirklich stornieren?</p>
+    <ul>
+        <li><strong>Arbeitsplatz:</strong> {{ booking.workspace.name }} ({{ booking.workspace.location.name }})</li>
+        <li><strong>Datum:</strong> {{ booking.date|date:"D, d.m.Y" }}</li>
+        {% if booking.purpose %}<li><strong>Zweck:</strong> {{ booking.purpose }}</li>{% endif %}
+    </ul>
+    <p class="text-muted small">Der Termin wird automatisch aus deinem Outlook-Kalender entfernt.</p>
+    <form method="post" class="d-flex gap-2 justify-content-end">
+        {% csrf_token %}
+        <a href="{% url 'workspace:portal_my_bookings' %}" class="btn btn-outline-secondary">Abbrechen</a>
+        <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle me-1"></i> Stornieren</button>
+    </form>
+</div></div>
+{% endblock %}

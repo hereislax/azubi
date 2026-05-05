@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}Praktikumseinsatz bearbeiten{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'instructor:chief_instructor_list' %}">Ausbildungskoordinationen</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'instructor:chief_instructor_detail' chief.public_id %}">{{ chief }}</a></li>
+        <li class="breadcrumb-item active">Einsatz bearbeiten</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-plus me-1"></i> Praktikumseinsatz bearbeiten</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Block: <strong>{{ schedule_block.name }}</strong>
+                    ({{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }})
+                    &mdash; Es werden nur Organisationseinheiten aus Ihrem Verantwortungsbereich angezeigt.
+                </p>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
+                        <label for="{{ field.id_for_label }}" class="kern-label">
+                            {{ field.label }}
+                            {% if not field.field.required %}<span class="kern-label__optional">(optional)</span>{% endif %}
+                        </label>
+
+                        {% if field.html_name == 'student' %}
+                            <div class="d-none">{{ field }}</div>
+                            <input type="text" class="kern-form-input__input" readonly disabled
+                                   value="{{ assignment.student }}">
+                            <div class="kern-hint">Nachwuchskraft kann durch die Koordination nicht verändert werden.</div>
+
+                        {% elif field.html_name == 'unit' %}
+                            {% if is_locked_for_changes %}
+                                <div class="d-none">{{ field }}</div>
+                                <input type="text" class="kern-form-input__input" readonly disabled
+                                       value="{{ assignment.unit }}">
+                                <div class="kern-hint">
+                                    Stationswechsel benötigen einen Änderungsantrag (siehe unten).
+                                </div>
+                            {% else %}
+                                <div style="display:none;">{{ field }}</div>
+                                <div class="ac-wrap position-relative" id="unit_wrap">
+                                    <input type="text" id="unit_search"
+                                           class="kern-form-input__input {% if field.errors %}is-invalid{% endif %}"
+                                           placeholder="Organisationseinheit suchen…"
+                                           autocomplete="off">
+                                    <div id="unit_dropdown" class="ac-dropdown"></div>
+                                </div>
+                            {% endif %}
+
+                        {% elif field.html_name == 'start_date' or field.html_name == 'end_date' %}
+                            {% if is_locked_for_changes %}
+                                <div class="d-none">{{ field }}</div>
+                                <input type="text" class="kern-form-input__input" readonly disabled
+                                       value="{% if field.html_name == 'start_date' %}{{ assignment.start_date|date:'d.m.Y' }}{% else %}{{ assignment.end_date|date:'d.m.Y' }}{% endif %}">
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+
+                        {% elif field.html_name == 'location' %}
+                            {% if is_locked_for_changes %}
+                                <div class="d-none">{{ field }}</div>
+                                <input type="text" class="kern-form-input__input" readonly disabled
+                                       value="{% if assignment.location %}{{ assignment.location }}{% if assignment.location.address %} – {{ assignment.location.address }}{% endif %}{% else %}Kein Standort zugewiesen{% endif %}">
+                                {% if assignment.location %}
+                                    <div class="kern-hint">Standortwechsel benötigen einen Änderungsantrag.</div>
+                                {% endif %}
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+
+                        {% elif field.html_name == 'instructor' %}
+                            {# Hidden select – Django renders selected correctly #}
+                            <div style="display:none;">{{ field }}</div>
+                            <div class="ac-wrap position-relative" id="instr_wrap">
+                                <input type="text" id="instr_search"
+                                       class="kern-form-input__input {% if field.errors %}is-invalid{% endif %}"
+                                       placeholder="Praxistutor suchen…"
+                                       autocomplete="off">
+                                <div id="instr_dropdown" class="ac-dropdown"></div>
+                            </div>
+                            <div id="instr_hint" class="kern-hint text-muted" style="display:none;"></div>
+
+                        {% else %}
+                            {{ field }}
+                        {% endif %}
+
+                        {% if field.errors %}
+                        <span class="kern-error">
+                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ field.errors|join:", " }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i> Speichern
+                        </button>
+                        <a href="{% url 'instructor:chief_instructor_detail' chief.public_id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Abbrechen
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# ── Aenderungsantraege ────────────────────────────────────────── #}
+        {% if is_locked_for_changes %}
+        <div class="card shadow-sm mt-3">
+            <div class="card-header">
+                <i class="bi bi-pencil-square me-1"></i> Änderungsanträge
+            </div>
+            <div class="card-body">
+                {% with open_requests=assignment.change_requests.all %}
+                {% for cr in open_requests %}
+                    {% if cr.status == 'pending' %}
+                        <div class="alert alert-warning d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <i class="bi bi-hourglass-split me-1"></i>
+                                Offener Antrag: <strong>{{ cr.get_change_type_display }}</strong> – {{ cr.summary }}
+                                <div class="text-muted small">
+                                    Beantragt am {{ cr.requested_at|date:"d.m.Y, H:i" }} Uhr
+                                    von {{ cr.requested_by.get_full_name|default:cr.requested_by.username }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% endwith %}
+
+                <p class="text-muted small mb-2">
+                    Änderungen an Stationszuordnung, Zeitraum, Standort oder eine Stornierung
+                    benötigen die Genehmigung der Ausbildungsleitung. Praxistutor-Wechsel
+                    werden direkt umgesetzt.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'instructor:change_request_create' chief.pk assignment.pk 'shift' %}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-arrows-expand me-1"></i> Zeitraum verschieben
+                    </a>
+                    <a href="{% url 'instructor:change_request_create' chief.pk assignment.pk 'split' %}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-scissors me-1"></i> Einsatz teilen
+                    </a>
+                    <a href="{% url 'instructor:change_request_create' chief.pk assignment.pk 'unit_change' %}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-diagram-3 me-1"></i> Stationswechsel
+                    </a>
+                    <a href="{% url 'instructor:change_request_create' chief.pk assignment.pk 'location' %}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-geo-alt me-1"></i> Standortwechsel
+                    </a>
+                    <a href="{% url 'instructor:change_request_create' chief.pk assignment.pk 'instructor' %}"
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-person-gear me-1"></i> Praxistutor wechseln
+                    </a>
+                    <a href="{% url 'instructor:change_request_create' chief.pk assignment.pk 'cancel' %}"
+                       class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-x-octagon me-1"></i> Einsatz stornieren
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .ac-dropdown {
+        position: absolute;
+        top: 100%; left: 0;
+        width: 100%;
+        display: none;
+        z-index: 200;
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    }
+    .ac-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #f0f0f0; }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.active { background: #e8f0fe; }
+    .ac-item-full { opacity: 0.55; cursor: not-allowed; background: #f8f9fa !important; }
+    .ac-highlight { font-weight: 600; color: #0d6efd; }
+    .ac-type  { font-size: 0.72rem; color: #6c757d; margin-left: 6px; }
+    .ac-badge { font-size: 0.68rem; border-radius: 3px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
+    .ac-badge-ok   { color: #6c757d; background: #e9ecef; }
+    .ac-badge-full { color: #dc3545; background: #fde8e8; font-weight: 600; }
+    .ac-empty { padding: 10px 12px; font-size: 0.85rem; color: #6c757d; font-style: italic; }
+</style>
+
+<script>
+(function () {
+    /* ── shared helpers ─────────────────────────────────────── */
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c =>
+            ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function hilite(text, q) {
+        if (!q) return esc(text);
+        const i = text.toLowerCase().indexOf(q.toLowerCase());
+        if (i === -1) return esc(text);
+        return esc(text.slice(0, i))
+             + '<span class="ac-highlight">' + esc(text.slice(i, i + q.length)) + '</span>'
+             + esc(text.slice(i + q.length));
+    }
+    function makeAC(cfg) {
+        /* cfg: { hiddenId, searchId, dropdownId, getOptions, onSelect } */
+        const hidden   = document.getElementById(cfg.hiddenId);
+        const search   = document.getElementById(cfg.searchId);
+        const dropdown = document.getElementById(cfg.dropdownId);
+        if (!hidden || !search || !dropdown) return null;
+
+        let activeIdx = -1;
+
+        function render(query) {
+            const q   = query.trim().toLowerCase();
+            const all = cfg.getOptions();
+            const hits = q ? all.filter(o => o.text.toLowerCase().includes(q)) : all;
+            dropdown.innerHTML = '';
+            activeIdx = -1;
+            if (hits.length === 0) {
+                dropdown.innerHTML = '<div class="ac-empty">Keine Treffer</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+            hits.slice(0, 50).forEach((opt, i) => {
+                const item = document.createElement('div');
+                item.className = 'ac-item' + (opt.full ? ' ac-item-full' : '');
+                item.dataset.value = opt.value;
+                item.dataset.idx   = i;
+                item.innerHTML     = cfg.renderItem(opt, query.trim());
+                if (!opt.full) {
+                    item.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        select(opt);
+                    });
+                }
+                dropdown.appendChild(item);
+            });
+            dropdown.style.display = 'block';
+        }
+
+        function select(opt) {
+            hidden.value  = opt.value;
+            search.value  = opt.label || opt.text;
+            dropdown.style.display = 'none';
+            activeIdx = -1;
+            if (cfg.onSelect) cfg.onSelect(opt);
+        }
+
+        function setActive(idx) {
+            const items = dropdown.querySelectorAll('.ac-item');
+            items.forEach(el => el.classList.remove('active'));
+            if (idx >= 0 && idx < items.length) {
+                items[idx].classList.add('active');
+                items[idx].scrollIntoView({ block: 'nearest' });
+                activeIdx = idx;
+            }
+        }
+
+        search.addEventListener('input', () => {
+            render(search.value);
+            if (hidden.value) {
+                const all = cfg.getOptions();
+                const cur = all.find(o => String(o.value) === String(hidden.value));
+                if (cur && !cur.text.toLowerCase().includes(search.value.trim().toLowerCase())) {
+                    hidden.value = '';
+                }
+            }
+        });
+        search.addEventListener('focus', () => render(search.value));
+        search.addEventListener('blur',  () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
+        search.addEventListener('keydown', e => {
+            const items = dropdown.querySelectorAll('.ac-item');
+            if (!items.length) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+            else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0) items[activeIdx].dispatchEvent(new MouseEvent('mousedown')); }
+            else if (e.key === 'Escape') { dropdown.style.display = 'none'; }
+        });
+
+        return { render, select, setPreselected(text) { search.value = text; } };
+    }
+
+    /* ── Unit autocomplete ──────────────────────────────────── */
+    const FULL_PKS  = new Set({{ full_unit_pks_json|default:"[]"|safe }});
+    const USAGE_MAP = {{ usage_map_json|default:"{}"|safe }};
+
+    const unitSelect = document.getElementById('id_unit');
+    const unitOptions = Array.from(unitSelect ? unitSelect.options : [])
+        .filter(o => o.value)
+        .map(o => ({ value: o.value, text: o.text, full: FULL_PKS.has(Number(o.value)) }));
+
+    const unitAC = makeAC({
+        hiddenId:   'id_unit',
+        searchId:   'unit_search',
+        dropdownId: 'unit_dropdown',
+        getOptions: () => unitOptions,
+        renderItem(opt, query) {
+            const m       = opt.text.match(/\(([^)]+)\)$/);
+            const abbr    = m ? m[1] : '';
+            const name    = abbr ? opt.text.replace(/\s*\([^)]+\)$/, '') : opt.text;
+            const usage   = USAGE_MAP[opt.value];
+            let badge     = '';
+            if (usage) {
+                const [used, max] = usage;
+                badge = `<span class="ac-badge ${used >= max ? 'ac-badge-full' : 'ac-badge-ok'}">${used}/${max}</span>`;
+            }
+            const fullBadge = opt.full ? '<span class="ac-badge ac-badge-full">voll</span>' : '';
+            return hilite(name, query)
+                 + (abbr ? `<span class="ac-type">${esc(abbr)}</span>` : '')
+                 + badge + fullBadge;
+        },
+        onSelect(opt) { instrAC && loadInstructors(opt.value); },
+    });
+
+    if (unitAC && unitSelect) {
+        const pre = unitSelect.options[unitSelect.selectedIndex];
+        if (pre && pre.value) unitAC.setPreselected(pre.text);
+    }
+
+    /* ── Instructor autocomplete ────────────────────────────── */
+    const AJAX_URL    = "{% url 'instructor:instructors_for_unit' %}";
+    const JOB_PROFILE = "{{ job_profile_pk|default:'' }}";
+    const LOCATION_PK = "{{ assignment.location_id|default:'' }}";
+    const EXCLUDE_PK  = "{{ assignment.pk|default:'' }}";
+    const CURRENT_INSTRUCTOR_PK = "{{ assignment.instructor_id|default:'' }}";
+
+    let instrOptions = [];
+
+    const instrAC = makeAC({
+        hiddenId:   'id_instructor',
+        searchId:   'instr_search',
+        dropdownId: 'instr_dropdown',
+        getOptions: () => instrOptions,
+        renderItem(opt, query) {
+            const badge = opt.full
+                ? '<span class="ac-badge ac-badge-full">5/5 – voll</span>'
+                : `<span class="ac-badge ac-badge-ok">${opt.count}/5</span>`;
+            return hilite(opt.text, query) + badge;
+        },
+    });
+
+    // Pre-fill instructor search text from the hidden select's selected option
+    const instrHidden = document.getElementById('id_instructor');
+    if (instrHidden) {
+        const pre = instrHidden.options[instrHidden.selectedIndex];
+        if (pre && pre.value) instrAC.setPreselected(pre.text);
+    }
+
+    function loadInstructors(unitPk) {
+        const hint = document.getElementById('instr_hint');
+        if (!unitPk) {
+            instrOptions = [];
+            instrAC.render('');
+            if (hint) hint.style.display = 'none';
+            return;
+        }
+        const startInput = document.getElementById('id_start_date');
+        const endInput   = document.getElementById('id_end_date');
+        const params = new URLSearchParams({ unit: unitPk });
+        if (JOB_PROFILE) params.set('job_profile', JOB_PROFILE);
+        if (LOCATION_PK) params.set('location', LOCATION_PK);
+        if (startInput && startInput.value) params.set('start_date', startInput.value);
+        if (endInput   && endInput.value)   params.set('end_date',   endInput.value);
+        if (EXCLUDE_PK) params.set('exclude', EXCLUDE_PK);
+        if (CURRENT_INSTRUCTOR_PK) params.set('current', CURRENT_INSTRUCTOR_PK);
+
+        fetch(AJAX_URL + '?' + params.toString())
+            .then(r => r.json())
+            .then(data => {
+                const prevPk = instrHidden ? instrHidden.value : '';
+                instrOptions = data.instructors.map(i => ({
+                    value: String(i.pk),
+                    text:  i.name,
+                    label: i.name,
+                    full:  i.full,
+                    count: i.current_count,
+                }));
+                // Restore previously selected instructor if still in list and not full
+                const still = instrOptions.find(o => o.value === prevPk && !o.full);
+                if (still) {
+                    instrAC.setPreselected(still.text);
+                } else {
+                    if (instrHidden) instrHidden.value = '';
+                    instrAC.setPreselected('');
+                }
+                if (hint) {
+                    if (instrOptions.length === 0) {
+                        hint.textContent = 'Keine passenden Praxistutoren für diese Einheit und dieses Berufsbild gefunden.';
+                        hint.style.display = 'block';
+                    } else {
+                        hint.style.display = 'none';
+                    }
+                }
+            });
+    }
+
+    // Load instructors for the initially selected unit on page load
+    if (unitSelect && unitSelect.value) {
+        loadInstructors(unitSelect.value);
+    }
+})();
+</script>
+{% endblock %}

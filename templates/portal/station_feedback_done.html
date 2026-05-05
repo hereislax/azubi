@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Stationsbewertung eingereicht{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'portal:stationsplan' %}">Stationsplan</a></li>
+        <li class="breadcrumb-item active">Stationsbewertung</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+<div class="col-12 col-lg-6 text-center py-4">
+
+    {% if already_submitted %}
+    <i class="bi bi-star-fill fs-1 text-info d-block mb-3"></i>
+    <h4 class="mb-2">Bewertung bereits abgegeben</h4>
+    <p class="text-muted mb-4">
+        Du hast für den Praxisabschnitt bei <strong>{{ assignment.unit }}</strong>
+        bereits eine anonyme Stationsbewertung eingereicht.
+    </p>
+    {% else %}
+    <i class="bi bi-check-circle-fill fs-1 text-success d-block mb-3"></i>
+    <h4 class="mb-2">Danke für deine Bewertung!</h4>
+    <p class="text-muted mb-4">
+        Deine anonyme Stationsbewertung für <strong>{{ assignment.unit }}</strong>
+        wurde erfolgreich gespeichert.<br>
+        Sie hilft dabei, die Ausbildungsqualität kontinuierlich zu verbessern.
+    </p>
+    {% endif %}
+
+    <a href="{% url 'portal:stationsplan' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Zurück zum Stationsplan
+    </a>
+
+</div>
+</div>
+{% endblock %}

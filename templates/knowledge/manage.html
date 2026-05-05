@@ -1,0 +1,508 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Wissensdatenbank{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">Wissensdatenbank</li>
+    </ol>
+</nav>
+<div class="page-title">
+    <h2><i class="bi bi-journal-bookmark me-2"></i>Wissensdatenbank</h2>
+    <div class="d-flex gap-2">
+        <button class="kern-btn kern-btn--tertiary" onclick="kernDialogOpen('dialog-add-category')">
+            <span class="kern-icon kern-icon--add" aria-hidden="true"></span>
+            <span class="kern-label">Neue Kategorie</span>
+        </button>
+        <button class="kern-btn kern-btn--primary" onclick="resetDocumentDialog(); kernDialogOpen('dialog-document')">
+            <span class="kern-icon kern-icon--add" aria-hidden="true"></span>
+            <span class="kern-label">Neues Dokument</span>
+        </button>
+    </div>
+</div>
+<p class="text-muted">Dokumente und Links für Nachwuchskräfte bereitstellen.</p>
+
+{% if error %}
+<div class="alert alert-danger mb-3">{{ error }}</div>
+{% endif %}
+
+{% if not categories %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-journal-bookmark" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Noch keine Kategorien angelegt.</p>
+    <button class="kern-btn kern-btn--primary mt-3" onclick="kernDialogOpen('dialog-add-category')">
+        <span class="kern-icon kern-icon--add" aria-hidden="true"></span>
+        <span class="kern-label">Erste Kategorie anlegen</span>
+    </button>
+</div>
+{% else %}
+
+{# ── Kategorie-Übersicht ──────────────────────────────────────────────────── #}
+{% for cat in categories %}
+<div class="card shadow-sm mb-3 {% if not cat.is_active %}opacity-50{% endif %}">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi {{ cat.icon }} text-primary me-1"></i>
+        <span class="fw-semibold">{{ cat.name }}</span>
+        {% if not cat.is_active %}
+        <span class="badge bg-secondary ms-1">Inaktiv</span>
+        {% endif %}
+        <div class="ms-auto d-flex gap-1">
+            <button class="kern-btn kern-btn--tertiary kern-btn--sm"
+                    onclick="openEditCategory({{ cat.pk }}, '{{ cat.name|escapejs }}', '{{ cat.icon|escapejs }}', {{ cat.order }}, {{ cat.is_active|yesno:'true,false' }})"
+                    title="Kategorie bearbeiten">
+                <span class="kern-icon kern-icon--edit" aria-hidden="true"></span>
+            </button>
+            <form method="post" action="{% url 'knowledge:delete_category' cat.public_id %}"
+                  onsubmit="return confirm('Kategorie „{{ cat.name }}" wirklich löschen? (Nur möglich wenn keine Dokumente darin sind)')">
+                {% csrf_token %}
+                <button type="submit" class="kern-btn kern-btn--tertiary kern-btn--sm kern-btn--danger" title="Kategorie löschen">
+                    <span class="kern-icon kern-icon--delete" aria-hidden="true"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if cat.documents.all %}
+        <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:2rem;"></th>
+                    <th>Titel</th>
+                    <th>Sichtbarkeit</th>
+                    <th>Zielgruppe</th>
+                    <th class="text-center">Aktiv</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in cat.documents.all %}
+                <tr {% if not doc.is_active %}class="text-muted"{% endif %}>
+                    <td class="text-center">
+                        {% if doc.is_link %}
+                        <i class="bi bi-box-arrow-up-right text-info" title="Externer Link"></i>
+                        {% elif doc.file_extension == 'pdf' %}
+                        <i class="bi bi-file-earmark-pdf text-danger" title="PDF"></i>
+                        {% elif doc.file_extension in 'docx,doc' %}
+                        <i class="bi bi-file-earmark-word text-primary" title="Word"></i>
+                        {% elif doc.file_extension in 'xlsx,csv' %}
+                        <i class="bi bi-file-earmark-spreadsheet text-success" title="Tabelle"></i>
+                        {% elif doc.file_extension in 'jpg,jpeg,png' %}
+                        <i class="bi bi-file-earmark-image text-secondary" title="Bild"></i>
+                        {% else %}
+                        <i class="bi bi-file-earmark text-muted" title="Datei"></i>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-semibold small">{{ doc.title }}</div>
+                        {% if doc.description %}
+                        <div class="text-muted" style="font-size:.75rem;">{{ doc.description|truncatechars:80 }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="small">
+                        {% if doc.visibility == 'all' %}
+                        <span class="badge bg-primary">Alle NK</span>
+                        {% elif doc.visibility == 'job_profile' %}
+                        <span class="badge bg-info text-dark">Berufsbild</span>
+                        {% elif doc.visibility == 'course' %}
+                        <span class="badge bg-warning text-dark">Kurs</span>
+                        {% elif doc.visibility == 'career' %}
+                        <span class="badge bg-secondary">Laufbahn</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">
+                        {% if doc.visibility == 'job_profile' and doc.target_job_profile %}
+                            {{ doc.target_job_profile.job_profile }}
+                        {% elif doc.visibility == 'course' and doc.target_course %}
+                            {{ doc.target_course.title }}
+                        {% elif doc.visibility == 'career' and doc.target_career %}
+                            {{ doc.target_career.description }}
+                        {% else %}–{% endif %}
+                    </td>
+                    <td class="text-center">
+                        <form method="post" action="{% url 'knowledge:toggle_document' doc.public_id %}">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="kern-btn kern-btn--tertiary kern-btn--sm"
+                                    title="{% if doc.is_active %}Deaktivieren{% else %}Aktivieren{% endif %}">
+                                <i class="bi {% if doc.is_active %}bi-check-circle-fill text-success{% else %}bi-pause-circle text-secondary{% endif %}"></i>
+                            </button>
+                        </form>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <button class="kern-btn kern-btn--tertiary kern-btn--sm"
+                                    onclick="openEditDocument({{ doc.pk }}, '{{ doc.title|escapejs }}', '{{ doc.description|escapejs }}', '{{ doc.content|escapejs }}', {{ doc.category_id }}, '{{ doc.external_url|escapejs }}', '{{ doc.filename|escapejs }}', '{{ doc.visibility }}', {{ doc.target_job_profile_id|default:'null' }}, {{ doc.target_course_id|default:'null' }}, {{ doc.target_career_id|default:'null' }}, {{ doc.order }}, {{ doc.is_active|yesno:'true,false' }})"
+                                    title="Bearbeiten">
+                                <span class="kern-icon kern-icon--edit" aria-hidden="true"></span>
+                            </button>
+                            <form method="post" action="{% url 'knowledge:delete_document' doc.public_id %}"
+                                  onsubmit="return confirm('Dokument „{{ doc.title }}" wirklich löschen?')">
+                                {% csrf_token %}
+                                <button type="submit" class="kern-btn kern-btn--tertiary kern-btn--sm kern-btn--danger" title="Löschen">
+                                    <span class="kern-icon kern-icon--delete" aria-hidden="true"></span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted small p-3 mb-0">
+            Noch keine Dokumente in dieser Kategorie.
+            <button class="btn btn-link btn-sm p-0 ms-1" onclick="openAddDocumentForCategory({{ cat.pk }})">Jetzt hinzufügen</button>
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{# Dialog: Neue Kategorie                                                      #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+<dialog class="kern-dialog" id="dialog-add-category" aria-labelledby="dialog-add-category-heading">
+    <form method="post" action="{% url 'knowledge:manage' %}" style="display:contents;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_category">
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="dialog-add-category-heading">
+                <i class="bi bi-folder-plus me-1"></i> Neue Kategorie
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <div class="kern-form-input">
+                <label class="kern-label" for="cat-add-name">Name <span class="text-danger">*</span></label>
+                <input type="text" name="name" id="cat-add-name" class="kern-form-input__input" required maxlength="100" autofocus>
+            </div>
+            <div class="kern-form-input">
+                <label class="kern-label" for="cat-add-icon">Icon</label>
+                <input type="text" name="icon" id="cat-add-icon" class="kern-form-input__input" value="bi-folder" maxlength="60"
+                       placeholder="z. B. bi-folder, bi-file-earmark-text">
+                <span class="kern-hint">Bootstrap-Icon-Klasse — <a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener">alle Icons</a></span>
+            </div>
+            <div class="kern-form-input">
+                <label class="kern-label" for="cat-add-order">Reihenfolge</label>
+                <input type="number" name="order" id="cat-add-order" class="kern-form-input__input" value="0" min="0">
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="is_active" id="cat-add-active" checked>
+                <label class="form-check-label" for="cat-add-active">Aktiv</label>
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Anlegen</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{# Dialog: Kategorie bearbeiten                                                #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+<dialog class="kern-dialog" id="dialog-edit-category" aria-labelledby="dialog-edit-category-heading">
+    <form method="post" action="{% url 'knowledge:manage' %}" style="display:contents;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit_category">
+        <input type="hidden" name="category_id" id="edit-cat-id">
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="dialog-edit-category-heading">
+                <i class="bi bi-pencil me-1"></i> Kategorie bearbeiten
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <div class="kern-form-input">
+                <label class="kern-label" for="edit-cat-name">Name <span class="text-danger">*</span></label>
+                <input type="text" name="name" id="edit-cat-name" class="kern-form-input__input" required maxlength="100">
+            </div>
+            <div class="kern-form-input">
+                <label class="kern-label" for="edit-cat-icon">Icon</label>
+                <input type="text" name="icon" id="edit-cat-icon" class="kern-form-input__input" maxlength="60">
+            </div>
+            <div class="kern-form-input">
+                <label class="kern-label" for="edit-cat-order">Reihenfolge</label>
+                <input type="number" name="order" id="edit-cat-order" class="kern-form-input__input" min="0">
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="is_active" id="edit-cat-active">
+                <label class="form-check-label" for="edit-cat-active">Aktiv</label>
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Speichern</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{# Dialog: Neues Dokument / Dokument bearbeiten                                #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+<dialog class="kern-dialog kern-dialog--lg" id="dialog-document" aria-labelledby="dialog-document-heading">
+    <form method="post" action="{% url 'knowledge:manage' %}" enctype="multipart/form-data" style="display:contents;">
+        {% csrf_token %}
+        <input type="hidden" name="action" id="doc-action" value="add_document">
+        <input type="hidden" name="document_id" id="doc-id" value="">
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="dialog-document-heading">
+                <i class="bi bi-file-earmark-plus me-1"></i>
+                <span id="doc-dialog-title">Neues Dokument</span>
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body" style="overflow-y:auto;max-height:65vh;">
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-title">Titel <span class="text-danger">*</span></label>
+                        <input type="text" name="title" id="doc-title" class="kern-form-input__input" required maxlength="200">
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-description">Beschreibung</label>
+                        <textarea name="description" id="doc-description" class="kern-form-input__input" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-category">Kategorie <span class="text-danger">*</span></label>
+                        <select name="category_id" id="doc-category" class="kern-form-input__input" required>
+                            {% for cat in categories %}
+                            <option value="{{ cat.pk }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-order">Reihenfolge</label>
+                        <input type="number" name="order" id="doc-order" class="kern-form-input__input" value="0" min="0">
+                    </div>
+                </div>
+
+                {# ── Datei ────────────────────────────────────────────────── #}
+                <div class="col-12">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-file">Datei<span class="kern-label__optional"> – Optional</span></label>
+                        <div class="kern-hint" id="doc-file-hint">Erlaubt: PDF, Word, Excel, CSV, Bilder — max. 50 MB</div>
+                        <input type="file" name="file" id="doc-file" class="kern-form-input__input"
+                               accept=".pdf,.docx,.doc,.xlsx,.csv,.jpg,.jpeg,.png"
+                               aria-describedby="doc-file-hint">
+                    </div>
+                    <div id="doc-current-file" class="d-flex align-items-center gap-2 mt-1" style="display:none !important;">
+                        <i class="bi bi-paperclip text-muted"></i>
+                        <span class="text-muted small" id="doc-current-filename"></span>
+                        <div class="form-check ms-2 mb-0">
+                            <input class="form-check-input" type="checkbox" name="remove_file" id="doc-remove-file">
+                            <label class="form-check-label small text-danger" for="doc-remove-file">Datei entfernen</label>
+                        </div>
+                    </div>
+                </div>
+
+                {# ── Externe URL ──────────────────────────────────────────── #}
+                <div class="col-12">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-url">Externe URL <span class="text-muted fw-normal">(optional)</span></label>
+                        <input type="url" name="external_url" id="doc-url" class="kern-form-input__input"
+                               placeholder="https://…">
+                    </div>
+                </div>
+
+                {# ── Textinhalt ───────────────────────────────────────────── #}
+                <div class="col-12">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-content">Textinhalt <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea name="content" id="doc-content" class="kern-form-input__input" rows="5"
+                                  placeholder="Artikel-Text …"></textarea>
+                    </div>
+                </div>
+
+                {# ── Sichtbarkeit ──────────────────────────────────────────── #}
+                <div class="col-md-6">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="doc-visibility">Sichtbarkeit</label>
+                        <select name="visibility" id="doc-visibility" class="kern-form-input__input"
+                                onchange="toggleVisibilityTarget(this.value)">
+                            <option value="all">Alle Nachwuchskräfte</option>
+                            <option value="job_profile">Bestimmtes Berufsbild</option>
+                            <option value="course">Bestimmter Kurs</option>
+                            <option value="career">Bestimmte Laufbahn</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-6" id="vis-target-group" style="display:none;">
+                    <div id="vis-job-profile-group" style="display:none;">
+                        <div class="kern-form-input">
+                            <label class="kern-label" for="doc-job-profile">Berufsbild</label>
+                            <select name="target_job_profile" id="doc-job-profile" class="kern-form-input__input">
+                                <option value="">– bitte wählen –</option>
+                                {% for jp in job_profiles %}
+                                <option value="{{ jp.pk }}">{{ jp.job_profile }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div id="vis-course-group" style="display:none;">
+                        <div class="kern-form-input">
+                            <label class="kern-label" for="doc-course">Kurs</label>
+                            <select name="target_course" id="doc-course" class="kern-form-input__input">
+                                <option value="">– bitte wählen –</option>
+                                {% for c in courses %}
+                                <option value="{{ c.pk }}">{{ c.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div id="vis-career-group" style="display:none;">
+                        <div class="kern-form-input">
+                            <label class="kern-label" for="doc-career">Laufbahn</label>
+                            <select name="target_career" id="doc-career" class="kern-form-input__input">
+                                <option value="">– bitte wählen –</option>
+                                {% for car in careers %}
+                                <option value="{{ car.pk }}">{{ car.description }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="doc-is-active" checked>
+                        <label class="form-check-label" for="doc-is-active">Aktiv</label>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary" id="doc-submit-btn">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label" id="doc-submit-label">Anlegen</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── Kategorie-Dialog bearbeiten ─────────────────────────────────────────── */
+function openEditCategory(id, name, icon, order, isActive) {
+    document.getElementById('edit-cat-id').value    = id;
+    document.getElementById('edit-cat-name').value  = name;
+    document.getElementById('edit-cat-icon').value  = icon;
+    document.getElementById('edit-cat-order').value = order;
+    document.getElementById('edit-cat-active').checked = isActive;
+    kernDialogOpen('dialog-edit-category');
+}
+
+/* ── Dokument-Dialog: Neues Dokument für Kategorie ───────────────────────── */
+function openAddDocumentForCategory(categoryId) {
+    resetDocumentDialog();
+    document.getElementById('doc-category').value = categoryId;
+    kernDialogOpen('dialog-document');
+}
+
+/* ── Dokument-Dialog: Bearbeiten ─────────────────────────────────────────── */
+function openEditDocument(id, title, description, content, categoryId, url, filename, visibility,
+                          jobProfileId, courseId, careerId, order, isActive) {
+    document.getElementById('doc-dialog-title').textContent = 'Dokument bearbeiten';
+    document.getElementById('doc-submit-label').textContent = 'Speichern';
+    document.getElementById('doc-action').value      = 'edit_document';
+    document.getElementById('doc-id').value          = id;
+    document.getElementById('doc-title').value       = title;
+    document.getElementById('doc-description').value = description;
+    document.getElementById('doc-content').value     = content;
+    document.getElementById('doc-url').value         = url;
+    document.getElementById('doc-category').value    = categoryId;
+    document.getElementById('doc-order').value       = order;
+    document.getElementById('doc-is-active').checked = isActive;
+
+    const currentFileRow = document.getElementById('doc-current-file');
+    if (filename) {
+        document.getElementById('doc-current-filename').textContent = filename;
+        currentFileRow.style.display = 'flex';
+    } else {
+        currentFileRow.style.display = 'none';
+    }
+    document.getElementById('doc-remove-file').checked = false;
+
+    document.getElementById('doc-visibility').value = visibility;
+    toggleVisibilityTarget(visibility);
+
+    if (jobProfileId) document.getElementById('doc-job-profile').value = jobProfileId;
+    if (courseId)     document.getElementById('doc-course').value      = courseId;
+    if (careerId)     document.getElementById('doc-career').value      = careerId;
+
+    kernDialogOpen('dialog-document');
+}
+
+function resetDocumentDialog() {
+    document.getElementById('doc-dialog-title').textContent = 'Neues Dokument';
+    document.getElementById('doc-submit-label').textContent = 'Anlegen';
+    document.getElementById('doc-action').value      = 'add_document';
+    document.getElementById('doc-id').value          = '';
+    document.getElementById('doc-title').value       = '';
+    document.getElementById('doc-description').value = '';
+    document.getElementById('doc-content').value     = '';
+    document.getElementById('doc-url').value         = '';
+    document.getElementById('doc-order').value       = '0';
+    document.getElementById('doc-is-active').checked = true;
+    document.getElementById('doc-current-file').style.display = 'none';
+    document.getElementById('doc-remove-file').checked = false;
+    document.getElementById('doc-visibility').value = 'all';
+    toggleVisibilityTarget('all');
+}
+
+/* ── Sichtbarkeits-Toggle ────────────────────────────────────────────────── */
+function toggleVisibilityTarget(visibility) {
+    const targetGroup   = document.getElementById('vis-target-group');
+    const jpGroup       = document.getElementById('vis-job-profile-group');
+    const courseGroup   = document.getElementById('vis-course-group');
+    const careerGroup   = document.getElementById('vis-career-group');
+
+    targetGroup.style.display = (visibility === 'all') ? 'none' : 'block';
+    jpGroup.style.display     = (visibility === 'job_profile') ? 'block' : 'none';
+    courseGroup.style.display = (visibility === 'course')      ? 'block' : 'none';
+    careerGroup.style.display = (visibility === 'career')      ? 'block' : 'none';
+}
+</script>
+{% endblock %}

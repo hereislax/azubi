@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Pflichtschulungen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active">Pflichtschulungen</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-shield-check me-1"></i> Pflichtschulungen — Übersicht</h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'mandatorytraining:type_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list me-1"></i> Schulungs-Typen
+        </a>
+        {% if can_write %}
+        <a href="{% url 'mandatorytraining:bulk_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-people me-1"></i> Bulk-Erfassung
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width: 220px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">Nachwuchskraft</th>
+                    {% for t in types %}
+                    <th class="text-center" style="font-size: 0.78rem;">
+                        <div title="{{ t.description }}"><i class="{{ t.icon|default:'bi-shield-check' }}"></i></div>
+                        <div>{{ t.name|truncatechars:18 }}</div>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td style="position: sticky; left: 0; background: #fff; z-index: 1;">
+                        <a href="{% url 'mandatorytraining:student_detail' row.student.pk %}" class="text-decoration-none fw-semibold">
+                            {{ row.student.first_name }} {{ row.student.last_name }}
+                        </a>
+                        {% if row.student.course %}<div class="small text-muted">{{ row.student.course.title }}</div>{% endif %}
+                    </td>
+                    {% for cell in row.cells %}
+                    <td class="text-center">
+                        {% if cell.na %}
+                            <span class="text-muted small">—</span>
+                        {% else %}
+                            <span class="badge bg-{{ cell.badge }}" title="{{ cell.label }}{% if cell.date %} · gültig bis {{ cell.date|date:'d.m.Y' }}{% elif cell.status == 'completed' %} · lebenslang{% endif %}">
+                                {% if cell.status == 'completed' %}<i class="bi bi-check"></i>
+                                {% elif cell.status == 'soon_expiring' %}<i class="bi bi-clock"></i>
+                                {% elif cell.status == 'expired' %}<i class="bi bi-x"></i>
+                                {% else %}<i class="bi bi-dash"></i>{% endif %}
+                            </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ types|length|add:'1' }}" class="text-center text-muted py-3">Keine Nachwuchskräfte.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-3 d-flex align-items-center gap-3 flex-wrap small text-muted">
+    <span class="badge bg-success"><i class="bi bi-check"></i></span> Erfüllt
+    <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i></span> Bald ablaufend
+    <span class="badge bg-danger"><i class="bi bi-x"></i></span> Abgelaufen
+    <span class="badge bg-secondary"><i class="bi bi-dash"></i></span> Noch nicht absolviert
+    <span class="text-muted">— = gilt nicht für diese Person</span>
+</div>
+{% endblock %}

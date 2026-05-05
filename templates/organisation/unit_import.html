@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}OE-Import{% endblock %}
+
+{% block content %}
+<div style="max-width: 820px;">
+
+    <nav aria-label="breadcrumb" class="mt-3 mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organisation:unit_list' %}">Organisationsstruktur</a></li>
+            <li class="breadcrumb-item active">Importieren</li>
+        </ol>
+    </nav>
+
+    <div class="card border-info mb-4">
+        <div class="card-header bg-info bg-opacity-10 d-flex align-items-center">
+            <i class="bi bi-1-circle me-2 text-info"></i>
+            <span class="fw-semibold">Schritt 1 – Vorlage herunterladen</span>
+        </div>
+        <div class="card-body">
+            <p class="mb-3 small">
+                Die Vorlage enthält die richtigen Spaltenüberschriften, eine Beispielzeile sowie
+                Referenzlisten aller bestehenden <strong>Standorte</strong>, <strong>Kompetenzen</strong>
+                und <strong>Organisationseinheiten</strong>. Bitte ausschließlich die Werte aus den
+                Referenzlisten verwenden – sonst werden die Zeilen mit Fehler markiert.
+            </p>
+            <a href="{% url 'organisation:unit_import_template' %}" class="btn btn-outline-info">
+                <i class="bi bi-download me-1"></i> Vorlage herunterladen (.xlsx)
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <i class="bi bi-2-circle me-2"></i>
+            <span class="fw-semibold">Schritt 2 – Ausgefüllte Datei hochladen</span>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="kern-form-input {% if form.file.errors %}kern-form-input--error{% endif %}">
+                    <label class="kern-label" for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+                    {% if form.file.help_text %}
+                    <div class="kern-hint" id="{{ form.file.id_for_label }}-hint">{{ form.file.help_text }}</div>
+                    {% endif %}
+                    {{ form.file }}
+                    {% if form.file.errors %}
+                    <span class="kern-error">
+                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ form.file.errors|join:", " }}
+                    </span>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-eye me-1"></i> Vorschau anzeigen
+                </button>
+                <a href="{% url 'organisation:unit_list' %}" class="btn btn-outline-secondary ms-2">Abbrechen</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4 border-secondary">
+        <div class="card-header bg-secondary bg-opacity-10">
+            <a class="text-decoration-none text-dark fw-semibold" data-bs-toggle="collapse" href="#format-help">
+                <i class="bi bi-info-circle me-1"></i> Erwartetes Dateiformat
+            </a>
+        </div>
+        <div class="collapse" id="format-help">
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    Erste Zeile = Spaltenüberschriften (Groß-/Kleinschreibung egal). Mehrere Standorte
+                    bzw. Kompetenzen werden mit Semikolon (<code>;</code>) getrennt.
+                </p>
+                <div class="table-responsive">
+                <table class="table table-sm table-bordered small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Spalte</th>
+                            <th>Pflicht</th>
+                            <th>Hinweis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>Name</code></td><td><span class="badge bg-danger">Ja</span></td><td>Kurzbezeichnung, max. 30 Zeichen</td></tr>
+                        <tr><td><code>Bezeichnung</code></td><td><span class="badge bg-danger">Ja</span></td><td>Ausgeschriebener Name</td></tr>
+                        <tr><td><code>Art</code></td><td><span class="badge bg-danger">Ja</span></td><td>Behörde, Abteilung, Referatsgruppe, Referat oder Sachgebiet</td></tr>
+                        <tr><td><code>Übergeordnete Einheit</code></td><td><span class="badge bg-secondary">Nein</span></td><td>Name einer bestehenden OE oder einer in derselben Datei angelegten OE</td></tr>
+                        <tr><td><code>Standorte</code></td><td><span class="badge bg-secondary">Nein</span></td><td>Mehrere mit <code>;</code> trennen – nur Werte aus der Referenzliste</td></tr>
+                        <tr><td><code>Kompetenzen</code></td><td><span class="badge bg-secondary">Nein</span></td><td>Mehrere mit <code>;</code> trennen – nur Werte aus der Referenzliste</td></tr>
+                        <tr><td><code>Max. Kapazität</code></td><td><span class="badge bg-secondary">Nein</span></td><td>Ganze Zahl ≥ 0</td></tr>
+                        <tr><td><code>Notizen</code></td><td><span class="badge bg-secondary">Nein</span></td><td>Freitext</td></tr>
+                        <tr><td><code>Aktiv</code></td><td><span class="badge bg-secondary">Nein</span></td><td><code>ja</code> (Default) oder <code>nein</code></td></tr>
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

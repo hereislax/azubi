@@ -1,0 +1,1078 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de" data-kern-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="{{ brand_primary_color }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="{% url 'services:manifest_json' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
+    <title>{% block title %}{% endblock %} - {{ brand_name }}</title>
+    {# ── KERN UX Design System (lokal, kein CDN) ─────────────────────────────── #}
+    <link rel="stylesheet" href="{% static 'css/fira-sans.css' %}">
+    <link rel="stylesheet" href="{% static 'css/kern.min.css' %}">
+    {# ── Bootstrap & Erweiterungen ─────────────────────────────────────────────── #}
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+    <link href="{% static 'css/datatables.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/tom-select.bootstrap5.min.css' %}">
+    {# ── Dynamisches Theme & eigene Anpassungen ────────────────────────────────── #}
+    <link rel="stylesheet" href="{% url 'services:theme_css' %}">
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    <link rel="icon" type="image/svg+xml" href="{% url 'services:favicon_svg' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
+    <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'js/pdfmake.min.js' %}"></script>
+    <script src="{% static 'js/vfs_fonts.js' %}"></script>
+    <script src="{% static 'js/datatables.min.js' %}"></script>
+
+    {# Sidebar-Zustand sofort anwenden – verhindert FOUC beim Neuladen #}
+    <script>
+        (function () {
+            if (localStorage.getItem('azubi_sidebar_closed') === '1')
+                document.documentElement.setAttribute('data-sidebar', 'closed');
+        })();
+    </script>
+
+    <style>
+        /* kern-kopfzeile (~32px) + navbar (~52px) */
+        :root {
+            --topbar-h: 5.25rem;
+            --sidebar-w: 268px;
+        }
+
+        body {
+            padding-top: var(--topbar-h);
+        }
+
+        .nav-search-input::placeholder {
+            color: rgba(255, 255, 255, .6);
+        }
+
+        .nav-search-input::-webkit-search-cancel-button {
+            filter: invert(1);
+        }
+
+        /* ── Sidebar ──────────────────────────────────────────────────────────── */
+        .app-sidebar {
+            position: fixed;
+            top: var(--topbar-h);
+            left: 0;
+            bottom: 2.5rem; /* Platz für fixierten Footer */
+            width: var(--sidebar-w);
+            background: var(--kern-color-layout-background-hued, #f5f7fa);
+            border-right: 1px solid var(--kern-color-layout-border-default, #d8dce3);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1029;
+            transition: transform .22s ease;
+        }
+
+        .app-sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .app-sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .app-sidebar::-webkit-scrollbar-thumb {
+            background: #c8cdd5;
+            border-radius: 2px;
+        }
+
+        /* ── Main-Content ─────────────────────────────────────────────────────── */
+        body.has-sidebar .main-content {
+            margin-left: var(--sidebar-w);
+            padding-left: .75rem;
+            transition: margin-left .22s ease, padding-left .22s ease;
+        }
+
+        /* Desktop: zugeklappt */
+        body.has-sidebar.sidebar-closed .app-sidebar {
+            transform: translateX(calc(-1 * var(--sidebar-w)));
+        }
+
+        body.has-sidebar.sidebar-closed .main-content {
+            margin-left: 0;
+            padding-left: 0;
+        }
+
+        /* FOUC-Schutz: Transitions bis JS fertig ist deaktivieren */
+        html[data-sidebar="closed"] body.has-sidebar .main-content {
+            margin-left: 0;
+            transition: none;
+        }
+
+        html[data-sidebar="closed"] .app-sidebar {
+            transform: translateX(calc(-1 * var(--sidebar-w)));
+            transition: none;
+        }
+
+        /* Mobil: Sidebar als Overlay */
+        @media (max-width: 991.98px) {
+            .app-sidebar {
+                transform: translateX(calc(-1 * var(--sidebar-w)));
+                z-index: 1045;
+            }
+
+            .app-sidebar.sidebar-mobile-show {
+                transform: translateX(0);
+                box-shadow: 4px 0 20px rgba(0, 0, 0, .18);
+            }
+
+            body.has-sidebar .main-content {
+                margin-left: 0 !important;
+            }
+        }
+
+        /* Backdrop (nur mobil) */
+        #sidebarBackdrop {
+            display: none;
+            position: fixed;
+            inset: var(--topbar-h) 0 0 0;
+            background: rgba(0, 0, 0, .4);
+            z-index: 1044;
+        }
+
+        #sidebarBackdrop.show {
+            display: block;
+        }
+
+        /* ── Sidebar-Nav-Stile ──────────────────────────────────────────────── */
+        .app-sidebar__nav {
+            padding: 1rem 0 .5rem;
+        }
+
+        /*
+         * Gruppen-Header: agiert als Sektion-Label + Collapse-Toggle.
+         * Lesbare Schrift, kein All-Caps – nach KERN-Typografie-Prinzip.
+         */
+        .snav-group-header {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: .6rem 1rem .35rem;
+            font-size: .8125rem; /* 13 px – eine Stufe unter Body */
+            font-weight: 600;
+            color: var(--kern-color-layout-text-default, #1b1b1b);
+            background: none;
+            border: none;
+            cursor: pointer;
+            gap: .45rem;
+            text-align: left;
+            line-height: 1.4;
+            transition: color .12s;
+            user-select: none;
+        }
+
+        .snav-group-header:hover {
+            color: var(--bs-primary, #0d6efd);
+        }
+
+        .snav-group-header i.bi:first-child {
+            color: var(--bs-primary, #0d6efd);
+            font-size: .95em;
+            min-width: 1.15em;
+            text-align: center;
+            flex-shrink: 0;
+            opacity: .85;
+        }
+
+        .snav-chevron {
+            margin-left: auto;
+            font-size: .65rem;
+            flex-shrink: 0;
+            opacity: .45;
+            transition: transform .18s ease;
+        }
+
+        /* Chevron-Richtung via aria-expanded – Bootstrap pflegt dieses Attribut automatisch */
+        .snav-group-header[aria-expanded="false"] .snav-chevron {
+            transform: rotate(-90deg);
+        }
+
+        /*
+         * Direkte Top-Level-Links (kein Untermenü).
+         * Gleiche Typografie wie .snav-group-header – einheitliche oberste Ebene.
+         * Aktiver Zustand: 4-px-Inset-Border links (--kern-metric-border-width-bold).
+         */
+        .snav-link {
+            display: flex;
+            align-items: center;
+            padding: .6rem 1rem .35rem;
+            font-size: .8125rem;
+            font-weight: 600;
+            color: var(--kern-color-layout-text-default, #1b1b1b);
+            text-decoration: none;
+            gap: .45rem;
+            line-height: 1.4;
+            hyphens: auto;
+            transition: color .12s, background .12s;
+        }
+
+        .snav-link:hover {
+            color: var(--bs-primary, #0d6efd);
+        }
+
+        .snav-link.active {
+            box-shadow: inset 4px 0 0 var(--bs-primary, #0d6efd);
+            background: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
+            color: var(--bs-primary, #0d6efd);
+        }
+
+        .snav-link i.bi {
+            color: var(--bs-primary, #0d6efd);
+            opacity: .85;
+            font-size: .95em;
+            min-width: 1.15em;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .snav-link.active i.bi {
+            opacity: 1;
+        }
+
+        /*
+         * Sub-Links: Text-fokussiert, keine Icons (nach KERN-Docs-Muster).
+         * Einrückung durch padding-left, Icon versteckt via CSS.
+         */
+        .snav-sub-link {
+            display: block;
+            padding: .3rem 1rem .3rem 2.15rem;
+            font-size: .8125rem; /* 13 px */
+            color: var(--kern-color-layout-text-muted, #6c757d);
+            text-decoration: none;
+            line-height: 1.45;
+            hyphens: auto;
+            transition: background .12s, color .12s;
+        }
+
+        .snav-sub-link i.bi {
+            display: none;
+        }
+
+        /* Icons in Sub-Links entfernen */
+        .snav-sub-link:hover {
+            background: rgba(0, 0, 0, .05);
+            color: var(--kern-color-layout-text-default, #1b1b1b);
+        }
+
+        .snav-sub-link.active {
+            box-shadow: inset 4px 0 0 var(--bs-primary, #0d6efd);
+            background: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
+            color: var(--bs-primary, #0d6efd);
+            font-weight: 500;
+        }
+
+        /* Trennlinie */
+        .snav-divider {
+            height: 1px;
+            background: var(--kern-color-layout-border-default, #d8dce3);
+            margin: .5rem .75rem;
+        }
+
+        /* ── Breadcrumb-Abstand ───────────────────────────────────────────────── */
+        /*
+         * Einheitlicher Abstand zwischen Breadcrumb und nachfolgendem Element.
+         * Entfernt mt-* und pt-* des direkt folgenden Elements, damit der Abstand
+         * allein durch den Breadcrumb (mb via Bootstrap-Default) definiert wird.
+         */
+        nav[aria-label="breadcrumb"] + * {
+            margin-top: 0 !important;
+        }
+
+        nav[aria-label="breadcrumb"] + .container,
+        nav[aria-label="breadcrumb"] + .container-fluid {
+            padding-top: 0 !important;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body {% if user.is_authenticated %}class="has-sidebar"{% endif %}>
+
+{# ── Sidebar-Backdrop (mobil) ───────────────────────────────────────────────── #}
+<div id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+{# ── KERN-Kopfzeile ─────────────────────────────────────────────────────────── #}
+<div class="kern-kopfzeile">
+    <div class="kern-container-fluid">
+        <div class="kern-kopfzeile__content">
+    <span class="kern-kopfzeile__flagge" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 16">
+        <path fill="#000" d="M0 .5h24v5.333H0z"/>
+        <path fill="red" d="M0 5.833h24v5.333H0z"/>
+        <path fill="#FACA2C" d="M0 11.167h24V16.5H0z"/>
+      </svg>
+    </span>
+            <span class="kern-kopfzeile__label">{{ brand_header }}</span>
+        </div>
+    </div>
+</div>
+
+{# ── Navigationsleiste (schlank – nur Logo + Toggle + rechte Aktionen) ────── #}
+<nav class="navbar navbar-expand fixed-top bg-primary navbar-dark">
+    <div class="container-fluid gap-2">
+
+        {# Sidebar-Toggle #}
+        {% if user.is_authenticated %}
+            <button class="btn btn-link text-white p-1 border-0 flex-shrink-0"
+                    id="sidebarToggleBtn" onclick="toggleSidebar()"
+                    title="Navigation ein-/ausblenden" aria-label="Navigation ein-/ausblenden">
+                <i class="bi bi-list" style="font-size:1.5rem;line-height:1;display:block;"></i>
+            </button>
+        {% endif %}
+
+        {# Logo #}
+        <a class="navbar-brand d-flex align-items-center gap-2 me-auto" href="/">
+            <img src="{% url 'services:logo_svg' %}" alt="azubi." height="28"
+                 style="filter: brightness(0) invert(1);">
+        </a>
+
+        {# Rechte Seite #}
+        <ul class="navbar-nav align-items-center gap-1 flex-row">
+
+            {# ── Berufsbilder-Toggle (nur Ausbildungsreferat, nicht Leitung) ── #}
+            {% if is_training_office and not is_training_director %}
+                <li class="nav-item">
+                    <form method="post" action="{% url 'services:toggle_training_office_scope' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit"
+                                class="btn btn-sm {% if training_office_show_all %}btn-warning{% else %}btn-outline-light{% endif %} px-2 py-1"
+                                title="{% if training_office_show_all %}Alle Nachwuchskräfte (klicken für eigene Berufsbilder){% else %}Nur eigene Berufsbilder (klicken für alle){% endif %}">
+                            {% if training_office_show_all %}
+                                <i class="bi bi-people-fill me-1"></i> Alle NK
+                            {% else %}
+                                <i class="bi bi-funnel me-1"></i> Meine BB
+                            {% endif %}
+                        </button>
+                    </form>
+                </li>
+            {% endif %}
+
+            {# ── Suche ──────────────────────────────────────────────────────── #}
+            {% if user.is_authenticated and not student_profile %}
+                <li class="nav-item d-flex align-items-center">
+                    <form method="get" action="{% url 'global_search' %}" class="d-flex align-items-center"
+                          id="navSearchForm">
+                        <input type="search" name="q" id="navSearchInput"
+                               class="kern-form-input__input border-0 nav-search-input"
+                               placeholder="Suchen …"
+                               value="{{ request.GET.q|default:'' }}"
+                               autocomplete="off"
+                               style="background:rgba(255,255,255,.15); color:#fff; width:0; padding-top:0; padding-bottom:0; padding-left:0; padding-right:0; transition:width .2s ease, padding .2s ease; overflow:hidden;">
+                        <button type="button" class="btn nav-link px-2 py-1" id="navSearchBtn"
+                                onclick="toggleNavSearch()" title="Suche">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </form>
+                </li>
+            {% endif %}
+
+            {# ── Benachrichtigungen & Offene Aufgaben ───────────────────────── #}
+            {% if user.is_authenticated and not student_profile %}
+                {% with total_count=pending_tasks_count|add:unread_notifications %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link px-2 py-1 position-relative" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false" title="Benachrichtigungen & Aufgaben">
+                            <i class="bi bi-bell-fill fs-5"></i>
+                            {% if total_count %}
+                                <span class="position-absolute badge rounded-pill bg-danger"
+                                      style="font-size:.6rem;top:2px;right:0;min-width:1.2em;line-height:1.4;">
+                        {{ total_count }}
+                    </span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow"
+                            style="min-width:min(360px, 90vw);max-height:520px;overflow-y:auto;">
+                            {% if recent_notifications %}
+                                <li>
+                                    <h6 class="dropdown-header d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-bell me-1"></i> Benachrichtigungen</span>
+                                        <span class="badge bg-warning text-dark rounded-pill">{{ unread_notifications }}</span>
+                                    </h6>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider my-1">
+                                </li>
+                                {% for n in recent_notifications %}
+                                    <li>
+                                        <a class="dropdown-item py-2"
+                                           href="{% url 'services:notification_mark_read' n.pk %}">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <i class="bi {{ n.icon }} text-warning mt-1 flex-shrink-0"></i>
+                                                <div class="lh-sm">
+                                                    {% if n.category %}
+                                                        <div class="text-muted"
+                                                             style="font-size:.75rem;">{{ n.category }}</div>{% endif %}
+                                                    <div class="fw-semibold"
+                                                         style="font-size:.875rem;">{{ n.message }}</div>
+                                                    <div class="text-muted"
+                                                         style="font-size:.75rem;">{{ n.created_at|date:"d.m.Y H:i" }}</div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                                {% if unread_notifications > 5 %}
+                                    <li>
+                                        <a class="dropdown-item text-center text-muted py-1"
+                                           href="{% url 'services:notifications' %}" style="font-size:.8rem;">
+                                            + {{ unread_notifications|add:"-5" }} weitere
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                <li>
+                                    <a class="dropdown-item text-center py-2 border-top"
+                                       href="{% url 'services:notifications' %}" style="font-size:.8rem;">
+                                        <i class="bi bi-arrow-right me-1"></i> Alle Benachrichtigungen
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% if pending_tasks_count %}
+                                {% if recent_notifications %}
+                                    <li>
+                                        <hr class="dropdown-divider my-1">
+                                    </li>{% endif %}
+                                <li>
+                                    <h6 class="dropdown-header d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-check2-square me-1"></i> Offene Aufgaben</span>
+                                        <span class="badge bg-danger rounded-pill">{{ pending_tasks_count }}</span>
+                                    </h6>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider my-1">
+                                </li>
+                                {% for task in pending_tasks %}
+                                    <li>
+                                        <a class="dropdown-item py-2" href="{{ task.url }}">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <i class="bi {{ task.icon }} text-primary mt-1 flex-shrink-0"></i>
+                                                <div class="lh-sm">
+                                                    <div class="text-muted"
+                                                         style="font-size:.75rem;">{{ task.category }}</div>
+                                                    <div class="fw-semibold"
+                                                         style="font-size:.875rem;">{{ task.label }}</div>
+                                                    <div class="text-muted"
+                                                         style="font-size:.75rem;">{{ task.sub }}</div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+
+                            {% if not recent_notifications and not pending_tasks_count %}
+                                <li>
+                                    <div class="dropdown-item-text text-center text-muted py-3"
+                                         style="font-size:.875rem;">
+                                        <i class="bi bi-check2-circle d-block fs-3 mb-1 text-success"></i>
+                                        Keine offenen Benachrichtigungen oder Aufgaben.
+                                    </div>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider my-1">
+                                </li>
+                                <li>
+                                    <a class="dropdown-item text-center py-2" href="{% url 'services:notifications' %}"
+                                       style="font-size:.8rem;">
+                                        <i class="bi bi-arrow-right me-1"></i> Alle Benachrichtigungen
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                {% endwith %}
+            {% endif %}
+
+            {# ── Nutzermenü ─────────────────────────────────────────────────── #}
+            {% if user.is_authenticated %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle px-2 py-1 d-flex align-items-center gap-1"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle fs-5"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                        <span class="dropdown-item-text fw-semibold" style="font-size:.875rem;">
+                            {{ user.get_full_name|default:user.username }}
+                        </span>
+                        </li>
+                        <li><span class="dropdown-item-text text-muted small">{{ user.email }}</span></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'services:mein_konto' %}">
+                                <i class="bi bi-person-gear me-1"></i> Mein Konto
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'services:notification_preferences' %}">
+                                <i class="bi bi-bell me-1"></i> Benachrichtigungen
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right me-1"></i> Abmelden
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link px-2" href="{% url 'login' %}">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Anmelden
+                    </a>
+                </li>
+            {% endif %}
+
+        </ul>
+    </div>
+</nav>
+
+{% if user.is_authenticated %}
+    <aside id="appSidebar" class="app-sidebar">
+        <nav class="app-sidebar__nav">
+
+            {% if is_training_director or is_training_office %}
+                {# ── Vollständige Navigation (Leitung / Referat / Staff) ─────────────── #}
+
+                {# Nachwuchskräfte #}
+                <button class="snav-group-header" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#snav-nachwuchs" aria-expanded="false">
+                    <i class="bi bi-people"></i>
+                    Nachwuchskräfte
+                    {% if is_training_office and not is_training_director and not training_office_show_all and training_office_profile %}
+                        <span class="badge bg-warning text-dark ms-auto me-1" style="font-size:.6rem;"
+                              title="Gefiltert: nur Ihre Berufsbilder">
+                <i class="bi bi-funnel-fill"></i>
+            </span>
+                    {% endif %}
+                    <i class="bi bi-chevron-down snav-chevron"></i>
+                </button>
+                <div class="collapse" id="snav-nachwuchs">
+                    <a class="snav-sub-link" href="{% url 'student:student_list' %}"><i class="bi bi-list"></i>
+                        Liste</a>
+                    <a class="snav-sub-link" href="{% url 'student:student_import' %}"><i class="bi bi-upload"></i>
+                        Importieren</a>
+                    <a class="snav-sub-link" href="{% url 'student:coordinator_calendar' %}"><i
+                            class="bi bi-calendar3"></i> Übersichtskalender</a>
+                    <a class="snav-sub-link" href="{% url 'student:student_statistics' %}"><i
+                            class="bi bi-bar-chart-line"></i> Statistik</a>
+                    <a class="snav-sub-link" href="{% url 'student:student_export_csv' %}"><i
+                            class="bi bi-file-earmark-spreadsheet"></i> CSV-Export</a>
+                    <a class="snav-sub-link" href="{% url 'student:data_privacy' %}"><i class="bi bi-shield-lock"></i>
+                        Datenschutz</a>
+                </div>
+                <div class="snav-divider"></div>
+
+                {# Kurse #}
+                <button class="snav-group-header" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#snav-kurse" aria-expanded="false">
+                    <i class="bi bi-journals"></i> Kurse
+                    <i class="bi bi-chevron-down snav-chevron"></i>
+                </button>
+                <div class="collapse" id="snav-kurse">
+                    <a class="snav-sub-link" href="{% url 'course:course_list' %}"><i class="bi bi-list"></i> Liste</a>
+                    <a class="snav-sub-link" href="{% url 'course:course_calendar' %}"><i class="bi bi-calendar3"></i>
+                        Kurskalender</a>
+                    <a class="snav-sub-link" href="{% url 'course:capacity_planning' %}"><i
+                            class="bi bi-speedometer2"></i> Kapazitätsplanung</a>
+                    <a class="snav-sub-link" href="{% url 'course:job_profile_list' %}"><i
+                            class="bi bi-mortarboard"></i> Berufsbilder</a>
+                    <a class="snav-sub-link" href="{% url 'organisation:competence_list' %}"><i class="bi bi-tags"></i>
+                        Kompetenzen</a>
+                </div>
+
+                <div class="snav-divider"></div>
+
+                {# Praxistutoren #}
+                <button class="snav-group-header" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#snav-praxistutoren" aria-expanded="false">
+                    <i class="bi bi-person-badge"></i> Praxistutoren
+                    <i class="bi bi-chevron-down snav-chevron"></i>
+                </button>
+                <div class="collapse" id="snav-praxistutoren">
+                    <a class="snav-sub-link" href="{% url 'instructor:instructor_list' %}"><i class="bi bi-list"></i>
+                        Liste</a>
+                    <a class="snav-sub-link" href="{% url 'instructor:instructor_statistics' %}"><i
+                            class="bi bi-bar-chart-line"></i> Statistik</a>
+                    <a class="snav-sub-link" href="{% url 'instructor:chief_instructor_list' %}"><i
+                            class="bi bi-list"></i> Koordinationsliste</a>
+                </div>
+
+                {% if training_office_can_manage_absences and module_absence %}
+                    {# Abwesenheiten #}
+                    <div class="snav-divider"></div>
+                    <button class="snav-group-header" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#snav-abwesenheiten" aria-expanded="false">
+                        <i class="bi bi-calendar-x"></i> Abwesenheiten
+                        <i class="bi bi-chevron-down snav-chevron"></i>
+                    </button>
+                    <div class="collapse" id="snav-abwesenheiten">
+                        <a class="snav-sub-link" href="{% url 'absence:vacation_list' %}"><i class="bi bi-sun"></i>
+                            Urlaubsanträge</a>
+                        <a class="snav-sub-link" href="{% url 'absence:sick_leave_list' %}"><i
+                                class="bi bi-thermometer-high"></i> Krankmeldungen</a>
+                        {% if module_studyday %}
+                            <a class="snav-sub-link" href="{% url 'studyday:request_list' %}"><i class="bi bi-book"></i>
+                                Lerntage</a>{% endif %}
+                    </div>
+                {% endif %}
+                <div class="snav-divider"></div>
+
+                {% if module_assessment %}
+                    {# Beurteilungen #}
+                    <button class="snav-group-header" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#snav-beurteilungen" aria-expanded="false">
+                        <i class="bi bi-clipboard-check"></i> Beurteilungen
+                        <i class="bi bi-chevron-down snav-chevron"></i>
+                    </button>
+                    <div class="collapse" id="snav-beurteilungen">
+                        <a class="snav-sub-link" href="{% url 'assessment:list' %}"><i
+                                class="bi bi-clipboard-check"></i> Stationsbeurteilungen</a>
+                        <a class="snav-sub-link" href="{% url 'assessment:station_feedback_overview' %}"><i
+                                class="bi bi-star"></i> Stationsfeedback-Auswertung</a>
+                    </div>
+                    <div class="snav-divider"></div>
+                {% endif %}
+
+                <a class="snav-link" href="{% url 'student:student_inquiry_list' %}">
+            <span class="position-relative flex-shrink-0" style="width:1.1em;text-align:center;display:inline-block;">
+                <i class="bi bi-chat-left-text"></i>
+                {% if open_inquiry_count %}
+                    <span class="position-absolute badge rounded-pill bg-danger"
+                          style="font-size:.5rem;top:-6px;right:-6px;min-width:1.1em;padding:.2em .3em;line-height:1.2;">
+                    {{ open_inquiry_count }}
+                </span>
+                {% endif %}
+            </span>
+                    Anfragen
+                </a>
+
+                <div class="snav-divider"></div>
+                {% if module_announcements %}
+                    <a class="snav-link" href="{% url 'announcements:list' %}">
+                        <i class="bi bi-megaphone"></i> Ankündigungen
+                    </a>
+                    <div class="snav-divider"></div>
+                {% endif %}
+
+                {% if module_intervention %}
+                    <a class="snav-link" href="{% url 'intervention:list' %}">
+                        <i class="bi bi-shield-exclamation"></i> Maßnahmen
+                    </a>
+                    <div class="snav-divider"></div>
+                {% endif %}
+
+
+                {# Pflichtschulungen #}
+                <a class="snav-link" href="{% url 'mandatorytraining:overview' %}">
+                    <i class="bi bi-mortarboard"></i> Pflichtschulungen
+                </a>
+
+                <div class="snav-divider"></div>
+
+                {% if module_knowledge %}
+                    <a class="snav-link" href="{% url 'knowledge:manage' %}">
+                        <i class="bi bi-journal-bookmark"></i> Wissensdatenbank
+                    </a>
+                    <div class="snav-divider"></div>
+                {% endif %}
+
+                {% if training_office_can_manage_inventory and module_inventory %}
+                    <a class="snav-link" href="{% url 'inventory:inventory_list' %}">
+                        <i class="bi bi-archive"></i> Inventar
+                    </a>
+                {% endif %}
+
+                {% if training_office_can_manage_dormitory and module_dormitory %}
+                    <div class="snav-divider"></div>
+                    {# Wohnheime #}
+                    <button class="snav-group-header" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#snav-wohnheime" aria-expanded="false">
+                        <i class="bi bi-building"></i> Wohnheime
+                        <i class="bi bi-chevron-down snav-chevron"></i>
+                    </button>
+                    <div class="collapse" id="snav-wohnheime">
+                        <a class="snav-sub-link" href="{% url 'dormitory:dormitory_list' %}"><i class="bi bi-list"></i>
+                            Übersicht</a>
+                        <a class="snav-sub-link" href="{% url 'dormitory:occupancy_calendar' %}"><i
+                                class="bi bi-calendar3"></i> Belegungsplan</a>
+                    </div>
+                {% endif %}
+
+                <div class="snav-divider"></div>
+                {# Raumbuchung #}
+                <button class="snav-group-header" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#snav-raumbuchung" aria-expanded="false">
+                    <i class="bi bi-door-open"></i> Raumbuchung
+                    <i class="bi bi-chevron-down snav-chevron"></i>
+                </button>
+                <div class="collapse" id="snav-raumbuchung">
+                    <a class="snav-sub-link" href="{% url 'workspace:workspace_list' %}"><i class="bi bi-list"></i>
+                        Arbeitsplätze</a>
+                    <a class="snav-sub-link" href="{% url 'workspace:workspace_calendar' %}"><i
+                            class="bi bi-calendar3"></i> Belegungsplan</a>
+                    <a class="snav-sub-link" href="{% url 'workspace:booking_list' %}"><i
+                            class="bi bi-calendar-event"></i> Alle Buchungen</a>
+                </div>
+
+
+                <div class="snav-divider"></div>
+
+                {# Auswertungen (Reports + Builder) #}
+                <a class="snav-link" href="{% url 'auswertungen' %}">
+                    <i class="bi bi-graph-up-arrow"></i> Auswertungen
+                </a>
+
+                {% if is_training_director %}
+                    <div class="snav-divider"></div>
+                    <a class="snav-link" href="{% url 'services:settings_overview' %}">
+                        <i class="bi bi-gear"></i> Einstellungen
+                    </a>
+                {% endif %}
+
+            {% elif is_training_coordinator %}
+                {# ── Ausbildungskoordination ─────────────────────────────────────────── #}
+                {% if chief_instructor_profile and chief_instructor_profile.coordination %}
+                    <button class="snav-group-header" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#snav-bereich" aria-expanded="false">
+                        <i class="bi bi-person-gear"></i> Mein Bereich
+                        <i class="bi bi-chevron-down snav-chevron"></i>
+                    </button>
+                    <div class="collapse" id="snav-bereich">
+                        <a class="snav-sub-link"
+                           href="{% url 'instructor:chief_instructor_detail' chief_instructor_profile.coordination.public_id %}"><i
+                                class="bi bi-card-list"></i> Übersicht</a>
+                        <a class="snav-sub-link"
+                           href="{% url 'instructor:chief_instructor_calendar' chief_instructor_profile.coordination.public_id %}"><i
+                                class="bi bi-calendar3"></i> Kalender</a>
+                    </div>
+                {% endif %}
+                {% if is_training_responsible %}
+                    <a class="snav-link" href="{% url 'student:student_list' %}">
+                        <i class="bi bi-people"></i> Nachwuchskräfte
+                    </a>
+                {% endif %}
+                <button class="snav-group-header" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#snav-praxistutoren-ko" aria-expanded="false">
+                    <i class="bi bi-person-badge"></i> Praxistutoren
+                    <i class="bi bi-chevron-down snav-chevron"></i>
+                </button>
+                <div class="collapse" id="snav-praxistutoren-ko">
+                    <a class="snav-sub-link" href="{% url 'instructor:instructor_list' %}"><i class="bi bi-list"></i>
+                        Liste</a>
+                    <a class="snav-sub-link" href="{% url 'instructor:instructor_create' %}"><i
+                            class="bi bi-person-add"></i> Hinzufügen</a>
+                </div>
+                <div class="snav-divider"></div>
+                <a class="snav-link" href="{% url 'workspace:workspace_calendar' %}">
+                    <i class="bi bi-calendar3"></i> Raumbelegung
+                </a>
+
+            {% elif is_dormitory_management %}
+                {# ── Hausverwaltung ──────────────────────────────────────────────────── #}
+                {% if module_dormitory %}
+                    <a class="snav-link" href="{% url 'dormitory:occupancy_calendar' %}">
+                        <i class="bi bi-calendar3"></i> Belegungsplan
+                    </a>
+                {% endif %}
+
+            {% elif is_travel_expense_office %}
+                {# ── Reisekostenstelle ───────────────────────────────────────────────── #}
+                <a class="snav-link" href="{% url 'student:student_list' %}"><i class="bi bi-people"></i>
+                    Nachwuchskräfte</a>
+                <a class="snav-link" href="{% url 'course:course_list' %}"><i class="bi bi-journals"></i> Kurse</a>
+                {% if module_dormitory %}
+                    <a class="snav-link" href="{% url 'dormitory:occupancy_calendar' %}"><i class="bi bi-calendar3"></i>
+                        Belegungsplan</a>{% endif %}
+
+            {% elif is_training_responsible %}
+                {# ── Ausbildungsverantwortliche ──────────────────────────────────────── #}
+                <a class="snav-link" href="{% url 'student:student_list' %}">
+                    <i class="bi bi-people"></i> Nachwuchskräfte
+                </a>
+
+            {% elif student_profile %}
+                {# ── Nachwuchskraft (Portal) ──────────────────────────────────────────── #}
+                <a class="snav-link" href="{% url 'portal:home' %}"><i class="bi bi-house"></i> Mein Portal</a>
+                <a class="snav-link" href="{% url 'portal:stationsplan' %}"><i class="bi bi-map"></i> Stationsplan</a>
+                <a class="snav-link" href="{% url 'portal:noten' %}"><i class="bi bi-mortarboard"></i> Noten</a>
+                {% if student_profile.course.job_profile.requires_proof_of_training and module_proofoftraining %}
+                    <a class="snav-link" href="{% url 'proofoftraining:record_list' %}"><i
+                            class="bi bi-journal-text"></i> Nachweise</a>
+                {% endif %}
+                {% if student_profile.course.job_profile.study_day_policy and module_studyday %}
+                    <a class="snav-link" href="{% url 'portal:studyday_list' %}"><i class="bi bi-book"></i> Lerntage</a>
+                {% endif %}
+                <a class="snav-link" href="{% url 'workspace:portal_my_bookings' %}"><i class="bi bi-door-open"></i>
+                    Raumbuchung</a>
+                <a class="snav-link" href="{% url 'mandatorytraining:portal_my_trainings' %}"><i
+                        class="bi bi-shield-check"></i> Pflichtschulungen</a>
+                <a class="snav-link" href="{% url 'portal:vacation_list' %}"><i class="bi bi-sun"></i> Urlaub</a>
+                <a class="snav-link" href="{% url 'portal:ausbildungsplan' %}"><i class="bi bi-list-check"></i>
+                    Ausbildungsplan</a>
+                <a class="snav-link" href="{% url 'portal:kompetenzmatrix' %}"><i class="bi bi-radar"></i>
+                    Kompetenzmatrix</a>
+                <a class="snav-link" href="{% url 'portal:einsatzwuensche' %}"><i class="bi bi-heart"></i>
+                    Einsatzwünsche</a>
+                <a class="snav-link" href="{% url 'portal:dokumente' %}"><i class="bi bi-file-earmark-text"></i>
+                    Bescheinigungen</a>
+                <a class="snav-link" href="{% url 'portal:nachrichten' %}"><i class="bi bi-chat-left-text"></i>
+                    Nachrichten</a>
+                {% if module_knowledge %}
+                    <a class="snav-link" href="{% url 'portal:kb_list' %}"><i class="bi bi-journal-bookmark"></i>
+                        Wissensdatenbank</a>{% endif %}
+                {% if module_announcements %}<a class="snav-link" href="{% url 'portal:announcement_list' %}">
+            <span class="position-relative flex-shrink-0" style="width:1.1em;text-align:center;display:inline-block;">
+                <i class="bi bi-megaphone"></i>
+                {% if unread_announcements_count %}
+                    <span class="position-absolute badge rounded-pill bg-danger"
+                          style="font-size:.5rem;top:-6px;right:-6px;min-width:1.1em;padding:.2em .3em;line-height:1.2;">
+                    {{ unread_announcements_count }}
+                </span>
+                {% endif %}
+            </span>
+                    Ankündigungen
+                </a>
+                {% endif %}
+                <a class="snav-link" href="{% url 'portal:daten' %}"><i class="bi bi-person-vcard"></i> Meine Daten</a>
+
+            {% endif %}
+
+        </nav>
+    </aside>
+{% endif %}
+
+{# ── Hauptinhalt ─────────────────────────────────────────────────────────────── #}
+<div class="main-content">
+    <div class="container overflow-auto">
+        {% if messages %}
+            <div class="azubi-flash-messages mt-3">
+                {% for msg in messages %}
+                    <div class="kern-alert {% if 'success' in msg.tags %}kern-alert--success{% elif 'error' in msg.tags %}kern-alert--danger{% elif 'warning' in msg.tags %}kern-alert--warning{% else %}kern-alert--info{% endif %}"
+                         role="alert"
+                         style="margin-bottom:0.5rem;">
+                        <div class="kern-alert__header">
+                    <span class="kern-icon {% if 'success' in msg.tags %}kern-icon--check_circle{% elif 'error' in msg.tags %}kern-icon--error{% elif 'warning' in msg.tags %}kern-icon--warning{% else %}kern-icon--info{% endif %}"
+                          aria-hidden="true"></span>
+                            <span class="kern-body">{{ msg }}</span>
+                            <button type="button"
+                                    class="kern-btn kern-btn--tertiary"
+                                    onclick="this.closest('.kern-alert').style.display='none'"
+                                    aria-label="Meldung schließen"
+                                    style="margin-left:auto;">
+                                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                                <span class="kern-label kern-sr-only">Schließen</span>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}
+        {% endblock %}
+    </div>
+</div>
+
+<footer class="border-top py-2 text-center text-muted small">
+    <div class="container">
+        &copy; {% now "Y" %} Azubi
+        {% if app_version %}&middot; v{{ app_version }}{% endif %}
+        &middot;
+        made with ❤️ in cologne /\/\
+        &middot;
+        <a href="{% url 'impressum' %}" class="text-muted text-decoration-none">Impressum</a>
+        &middot;
+        <a href="{% url 'datenschutz' %}" class="text-muted text-decoration-none">Datenschutz</a>
+        &middot;
+        <a href="{% url 'acknowledgments' %}" class="text-muted text-decoration-none">Verwendete Bibliotheken</a>
+    </div>
+</footer>
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script async src="{% static 'js/masonry.pkgd.min.js' %}"></script>
+<script>
+    /* ── kern-dialog Hilfsfunktionen ─────────────────────────────────────────── */
+    function kernDialog(id) {
+        return document.getElementById(id);
+    }
+
+    function kernDialogOpen(id) {
+        document.getElementById(id).showModal();
+    }
+
+    function kernDialogClose(el) {
+        el.closest('dialog').close();
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.target.tagName === 'DIALOG') e.target.close();
+    });
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────────── */
+    (function () {
+        const STORAGE_KEY = 'azubi_sidebar_closed';
+        const body = document.body;
+        const sidebar = document.getElementById('appSidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (!sidebar) return;
+
+        // Gespeicherten Desktop-Zustand anwenden
+        if (window.innerWidth >= 992 && localStorage.getItem(STORAGE_KEY) === '1') {
+            body.classList.add('sidebar-closed');
+        }
+        // FOUC-Schutz entfernen, Transitions freigeben
+        requestAnimationFrame(function () {
+            document.documentElement.removeAttribute('data-sidebar');
+        });
+
+        window.toggleSidebar = function () {
+            const mobile = window.innerWidth < 992;
+            if (mobile) {
+                var open = sidebar.classList.toggle('sidebar-mobile-show');
+                backdrop.classList.toggle('show', open);
+            } else {
+                var closed = body.classList.toggle('sidebar-closed');
+                localStorage.setItem(STORAGE_KEY, closed ? '1' : '0');
+            }
+        };
+
+        // Overlay aufräumen wenn Fenster vergrößert wird
+        window.addEventListener('resize', function () {
+            if (window.innerWidth >= 992) {
+                sidebar.classList.remove('sidebar-mobile-show');
+                backdrop.classList.remove('show');
+            }
+        });
+
+        // ── Collapse-Gruppen: Zustand aus localStorage wiederherstellen ──────────
+        var GROUP_PREFIX = 'azubi_snav_';
+        sidebar.querySelectorAll('.collapse[id^="snav-"]').forEach(function (el) {
+            var saved = localStorage.getItem(GROUP_PREFIX + el.id);
+            if (saved === 'open') {
+                // Bootstrap ohne Animation öffnen
+                el.classList.add('show');
+                var btn = sidebar.querySelector('[data-bs-target="#' + el.id + '"]');
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        // ── Aktiven Link hervorheben & dessen Gruppe immer öffnen ────────────────
+        var currentPath = window.location.pathname;
+        sidebar.querySelectorAll('a.snav-link, a.snav-sub-link').forEach(function (link) {
+            var href = link.getAttribute('href');
+            if (href && href === currentPath) {
+                link.classList.add('active');
+                // Gruppe des aktiven Links immer aufklappen (überschreibt gespeicherten Zustand)
+                var collapseEl = link.closest('.collapse');
+                if (collapseEl && !collapseEl.classList.contains('show')) {
+                    collapseEl.classList.add('show');
+                    var btn = sidebar.querySelector('[data-bs-target="#' + collapseEl.id + '"]');
+                    if (btn) btn.setAttribute('aria-expanded', 'true');
+                }
+            }
+        });
+
+        // ── Zustand bei jeder Änderung speichern ─────────────────────────────────
+        sidebar.querySelectorAll('.collapse[id^="snav-"]').forEach(function (el) {
+            el.addEventListener('shown.bs.collapse', function () {
+                localStorage.setItem(GROUP_PREFIX + el.id, 'open');
+            });
+            el.addEventListener('hidden.bs.collapse', function () {
+                localStorage.setItem(GROUP_PREFIX + el.id, 'closed');
+            });
+        });
+    })();
+
+    /* ── Navbar-Suche ────────────────────────────────────────────────────────── */
+    function toggleNavSearch() {
+        var input = document.getElementById('navSearchInput');
+        var isOpen = input.style.width && input.style.width !== '0px' && input.style.width !== '0';
+        if (isOpen) {
+            input.style.width = '0';
+            input.style.padding = '0';
+        } else {
+            input.style.width = 'min(180px, 50vw)';
+            input.style.padding = '.25rem .5rem';
+            input.focus();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var input = document.getElementById('navSearchInput');
+        if (input) {
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') document.getElementById('navSearchForm').submit();
+            });
+            if (input.value.trim()) {
+                input.style.width = 'min(180px, 50vw)';
+                input.style.padding = '.25rem .5rem';
+            }
+        }
+
+        /* ── Horizontale Tab-Scroll-Pfeile (alle .tabs-scroll-wrapper) ──────── */
+        document.querySelectorAll('.tabs-scroll-wrapper').forEach(function (wrapper) {
+            var tabList = wrapper.querySelector('.nav-tabs');
+            var btnLeft = wrapper.querySelector('.tabs-scroll-btn--left');
+            var btnRight = wrapper.querySelector('.tabs-scroll-btn--right');
+            if (!tabList) return;
+
+            var STEP = 160;
+
+            function updateButtons() {
+                var overflowing = tabList.scrollWidth > tabList.clientWidth;
+                if (btnLeft) btnLeft.hidden = !overflowing || tabList.scrollLeft <= 0;
+                if (btnRight) btnRight.hidden = !overflowing || tabList.scrollLeft >= tabList.scrollWidth - tabList.clientWidth - 1;
+            }
+
+            if (btnLeft) btnLeft.addEventListener('click', function () {
+                tabList.scrollBy({left: -STEP, behavior: 'smooth'});
+            });
+            if (btnRight) btnRight.addEventListener('click', function () {
+                tabList.scrollBy({left: STEP, behavior: 'smooth'});
+            });
+
+            tabList.addEventListener('scroll', updateButtons);
+
+            tabList.addEventListener('wheel', function (e) {
+                if (e.deltaY === 0) return;
+                e.preventDefault();
+                tabList.scrollBy({left: e.deltaY * 2, behavior: 'smooth'});
+            }, {passive: false});
+
+            var activeLink = tabList.querySelector('.nav-link.active');
+            if (activeLink) activeLink.scrollIntoView({inline: 'nearest', block: 'nearest'});
+
+            tabList.addEventListener('shown.bs.tab', function (e) {
+                e.target.scrollIntoView({inline: 'nearest', block: 'nearest', behavior: 'smooth'});
+                setTimeout(updateButtons, 150);
+            });
+
+            updateButtons();
+            window.addEventListener('resize', updateButtons);
+        });
+    });
+</script>
+{# ── Service Worker Registration ──────────────────────────────────────────── #}
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

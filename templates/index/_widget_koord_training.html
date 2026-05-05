@@ -1,0 +1,28 @@
+<div class="card shadow-sm h-100">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-journal-check text-muted me-1"></i>
+        <span class="fw-semibold small">Eingereichte Nachweise</span>
+        {% if koord_training_count %}
+        <span class="badge bg-warning text-dark rounded-pill ms-auto">{{ koord_training_count }}</span>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        {% if koord_training %}
+        <ul class="list-group list-group-flush">
+            {% for record in koord_training %}
+            <li class="list-group-item px-3 py-2">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="small fw-semibold">{{ record.student.first_name }} {{ record.student.last_name }}</div>
+                        <div class="text-muted" style="font-size:.75rem;">KW {{ record.calendar_week }}/{{ record.week_start.year }}</div>
+                    </div>
+                    <span class="text-muted" style="font-size:.75rem;">{{ record.submitted_at|date:"d.m.Y" }}</span>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small p-3 mb-0">Keine eingereichten Nachweise.</p>
+        {% endif %}
+    </div>
+</div>

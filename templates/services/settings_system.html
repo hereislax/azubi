@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Systeminfo{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+        <li class="breadcrumb-item active">Systeminfo</li>
+    </ol>
+</nav>
+
+<h2 class="mb-3"><i class="bi bi-cpu me-1"></i> Systeminfo</h2>
+
+<div class="row g-4">
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-code-square me-1"></i> Software
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-6">Django</dt>
+                    <dd class="col-6"><code>{{ django_version }}</code></dd>
+                    <dt class="col-6">Python</dt>
+                    <dd class="col-6"><code>{{ python_version }}</code></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-database me-1"></i> Datenbank (PostgreSQL)
+            </div>
+            <div class="card-body">
+                {% if db_version %}
+                <dl class="row mb-0">
+                    <dt class="col-5">Version</dt>
+                    <dd class="col-7 text-break"><code>{{ db_version }}</code></dd>
+                    <dt class="col-5">Datenbankgröße</dt>
+                    <dd class="col-7"><strong>{{ db_size }}</strong></dd>
+                </dl>
+                {% else %}
+                <span class="text-danger"><i class="bi bi-x-circle me-1"></i> Verbindung fehlgeschlagen</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-archive me-1"></i> Paperless-ngx
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">URL</dt>
+                    <dd class="col-7"><code>{{ paperless_url }}</code></dd>
+                    <dt class="col-5">Status</dt>
+                    <dd class="col-7">
+                        {% if paperless_ok %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Verbunden</span>
+                        {% else %}
+                        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Nicht erreichbar</span>
+                        {% if paperless_error %}
+                        <div class="text-danger small mt-1">{{ paperless_error }}</div>
+                        {% endif %}
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-bar-chart me-1"></i> Daten
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-7">Benutzerkonten</dt>
+                    <dd class="col-5"><strong>{{ user_count }}</strong></dd>
+                    <dt class="col-7">Nachwuchskräfte</dt>
+                    <dd class="col-5"><strong>{{ student_count }}</strong></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

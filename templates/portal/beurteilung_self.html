@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Selbstbeurteilung{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item active">Selbstbeurteilung</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+<div class="col-12 col-lg-8">
+
+    {# Kontextbox #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-person-workspace me-1"></i> Selbstbeurteilung – Praxisabschnitt</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0 small">
+                <dt class="col-sm-4">Organisationseinheit</dt>
+                <dd class="col-sm-8 fw-semibold">{{ assignment.unit }}</dd>
+
+                <dt class="col-sm-4">Zeitraum</dt>
+                <dd class="col-sm-8">{{ assignment.start_date|date:"d.m.Y" }} – {{ assignment.end_date|date:"d.m.Y" }}</dd>
+
+                <dt class="col-sm-4">Block</dt>
+                <dd class="col-sm-8 mb-0">{{ assignment.schedule_block.name }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    {% if self_assessment.status == 'submitted' %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        Deine Selbstbeurteilung wurde am {{ self_assessment.submitted_at|date:"d.m.Y" }} eingereicht.
+        Änderungen sind nicht mehr möglich.
+    </div>
+
+    {# Lesende Darstellung nach Einreichung #}
+    <div class="card shadow-sm mb-3">
+        <div class="card-header fw-semibold">Deine Bewertungen</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr><th>Kriterium</th><th class="text-center">Bewertung</th><th>Kommentar</th></tr>
+                </thead>
+                <tbody>
+                    {% for rating in self_assessment.ratings.all %}
+                    <tr>
+                        <td class="small">{{ rating.criterion.name }}</td>
+                        <td class="text-center fw-semibold">{{ rating.value }}</td>
+                        <td class="small text-muted">{{ rating.comment|default:"–" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% if self_assessment.overall_comment %}
+            <div class="px-3 py-2 border-top small">
+                <span class="text-muted fw-semibold">Gesamtkommentar:</span>
+                <div>{{ self_assessment.overall_comment|linebreaksbr }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+
+    {% if template.instructions_self %}
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        {{ template.instructions_self|linebreaksbr }}
+    </div>
+    {% endif %}
+
+    {% if template.rating_scale == 'grade' %}
+    <div class="alert alert-secondary small mb-4 py-2">
+        <i class="bi bi-rulers me-1"></i>
+        <strong>Bewertungsskala:</strong> Notenskala (1,0 = sehr gut · 6,0 = ungenügend)
+    </div>
+    {% else %}
+    <div class="alert alert-secondary small mb-4 py-2">
+        <i class="bi bi-rulers me-1"></i>
+        <strong>Bewertungsskala:</strong> Punkteskala (0–15 Punkte)
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+        {% endif %}
+
+        {% for tc, rating_field, comment_field in form.get_criterion_pairs %}
+        <div class="card shadow-sm mb-3" style="border-left: 4px solid #198754;">
+            <div class="card-body pb-2">
+                <div class="fw-semibold mb-1">{{ rating_field.label }}</div>
+                {% if rating_field.help_text %}
+                <div class="text-muted small mb-2">{{ rating_field.help_text }}</div>
+                {% endif %}
+
+                {% if template.rating_scale == 'grade' %}
+                <div class="mb-2">
+                    {% for radio in rating_field %}
+                    <div class="form-check form-check-inline">
+                        {{ radio.tag }}
+                        <label class="form-check-label small" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="mb-2 d-flex align-items-center gap-2">
+                    {{ rating_field }}
+                    <span class="text-muted small">Punkte (0–15)</span>
+                </div>
+                {% endif %}
+
+                {% if rating_field.errors %}
+                <span class="kern-error">
+                    <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ rating_field.errors|join:", " }}
+                </span>
+                {% endif %}
+
+                <details class="mt-1">
+                    <summary class="text-muted small" style="cursor:pointer;">Kommentar hinzufügen</summary>
+                    <div class="mt-2">{{ comment_field }}</div>
+                </details>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <label class="fw-semibold mb-1" for="{{ form.overall_comment.id_for_label }}">
+                    <i class="bi bi-chat-text me-1"></i> Gesamtkommentar
+                </label>
+                {{ form.overall_comment }}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" name="action" value="draft" class="btn btn-outline-secondary">
+                <i class="bi bi-floppy me-1"></i> Entwurf speichern
+            </button>
+            <button type="submit" name="action" value="submit" class="btn btn-success">
+                <i class="bi bi-send-check me-1"></i> Selbstbeurteilung einreichen
+            </button>
+        </div>
+        <div class="text-muted small mt-2">
+            Nach dem Einreichen sind keine Änderungen mehr möglich.
+        </div>
+    </form>
+    {% endif %}
+
+</div>
+</div>
+{% endblock %}

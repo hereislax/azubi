@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Kapazitätsplanung{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Kapazitätsplanung</li>
+    </ol>
+</nav>
+<div class="container-fluid py-4">
+
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <h2 class="mb-0"><i class="bi bi-grid-3x3-gap me-1"></i> Kapazitätsplanung</h2>
+        <div class="d-flex align-items-center gap-2">
+            <a href="?month={{ prev_month }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-left me-1"></i>
+            </a>
+            <span class="fw-semibold small px-1">
+                {{ start|date:"F Y" }} – {{ months|last|date:"F Y" }}
+            </span>
+            <a href="?month={{ next_month }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-right me-1"></i>
+            </a>
+            <a href="?" class="btn btn-outline-primary btn-sm ms-1">Heute</a>
+        </div>
+    </div>
+
+    {# Konflikt-Alert #}
+    {% if conflict_summary %}
+    <div class="alert alert-danger mb-3 py-2 px-3" id="conflictAlert">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                <strong>{{ conflict_summary|length }} Einheit{{ conflict_summary|length|pluralize:",en" }}</strong>
+                mit Überkapazität in den nächsten 12 Monaten.
+            </div>
+            <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#conflictDetails">
+                Details <i class="bi bi-chevron-down ms-1"></i>
+            </button>
+        </div>
+        <div class="collapse mt-2" id="conflictDetails">
+            <table class="table table-sm table-borderless mb-0 small bg-white rounded">
+                <thead class="table-light">
+                    <tr>
+                        <th>Organisationseinheit</th>
+                        <th class="text-center">Überkapazitäts-Tage</th>
+                        <th>Erstes betroffenes Datum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for c in conflict_summary %}
+                <tr>
+                    <td><strong>{{ c.unit.name }}</strong>{% if c.unit.label %} <span class="text-muted">({{ c.unit.label }})</span>{% endif %}</td>
+                    <td class="text-center"><span class="badge bg-danger">{{ c.days_over }}</span></td>
+                    <td>{{ c.next_conflict|date:"d.m.Y" }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Filterleiste #}
+    <div class="card mb-3 border-0 bg-light">
+        <div class="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
+            <input type="text" id="unitSearch" class="kern-form-input__input"
+                   placeholder="Einheit suchen …" oninput="applyFilters()"
+                   style="max-width: 260px;">
+            <div class="d-flex gap-1 flex-wrap">
+                <button class="btn btn-sm btn-outline-secondary filter-btn active" data-filter="all" onclick="setFilter(this,'all')">
+                    Alle
+                </button>
+                <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="danger" onclick="setFilter(this,'danger')">
+                    <i class="bi bi-circle-fill text-danger me-1" style="font-size:.55rem;"></i>Voll
+                </button>
+                <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="warning" onclick="setFilter(this,'warning')">
+                    <i class="bi bi-circle-fill text-warning me-1" style="font-size:.55rem;"></i>Fast voll
+                </button>
+                <button class="btn btn-sm btn-outline-success filter-btn" data-filter="success" onclick="setFilter(this,'success')">
+                    <i class="bi bi-circle-fill text-success me-1" style="font-size:.55rem;"></i>Verfügbar
+                </button>
+                <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="active" onclick="setFilter(this,'active')">
+                    Mit Einsätzen
+                </button>
+                {% if conflict_summary %}
+                <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="conflicts" onclick="setFilter(this,'conflicts')">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Nur Konflikte
+                </button>
+                {% endif %}
+            </div>
+            <span id="rowCount" class="ms-auto text-muted small"></span>
+        </div>
+    </div>
+
+    {% if rows %}
+    <div class="table-responsive" style="max-height: calc(100vh - 250px); overflow: auto;">
+        <table class="table table-sm table-bordered align-middle mb-0" id="capacityTable" style="min-width: 900px;">
+            <thead style="position: sticky; top: 0; z-index: 3; background: #fff;">
+                <tr>
+                    <th style="min-width:200px; position:sticky; left:0; background:#f8f9fa; z-index:4; border-right: 2px solid #dee2e6;">
+                        Organisationseinheit
+                    </th>
+                    {% for month in months %}
+                    <th class="text-center px-0 {% if month.year == today.year and month.month == today.month %}bg-primary bg-opacity-10{% else %}bg-light{% endif %}"
+                        style="min-width:68px; width:68px; font-size:.78rem; border-bottom: 2px solid {% if month.year == today.year and month.month == today.month %}#0d6efd{% else %}#dee2e6{% endif %};">
+                        <div class="fw-semibold">{{ month|date:"M" }}</div>
+                        <div class="text-muted fw-normal" style="font-size:.68rem;">{{ month|date:"Y" }}</div>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr class="unit-row"
+                    data-name="{{ row.unit.name|lower }}"
+                    data-worst="{{ row.worst }}"
+                    data-has-count="{% if row.has_any %}1{% else %}0{% endif %}"
+                    data-days-over="{{ row.days_over }}">
+                    <td style="position:sticky; left:0; background:#fff; z-index:1; border-right: 2px solid #dee2e6;">
+                        <div class="fw-semibold small lh-sm d-flex align-items-center gap-1">
+                            {{ row.unit.name }}
+                            {% if row.days_over %}
+                            <span class="badge bg-danger ms-1" style="font-size:.62rem;" title="{{ row.days_over }} Überkapazitäts-Tage in den nächsten 12 Monaten">
+                                {{ row.days_over }}&thinsp;T
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted" style="font-size:.7rem;">
+                            {% if row.unit.max_capacity %}Max. {{ row.unit.max_capacity }}{% else %}Keine Kapazität{% endif %}
+                        </div>
+                    </td>
+                    {% for cell in row.cells %}
+                    <td class="text-center p-0 {% if cell.is_today %}border-start border-end border-primary{% endif %}"
+                        style="font-size:.82rem; vertical-align:middle;">
+                        <div class="d-flex flex-column align-items-center justify-content-center" style="height:44px; gap:2px;">
+                            {% if cell.count > 0 %}
+                            <span class="fw-semibold {% if cell.status == 'danger' %}text-danger{% elif cell.status == 'warning' %}text-body{% elif cell.status == 'success' %}text-success{% else %}text-secondary{% endif %}">
+                                {{ cell.count }}{% if cell.cap %}<span class="text-muted fw-normal" style="font-size:.7rem;">/{{ cell.cap }}</span>{% endif %}
+                            </span>
+                            <span class="rounded-circle {% if cell.status == 'danger' %}bg-danger{% elif cell.status == 'warning' %}bg-warning{% elif cell.status == 'success' %}bg-success{% else %}bg-secondary{% endif %}"
+                                  style="width:6px;height:6px;display:inline-block;opacity:.85;"></span>
+                            {% else %}
+                            <span class="text-muted" style="opacity:.35;">–</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Legende #}
+    <div class="d-flex flex-wrap gap-3 mt-3 small text-muted">
+        <span class="d-flex align-items-center gap-1">
+            <span class="rounded-circle bg-success d-inline-block" style="width:8px;height:8px;"></span> Verfügbar (&lt; 75 %)
+        </span>
+        <span class="d-flex align-items-center gap-1">
+            <span class="rounded-circle bg-warning d-inline-block" style="width:8px;height:8px;"></span> Fast voll (75–99 %)
+        </span>
+        <span class="d-flex align-items-center gap-1">
+            <span class="rounded-circle bg-danger d-inline-block" style="width:8px;height:8px;"></span> Voll / überbucht (≥ 100 %)
+        </span>
+        <span class="d-flex align-items-center gap-1">
+            <span class="rounded-circle bg-secondary d-inline-block" style="width:8px;height:8px;"></span> Keine Kapazität hinterlegt
+        </span>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-grid-3x3-gap" style="font-size:2.5rem;"></i>
+        <p class="mt-2 mb-0">Keine Einheiten mit Kapazitätsangabe oder Praktikumseinsätzen vorhanden.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+let activeFilter = 'all';
+
+function setFilter(btn, filter) {
+    activeFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+}
+
+function applyFilters() {
+    const search = document.getElementById('unitSearch').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.unit-row');
+    let visible = 0;
+
+    rows.forEach(row => {
+        const name = row.dataset.name || '';
+        const worst = row.dataset.worst || '';
+        const hasCount = row.dataset.hasCount === '1';
+
+        const matchesSearch = !search || name.includes(search);
+        const daysOver = parseInt(row.dataset.daysOver || '0', 10);
+        let matchesFilter = true;
+        if (activeFilter === 'danger')    matchesFilter = worst.includes('danger');
+        if (activeFilter === 'warning')   matchesFilter = worst.includes('danger') || worst.includes('warning');
+        if (activeFilter === 'success')   matchesFilter = hasCount && !worst.includes('danger') && !worst.includes('warning');
+        if (activeFilter === 'active')    matchesFilter = hasCount;
+        if (activeFilter === 'conflicts') matchesFilter = daysOver > 0;
+
+        const show = matchesSearch && matchesFilter;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    const total = rows.length;
+    const el = document.getElementById('rowCount');
+    if (el) el.textContent = visible < total ? `${visible} von ${total} Einheiten` : `${total} Einheiten`;
+}
+
+// Initialer Zähler
+document.addEventListener('DOMContentLoaded', applyFilters);
+</script>
+{% endblock %}

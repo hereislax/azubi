@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Import-Vorschau{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'student:student_import' %}">Importieren</a></li>
+            <li class="breadcrumb-item active">Vorschau</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <h2 class="mb-0"><i class="bi bi-table me-1"></i> Import-Vorschau</h2>
+        <span class="badge bg-success fs-6">{{ valid_count }} gültig</span>
+        {% if errors %}
+        <span class="badge bg-danger fs-6">{{ errors|length }} fehlerhaft</span>
+        {% endif %}
+    </div>
+
+    {% if errors %}
+    <div class="alert alert-warning d-flex gap-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1 me-1"></i>
+        <div>
+            <strong>{{ errors|length }} Zeile(n) mit Fehlern werden übersprungen.</strong>
+            Gültige Zeilen werden trotzdem importiert.
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="table-responsive mb-4">
+        <table class="table table-sm table-bordered align-middle" style="font-size: 0.85rem;">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Vorname</th>
+                    <th>Nachname</th>
+                    <th>Geburtsdatum</th>
+                    <th>Geburtsort</th>
+                    <th>Geschlecht</th>
+                    <th>Kurs</th>
+                    <th>Besch.-Verh.</th>
+                    <th>Status</th>
+                    <th>E-Mail (priv.)</th>
+                    <th>Adresse</th>
+                    <th>Fehler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr class="{% if row.errors %}table-warning{% endif %}">
+                    <td class="text-muted">{{ row.row_num }}</td>
+                    <td>{{ row.first_name }}</td>
+                    <td>{{ row.last_name }}</td>
+                    <td>{{ row.date_of_birth|default:"–" }}</td>
+                    <td>{{ row.place_of_birth }}</td>
+                    <td>{{ row.gender_id|default:"–" }}</td>
+                    <td>{{ row.course_id|default:"–" }}</td>
+                    <td>{{ row.employment_id|default:"–" }}</td>
+                    <td>{{ row.status_id|default:"–" }}</td>
+                    <td>{{ row.email_private|default:"–" }}</td>
+                    <td>
+                        {% if row.has_address %}
+                        {{ row.address_street }} {{ row.address_house_number }}, {{ row.address_zip }} {{ row.address_city }}
+                        {% else %}–{% endif %}
+                    </td>
+                    <td>
+                        {% if row.errors %}
+                        <ul class="mb-0 ps-3 text-danger small">
+                            {% for e in row.errors %}<li>{{ e }}</li>{% endfor %}
+                        </ul>
+                        {% else %}
+                        <span class="text-success"><i class="bi bi-check-circle me-1"></i></span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex gap-2">
+        {% if valid_count > 0 %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="confirm" value="1">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-lg me-1"></i> {{ valid_count }} Nachwuchskraft/kräfte importieren
+            </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'student:student_import' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Zurück
+        </a>
+    </div>
+
+</div>
+{% endblock %}

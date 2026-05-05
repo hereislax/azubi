@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Station anonym bewerten{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'portal:stationsplan' %}">Stationsplan</a></li>
+        <li class="breadcrumb-item active">Station bewerten</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+<div class="col-12 col-lg-8">
+
+    {# Kontextbox #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info bg-opacity-75 text-white">
+            <h5 class="mb-0"><i class="bi bi-star me-1"></i> Anonyme Stationsbewertung</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0 small">
+                <dt class="col-sm-4">Organisationseinheit</dt>
+                <dd class="col-sm-8 fw-semibold">{{ assignment.unit }}</dd>
+
+                <dt class="col-sm-4">Zeitraum</dt>
+                <dd class="col-sm-8">{{ assignment.start_date|date:"d.m.Y" }} – {{ assignment.end_date|date:"d.m.Y" }}</dd>
+
+                <dt class="col-sm-4">Block</dt>
+                <dd class="col-sm-8 mb-0">{{ assignment.schedule_block.name }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="alert alert-secondary small mb-4 py-2">
+        <i class="bi bi-shield-lock me-1"></i>
+        <strong>Hinweis:</strong> <br/>
+        Deine Bewertung erfolgt vollständig anonym.
+        Es werden keine Angaben gespeichert, die Rückschlüsse auf deine Person zulassen.
+        Bitte achte darauf, dass im Freitextfeld keine personenbezogenen Daten eingegeben werden.
+    </div>
+
+    <div class="alert alert-info small mb-4 py-2">
+        <i class="bi bi-rulers me-1"></i>
+        <strong>Bewertungsskala:</strong> <br/>
+        Die Bewertungsskala orientiert sich an Schulnoten.
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+        {% endif %}
+
+        {% for category, field in form.get_category_pairs %}
+        <div class="card shadow-sm mb-3" style="border-left: 4px solid #0dcaf0;">
+            <div class="card-body pb-2">
+                <div class="fw-semibold mb-1">{{ field.label }}</div>
+                {% if field.help_text %}
+                <div class="text-muted small mb-2">{{ field.help_text }}</div>
+                {% endif %}
+
+                <div class="mb-1">
+                    {% for radio in field %}
+                    <div class="form-check form-check-inline">
+                        {{ radio.tag }}
+                        <label class="form-check-label small" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if field.errors %}
+                <span class="kern-error">
+                    <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ field.errors|join:", " }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <label class="fw-semibold mb-1" for="{{ form.comment.id_for_label }}">
+                    <i class="bi bi-chat-text me-1"></i> {{ form.comment.label }}
+                </label>
+                {{ form.comment }}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-center">
+            <button type="submit" class="btn btn-info">
+                <i class="bi bi-send-check me-1"></i> Bewertung anonym einreichen
+            </button>
+            <a href="{% url 'portal:stationsplan' %}" class="btn btn-link text-muted">Abbrechen</a>
+        </div>
+        <div class="text-muted small mt-2">
+            Nach dem Einreichen sind keine Änderungen mehr möglich.
+        </div>
+    </form>
+
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Ausgabe – {{ item.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ac-dropdown {
+        position: absolute;
+        top: 100%; left: 0;
+        width: 100%;
+        display: none;
+        z-index: 200;
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    }
+    .ac-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #f0f0f0; }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.active { background: #e8f0fe; }
+    .ac-highlight { font-weight: 600; color: #0d6efd; }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'inventory:inventory_list' %}">Inventar</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'inventory:item_detail' item.public_id %}">{{ item.name }}</a></li>
+        <li class="breadcrumb-item active">Ausgeben</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-7">
+
+{% if item.category.receipt_template %}
+<div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-file-earmark-word fs-5 me-1"></i>
+    <span>Es wird automatisch eine Ausgabequittung mit der Vorlage <strong>„{{ item.category.receipt_template.name }}"</strong> generiert und in Paperless hochgeladen.</span>
+</div>
+{% else %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-exclamation-triangle fs-5 me-1"></i>
+    <span>Für die Kategorie <strong>„{{ item.category.name }}"</strong> ist keine Quittungsvorlage hinterlegt. Es wird keine Ausgabequittung erstellt.
+    <a href="{% url 'inventory:category_edit' item.category.public_id %}">Vorlage zuweisen</a></span>
+</div>
+{% endif %}
+
+<div class="card shadow-sm mt-3">
+    <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-arrow-right me-1"></i> Gegenstand ausgeben
+                    <small class="fw-normal ms-2 opacity-75"><i class="bi {{ item.category.icon }}"></i> {{ item.name }}{% if item.serial_number %} · {{ item.serial_number }}{% endif %}</small>
+                </h5>
+            </div>
+            <div class="card-body">
+        <form method="post" id="issuanceForm">
+            {% csrf_token %}
+
+            {# Nachwuchskraft – Autocomplete #}
+            <div class="kern-form-input">
+                <label for="student_search" class="kern-label">Nachwuchskraft <span class="text-danger">*</span></label>
+                <select name="student" id="student_hidden" style="display:none;">
+                    <option value=""></option>
+                    {% for s in students %}
+                    <option value="{{ s.pk }}">{{ s.last_name }}, {{ s.first_name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="ac-wrap position-relative">
+                    <input type="text" id="student_search" class="kern-form-input__input"
+                           placeholder="Name eingeben …" autocomplete="off">
+                    <div id="student_dropdown" class="ac-dropdown"></div>
+                </div>
+                <div id="student_error" class="text-danger small mt-1" style="display:none;">
+                    <i class="bi bi-exclamation-circle me-1"></i> Bitte eine Nachwuchskraft auswählen.
+                </div>
+            </div>
+
+            <div class="kern-form-input">
+                <label for="issued_at" class="kern-label">Ausgabezeitpunkt <span class="text-danger">*</span></label>
+                <input type="datetime-local" name="issued_at" id="issued_at" class="kern-form-input__input" required>
+            </div>
+            <div class="kern-form-input">
+                <label for="notes" class="kern-label">Notizen</label>
+                <textarea name="notes" id="notes" class="kern-form-input__input" rows="2" placeholder="Optional"></textarea>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i> Ausgeben</button>
+                <a href="{% url 'inventory:item_detail' item.public_id %}" class="btn btn-outline-secondary"><i class="bi bi-x-circle me-1"></i> Abbrechen</a>
+            </div>
+        </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c =>
+            ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function hilite(text, q) {
+        if (!q) return esc(text);
+        const i = text.toLowerCase().indexOf(q.toLowerCase());
+        if (i === -1) return esc(text);
+        return esc(text.slice(0, i))
+             + '<span class="ac-highlight">' + esc(text.slice(i, i + q.length)) + '</span>'
+             + esc(text.slice(i + q.length));
+    }
+
+    const hidden   = document.getElementById('student_hidden');
+    const search   = document.getElementById('student_search');
+    const dropdown = document.getElementById('student_dropdown');
+    const errMsg   = document.getElementById('student_error');
+
+    const options = Array.from(hidden.options)
+        .filter(o => o.value)
+        .map(o => ({ value: o.value, text: o.text }));
+
+    let activeIdx = -1;
+
+    function render(query) {
+        const q = query.trim().toLowerCase();
+        const hits = q ? options.filter(o => o.text.toLowerCase().includes(q)) : options;
+        dropdown.innerHTML = '';
+        activeIdx = -1;
+        if (hits.length === 0) {
+            dropdown.innerHTML = '<div style="padding:10px 12px;font-size:.85rem;color:#6c757d;font-style:italic;">Keine Treffer</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        hits.slice(0, 50).forEach((opt, i) => {
+            const item = document.createElement('div');
+            item.className = 'ac-item';
+            item.dataset.value = opt.value;
+            item.innerHTML = hilite(opt.text, query.trim());
+            item.addEventListener('mousedown', e => {
+                e.preventDefault();
+                hidden.value = opt.value;
+                search.value = opt.text;
+                dropdown.style.display = 'none';
+                activeIdx = -1;
+                errMsg.style.display = 'none';
+                search.classList.remove('is-invalid');
+            });
+            dropdown.appendChild(item);
+        });
+        dropdown.style.display = 'block';
+    }
+
+    function setActive(idx) {
+        const items = dropdown.querySelectorAll('.ac-item');
+        items.forEach(el => el.classList.remove('active'));
+        if (idx >= 0 && idx < items.length) {
+            items[idx].classList.add('active');
+            items[idx].scrollIntoView({ block: 'nearest' });
+            activeIdx = idx;
+        }
+    }
+
+    search.addEventListener('input', () => {
+        render(search.value);
+        const cur = options.find(o => String(o.value) === String(hidden.value));
+        if (cur && !cur.text.toLowerCase().includes(search.value.trim().toLowerCase())) {
+            hidden.value = '';
+        }
+    });
+    search.addEventListener('focus', () => render(search.value));
+    search.addEventListener('blur',  () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
+    search.addEventListener('keydown', e => {
+        const items = dropdown.querySelectorAll('.ac-item');
+        if (!items.length) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0) items[activeIdx].dispatchEvent(new MouseEvent('mousedown')); }
+        else if (e.key === 'Escape') { dropdown.style.display = 'none'; }
+    });
+
+    // Clientseitige Validierung: Nachwuchskraft muss ausgewählt sein
+    document.getElementById('issuanceForm').addEventListener('submit', e => {
+        if (!hidden.value) {
+            e.preventDefault();
+            search.classList.add('is-invalid');
+            errMsg.style.display = 'block';
+            search.focus();
+        }
+    });
+
+    // Ausgabezeitpunkt auf aktuelle Lokalzeit vorbelegen
+    const issuedAt = document.getElementById('issued_at');
+    const now = new Date();
+    now.setSeconds(0, 0);
+    const pad = n => String(n).padStart(2, '0');
+    issuedAt.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+})();
+</script>
+{% endblock %}

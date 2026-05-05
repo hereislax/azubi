@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Impressum{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <h1 class="mb-4">Impressum</h1>
+        {% if impressum_text %}
+            {{ impressum_text|safe }}
+        {% else %}
+            <p class="text-muted">Kein Impressum-Text hinterlegt. Bitte unter <em>Einstellungen › Impressum & Datenschutz</em> pflegen.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

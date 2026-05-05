@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Impressum & Datenschutz{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+        <li class="breadcrumb-item active">Impressum & Datenschutz</li>
+    </ol>
+</nav>
+
+<h2 class="mb-3"><i class="bi bi-file-text me-1"></i> Impressum & Datenschutz</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="row g-4">
+
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-info-circle me-1"></i> Impressum
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        HTML ist erlaubt. Der Text wird direkt auf der Impressumsseite gerendert.
+                    </p>
+                    <div class="kern-form-input">
+                        <label for="id_impressum_text" class="kern-label">Impressum-Text</label>
+                        <textarea id="id_impressum_text" name="impressum_text" class="kern-form-input__input font-monospace"
+                                  rows="18" placeholder="Impressum-Text (HTML erlaubt)">{{ config.impressum_text }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-shield-lock me-1"></i> Datenschutzerklärung
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        HTML ist erlaubt. Der Text wird direkt auf der Datenschutzseite gerendert.
+                    </p>
+                    <div class="kern-form-input">
+                        <label for="id_datenschutz_text" class="kern-label">Datenschutz-Text</label>
+                        <textarea id="id_datenschutz_text" name="datenschutz_text" class="kern-form-input__input font-monospace"
+                                  rows="18" placeholder="Datenschutztext (HTML erlaubt)">{{ config.datenschutz_text }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-floppy me-1"></i> Speichern
+            </button>
+            <a href="{% url 'impressum' %}" target="_blank" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Impressum ansehen
+            </a>
+            <a href="{% url 'datenschutz' %}" target="_blank" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Datenschutz ansehen
+            </a>
+        </div>
+
+    </div>
+</form>
+{% endblock %}

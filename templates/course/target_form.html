@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load kern %}
+
+{% block title %}Endziel {{ action }} – {{ profile.description }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:job_profile_list' %}">Berufsbilder</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:job_profile_config' profile.pk %}">{{ profile.description }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Endziel {{ action }}</li>
+    </ol>
+</nav>
+<h2 class="mb-3"><i class="bi bi-bullseye me-1"></i> Kompetenz-Endziel {{ action }}</h2>
+
+<div class="card"><div class="card-body">
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+            {% kern_field field %}
+        {% endfor %}
+        <p class="text-muted small">
+            Der Wert (0–100) ist das Niveau, das am Ende der Ausbildung erreicht sein soll.
+            In der Kompetenzmatrix wird linear vom Kursstart bis Kursende interpoliert.
+        </p>
+        <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'course:job_profile_config' profile.pk %}" class="btn btn-outline-secondary">Abbrechen</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Speichern</button>
+        </div>
+    </form>
+</div></div>
+{% endblock %}

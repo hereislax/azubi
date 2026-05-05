@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Krankmeldung erfassen{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ac-dropdown {
+        position: absolute;
+        top: 100%; left: 0;
+        width: 100%;
+        display: none;
+        z-index: 200;
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    }
+    .ac-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #f0f0f0; }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.active { background: #e8f0fe; }
+    .ac-highlight { font-weight: 600; color: #0d6efd; }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'absence:sick_leave_list' %}">Krankmeldungen</a></li>
+        <li class="breadcrumb-item active">Erfassen</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-thermometer-high me-1"></i> Krankmeldung erfassen</h5>
+            </div>
+            <div class="card-body">
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <form method="post" id="sickLeaveForm">
+                    {% csrf_token %}
+
+                    {# Nachwuchskraft – Autocomplete #}
+                    <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
+                        <label for="student_search" class="kern-label">
+                            Nachwuchskraft <span class="text-danger">*</span>
+                        </label>
+                        {% if form.student.errors %}
+                        <div class="text-danger small mb-1">{{ form.student.errors.as_text }}</div>
+                        {% endif %}
+                        <select name="student" id="student_hidden" style="display:none;">
+                            <option value=""></option>
+                            {% for s in students %}
+                            <option value="{{ s.pk }}" {% if form.student.value == s.pk %}selected{% endif %}>
+                                {{ s.last_name }}, {{ s.first_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="ac-wrap position-relative">
+                            <input type="text" id="student_search" class="kern-form-input__input"
+                                   placeholder="Name eingeben …" autocomplete="off">
+                            <div id="student_dropdown" class="ac-dropdown"></div>
+                        </div>
+                        <div id="student_error" class="text-danger small mt-1" style="display:none;">
+                            <i class="bi bi-exclamation-circle me-1"></i> Bitte eine Nachwuchskraft auswählen.
+                        </div>
+                    </div>
+
+                    {# Restliche Felder #}
+                    {% for field in form %}
+                    {% if field.name != 'student' %}
+                    <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
+                        <label class="kern-label" for="{{ field.id_for_label }}">
+                            {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {% if field.errors %}
+                        <div class="text-danger small mb-1">{{ field.errors.as_text }}</div>
+                        {% endif %}
+                        {% if field.field.widget.input_type == 'select' %}
+                        <select name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="kern-form-input__input">
+                            {% for val, opt_label in field.field.choices %}
+                            <option value="{{ val }}" {% if val == field.value %}selected{% endif %}>{{ opt_label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% elif field.field.widget.input_type == 'textarea' %}
+                        <textarea name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                                  class="kern-form-input__input" rows="3">{{ field.value|default:'' }}</textarea>
+                        {% else %}
+                        <input type="{{ field.field.widget.input_type }}"
+                               name="{{ field.html_name }}"
+                               id="{{ field.id_for_label }}"
+                               class="kern-form-input__input"
+                               value="{{ field.value|default:'' }}">
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'absence:sick_leave_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save me-1"></i> Speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    // Heutiges Datum als Standard für start_date setzen
+    const dateInput = document.getElementById('id_start_date');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c =>
+            ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function hilite(text, q) {
+        if (!q) return esc(text);
+        const i = text.toLowerCase().indexOf(q.toLowerCase());
+        if (i === -1) return esc(text);
+        return esc(text.slice(0, i))
+             + '<span class="ac-highlight">' + esc(text.slice(i, i + q.length)) + '</span>'
+             + esc(text.slice(i + q.length));
+    }
+
+    const hidden   = document.getElementById('student_hidden');
+    const search   = document.getElementById('student_search');
+    const dropdown = document.getElementById('student_dropdown');
+    const errMsg   = document.getElementById('student_error');
+
+    const options = Array.from(hidden.options)
+        .filter(o => o.value)
+        .map(o => ({ value: o.value, text: o.text }));
+
+    // Vorauswahl wiederherstellen (nach fehlgeschlagenem Submit)
+    const preselected = hidden.options[hidden.selectedIndex];
+    if (preselected && preselected.value) {
+        search.value = preselected.text;
+    }
+
+    let activeIdx = -1;
+
+    function render(query) {
+        const q = query.trim().toLowerCase();
+        const hits = q ? options.filter(o => o.text.toLowerCase().includes(q)) : options;
+        dropdown.innerHTML = '';
+        activeIdx = -1;
+        if (hits.length === 0) {
+            dropdown.innerHTML = '<div style="padding:10px 12px;font-size:.85rem;color:#6c757d;font-style:italic;">Keine Treffer</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        hits.slice(0, 50).forEach((opt) => {
+            const item = document.createElement('div');
+            item.className = 'ac-item';
+            item.dataset.value = opt.value;
+            item.innerHTML = hilite(opt.text, query.trim());
+            item.addEventListener('mousedown', e => {
+                e.preventDefault();
+                hidden.value = opt.value;
+                search.value = opt.text;
+                dropdown.style.display = 'none';
+                activeIdx = -1;
+                errMsg.style.display = 'none';
+                search.classList.remove('is-invalid');
+            });
+            dropdown.appendChild(item);
+        });
+        dropdown.style.display = 'block';
+    }
+
+    function setActive(idx) {
+        const items = dropdown.querySelectorAll('.ac-item');
+        items.forEach(el => el.classList.remove('active'));
+        if (idx >= 0 && idx < items.length) {
+            items[idx].classList.add('active');
+            items[idx].scrollIntoView({ block: 'nearest' });
+            activeIdx = idx;
+        }
+    }
+
+    search.addEventListener('input', () => {
+        render(search.value);
+        const cur = options.find(o => String(o.value) === String(hidden.value));
+        if (cur && !cur.text.toLowerCase().includes(search.value.trim().toLowerCase())) {
+            hidden.value = '';
+        }
+    });
+    search.addEventListener('focus', () => render(search.value));
+    search.addEventListener('blur',  () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
+    search.addEventListener('keydown', e => {
+        const items = dropdown.querySelectorAll('.ac-item');
+        if (!items.length) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0) items[activeIdx].dispatchEvent(new MouseEvent('mousedown')); }
+        else if (e.key === 'Escape') { dropdown.style.display = 'none'; }
+    });
+
+    document.getElementById('sickLeaveForm').addEventListener('submit', e => {
+        if (!hidden.value) {
+            e.preventDefault();
+            search.classList.add('is-invalid');
+            errMsg.style.display = 'block';
+            search.focus();
+        }
+    });
+})();
+</script>
+{% endblock %}

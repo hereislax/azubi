@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Stationsschreiben freigeben{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:station_letter_detail' course.pk schedule_block.public_id letter.pk %}">Stationsschreiben</a></li>
+        <li class="breadcrumb-item active">Freigeben</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-send-check me-1"></i> Stationsschreiben freigeben</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                <table class="table table-sm mb-4">
+                    <tr><th>Block</th><td>{{ schedule_block.name }}</td></tr>
+                    <tr><th>Zeitraum</th><td>{{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</td></tr>
+                    <tr><th>Erstellt von</th><td>{{ letter.generated_by.get_full_name|default:letter.generated_by.username|default:"–" }}</td></tr>
+                    <tr><th>Erstellt am</th><td>{{ letter.generated_at|date:"d.m.Y H:i" }}</td></tr>
+                    <tr><th>Einsätze</th><td>{{ assignments|length }}</td></tr>
+                </table>
+                </div>
+
+                <div class="mb-4">
+                    <p class="fw-semibold mb-1 small"><i class="bi bi-building me-1"></i> Einsätze</p>
+                    <ul class="list-group list-group-flush small">
+                        {% for a in assignments %}
+                            <li class="list-group-item py-1 px-0">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ a.student.gender }} {{ a.student.first_name }} {{ a.student.last_name }}
+                                        <span class="text-muted">– {{ a.unit }}</span></span>
+                                    {% if a.student.email_id %}
+                                        <span class="text-muted">{{ a.student.email_id }}</span>
+                                    {% else %}
+                                        <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i> keine E-Mail</span>
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning py-2 small mb-3">
+                    <i class="bi bi-envelope me-1"></i>
+                    Nach der Freigabe werden die Schreiben sofort per E-Mail versendet.
+                    <strong>Diese Aktion kann nicht rückgängig gemacht werden.</strong>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-send-check me-1"></i> Freigeben &amp; jetzt versenden
+                        </button>
+                        <a href="{% url 'course:station_letter_detail' course.pk schedule_block.public_id letter.pk %}"
+                           class="btn btn-outline-secondary"><i class="bi bi-x-circle me-1"></i> Abbrechen</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

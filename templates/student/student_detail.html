@@ -1,0 +1,1722 @@
+{% extends "base.html" %}
+{% load student_filters %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .akte-highlight-row mark,
+    .akte-highlight-row span[class*="highlight"] {
+        background-color: #fff3cd;
+        padding: 0 2px;
+        border-radius: 2px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'student:student_list' %}">Nachwuchskräfte</a></li>
+        <li class="breadcrumb-item active">{{ student.first_name }} {{ student.last_name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ student.first_name }} {{ student.last_name }}
+        </h2>
+        {% if student.status %}
+            <span class="badge bg-{{ student.status.color }} mt-1">{{ student.status }}</span>
+        {% else %}
+            <span class="badge bg-light text-dark border mt-1">Kein Status</span>
+        {% endif %}
+    </div>
+    {% if can_edit %}
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'student:student_edit' student.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i> Bearbeiten
+        </a>
+        <form method="post" action="{% url 'student:student_set_status' student.pk %}" class="d-flex gap-1">
+            {% csrf_token %}
+            {% for s in all_statuses %}
+            <button type="submit" name="status_pk" value="{{ s.pk }}"
+                    class="btn btn-sm {% if student.status == s %}btn-{{ s.color }}{% else %}btn-outline-{{ s.color }}{% endif %}">
+                {{ s.description }}
+            </button>
+            {% endfor %}
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Tabs ─────────────────────────────────────────────────────────────────── #}
+<div class="tabs-scroll-wrapper">
+    <button class="tabs-scroll-btn tabs-scroll-btn--left" id="tabScrollLeft" aria-label="Tabs nach links scrollen" hidden>
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <button class="tabs-scroll-btn tabs-scroll-btn--right" id="tabScrollRight" aria-label="Tabs nach rechts scrollen" hidden>
+        <i class="bi bi-chevron-right"></i>
+    </button>
+<ul class="nav nav-tabs" id="studentTabs" role="tablist">
+    {# Stammdaten #}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#data"
+                type="button" role="tab">
+            <i class="bi bi-person-vcard me-1"></i> Stammdaten
+        </button>
+    </li>
+    {# Akte #}
+    {% if paperless_docs is not None and tab_akte %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="akte-tab" data-bs-toggle="tab" data-bs-target="#akte"
+                type="button" role="tab">
+            <i class="bi bi-folder2-open me-1"></i> Akte
+            {% if paperless_docs %}
+            <span class="badge bg-secondary ms-1">{{ paperless_docs|length }}</span>
+            {% endif %}
+        </button>
+    </li>
+    {% endif %}
+    {# Praktika #}
+    {% if internship_assignments and tab_praktika %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="praktika-tab" data-bs-toggle="tab" data-bs-target="#praktika"
+                type="button" role="tab">
+            <i class="bi bi-briefcase me-1"></i> Praktika
+            <span class="badge bg-secondary ms-1">{{ internship_assignments|length }}</span>
+        </button>
+    </li>
+    {% endif %}
+    {# Noten #}
+    {% if tab_noten %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="noten-tab" data-bs-toggle="tab" data-bs-target="#noten"
+                type="button" role="tab">
+            <i class="bi bi-mortarboard me-1"></i> Noten
+            {% if grades %}<span class="badge bg-secondary ms-1">{{ grades|length }}</span>{% endif %}
+        </button>
+    </li>
+    {% endif %}
+    {# Ausbildungsnachweise #}
+    {% if training_records is not None and student.course.job_profile.requires_proof_of_training %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="ausbildungsnachweise-tab" data-bs-toggle="tab"
+                data-bs-target="#ausbildungsnachweise" type="button" role="tab">
+            <i class="bi bi-journal-text me-1"></i> Ausbildungsnachweise
+            {% if training_records %}
+            <span class="badge bg-secondary ms-1">{{ training_records|length }}</span>
+            {% endif %}
+        </button>
+    </li>
+    {% endif %}
+    {# Wohnheim #}
+    {% if assignments and tab_wohnheim %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="wohnheim-tab" data-bs-toggle="tab" data-bs-target="#wohnheim"
+                type="button" role="tab">
+            <i class="bi bi-building me-1"></i> Wohnheim
+            <span class="badge bg-secondary ms-1">{{ assignments|length }}</span>
+        </button>
+    </li>
+    {% endif %}
+    {# Abwesenheiten (Urlaub + Krank + Lerntage) #}
+    {% if can_view_absences %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="abwesenheiten-tab" data-bs-toggle="tab"
+                data-bs-target="#abwesenheiten" type="button" role="tab">
+            <i class="bi bi-calendar-x me-1"></i> Abwesenheiten
+            {% if traffic_light_info %}
+            <i class="bi {{ traffic_light_info.icon }} text-{{ traffic_light_info.color }} ms-1 small"></i>
+            {% endif %}
+        </button>
+    </li>
+    {% endif %}
+    {# Kontakthistorie #}
+    {% if can_view_contacts %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="kontakte-tab" data-bs-toggle="tab"
+                data-bs-target="#kontakte" type="button" role="tab">
+            <i class="bi bi-chat-left-text me-1"></i> Kontakthistorie
+            {% if contacts %}
+            <span class="badge bg-secondary ms-1">{{ contacts|length }}</span>
+            {% endif %}
+        </button>
+    </li>
+    {% endif %}
+    {# Checklisten #}
+    {% if can_manage_checklists %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                id="checklisten-tab" data-bs-toggle="tab"
+                data-bs-target="#checklisten" type="button" role="tab">
+            <i class="bi bi-check2-square me-1"></i> Checklisten
+            {% if checklists %}
+            <span class="badge bg-secondary ms-1">{{ checklists|length }}</span>
+            {% endif %}
+        </button>
+    </li>
+    {% endif %}
+    {# Maßnahmen #}
+    {% if can_view_interventions %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                id="massnahmen-tab" data-bs-toggle="tab"
+                data-bs-target="#massnahmen" type="button" role="tab">
+            <i class="bi bi-shield-exclamation me-1"></i> Maßnahmen
+            {% if interventions %}
+            {% with open_iv=interventions|length %}
+            <span class="badge bg-secondary ms-1">{{ open_iv }}</span>
+            {% endwith %}
+            {% endif %}
+        </button>
+    </li>
+    {% endif %}
+    {# Nachrichten (Anfragen) #}
+    {% if inquiries %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                id="nachrichten-tab" data-bs-toggle="tab"
+                data-bs-target="#nachrichten" type="button" role="tab">
+            <i class="bi bi-chat-left-text me-1"></i> Nachrichten
+            <span class="badge bg-secondary ms-1">{{ inquiries|length }}</span>
+        </button>
+    </li>
+    {% endif %}
+    {# Ausbildungsplan #}
+    {% if curriculum_status %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                id="ausbildungsplan-tab" data-bs-toggle="tab"
+                data-bs-target="#ausbildungsplan" type="button" role="tab">
+            <i class="bi bi-list-check me-1"></i> Ausbildungsplan
+        </button>
+    </li>
+    {% endif %}
+    {# Kompetenzmatrix (eigene Seite, kein In-Page-Tab) #}
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" href="{% url 'student:competence_matrix' student.pk %}"
+           title="Kompetenzmatrix in eigener Ansicht öffnen">
+            <i class="bi bi-radar me-1"></i> Kompetenzmatrix
+            <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.7em; opacity: 0.6;"></i>
+        </a>
+    </li>
+    {# Pflichtschulungen (eigene Seite) #}
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" href="{% url 'mandatorytraining:student_detail' student.pk %}"
+           title="Pflichtschulungen in eigener Ansicht öffnen">
+            <i class="bi bi-shield-check me-1"></i> Pflichtschulungen
+            <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.7em; opacity: 0.6;"></i>
+        </a>
+    </li>
+</ul>
+</div>{# /.tabs-scroll-wrapper #}
+
+<div class="tab-content border border-top-0 rounded-bottom p-4 mb-4" id="studentTabContent">
+
+    {# ── Tab: Stammdaten ─────────────────────────────────────────────────── #}
+    <div class="tab-pane fade show active" id="data" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light fw-semibold">
+                        <i class="bi bi-person-vcard me-1"></i> Persönliche Daten
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Geschlecht</dt>
+                            <dd class="col-sm-7">{{ student.gender|default:"–" }}</dd>
+
+                            <dt class="col-sm-5">Vorname(n)</dt>
+                            <dd class="col-sm-7">{{ student.first_name|default:"–" }}</dd>
+
+                            <dt class="col-sm-5">Nachname</dt>
+                            <dd class="col-sm-7">{{ student.last_name|default:"–" }}</dd>
+
+                            {% if not restricted_view %}
+                            <dt class="col-sm-5">Geburtsdatum</dt>
+                            <dd class="col-sm-7">{{ student.date_of_birth|date:"d.m.Y" }}</dd>
+
+                            <dt class="col-sm-5">Geburtsort</dt>
+                            <dd class="col-sm-7">{{ student.place_of_birth|default:"–" }}</dd>
+
+                            <dt class="col-sm-5">Beschäftigung</dt>
+                            <dd class="col-sm-7">{{ student.employment|default:"–" }}</dd>
+                            {% endif %}
+
+                            <hr class="my-2"/>
+
+                            <dt class="col-sm-5">ID</dt>
+                            <dd class="col-sm-7 font-monospace text-muted small">{{ student.pk }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 d-flex flex-column gap-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light fw-semibold">
+                        <i class="bi bi-journals me-1"></i> Ausbildung
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Kurs</dt>
+                            <dd class="col-sm-7">
+                                {% if student.course %}
+                                    {% if not restricted_view %}
+                                        <a href="{% url 'course:course_detail' student.course_id %}">{{ student.course }}</a>
+                                    {% else %}
+                                        {{ student.course }}
+                                    {% endif %}
+                                {% else %}–{% endif %}
+                            </dd>
+
+                            {% if current_block %}
+                            <dt class="col-sm-5">Aktuelle Station</dt>
+                            <dd class="col-sm-7">
+                                {{ current_block.name }}
+                                <span class="text-muted small ms-1">(noch {{ remaining_days }} Tag{{ remaining_days|pluralize:"e" }})</span>
+                            </dd>
+                            {% endif %}
+
+                            {% if current_internship %}
+                            <dt class="col-sm-5">Aktuelle Praxisstation</dt>
+                            <dd class="col-sm-7">
+                                {{ current_internship.unit }}
+                                <span class="text-muted small ms-1">(noch {{ internship_remaining_days }} Tag{{ internship_remaining_days|pluralize:"e" }})</span>
+                            </dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light fw-semibold">
+                        <i class="bi bi-telephone me-1"></i> Kontakt
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Telefon</dt>
+                            <dd class="col-sm-7">{{ student.phone_number|phone_format }}</dd>
+
+                            <dt class="col-sm-5">E-Mail (privat)</dt>
+                            <dd class="col-sm-7">
+                                {% if student.email_private %}
+                                    <a href="mailto:{{ student.email_private }}">{{ student.email_private }}</a>
+                                {% else %}–{% endif %}
+                            </dd>
+
+                            <dt class="col-sm-5">E-Mail (dienstlich)</dt>
+                            <dd class="col-sm-7">
+                                {% if student.email_id %}
+                                    <a href="mailto:{{ student.email_id }}">{{ student.email_id }}</a>
+                                {% else %}–{% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+{% if addresses %}
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light fw-semibold">
+                        <i class="bi bi-geo-alt me-1"></i> Adresse(n)
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for addr in addresses %}
+                        <li class="list-group-item">{{ addr }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if custom_fields %}
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light fw-semibold">
+                        <i class="bi bi-sliders me-1"></i> Benutzerdefinierte Felder
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            {% for defn, value in custom_fields %}
+                            <dt class="col-sm-5">{{ defn.name }}</dt>
+                            <dd class="col-sm-7">{{ value|default:"–" }}</dd>
+                            {% endfor %}
+                        </dl>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Tab: Wohnheim ───────────────────────────────────────────────────── #}
+    {% if assignments %}
+    <div class="tab-pane fade" id="wohnheim" role="tabpanel">
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0" id="wohnheimTable" style="width:100%">
+            <thead class="table-light">
+                <tr>
+                    <th>Wohnheim</th>
+                    <th>Zimmer</th>
+                    <th>Einzug</th>
+                    <th>Auszug</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assignments %}
+                <tr>
+                    <td>{{ a.room.dormitory.name }}</td>
+                    <td>{{ a.room.number }}</td>
+                    <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                    <td>{{ a.end_date|date:"d.m.Y"|default:"offen" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'dormitory:room_detail' a.room.public_id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-right me-1"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Tab: Praktika ───────────────────────────────────────────────────── #}
+    {% if internship_assignments %}
+    <div class="tab-pane fade" id="praktika" role="tabpanel">
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0" id="praktikaTable" style="width:100%">
+            <thead class="table-light">
+                <tr>
+                    <th>Organisationseinheit</th>
+                    <th>Standort</th>
+                    <th>Von</th>
+                    <th>Bis</th>
+                    <th>Block</th>
+                    <th>Bewertung</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ia in internship_assignments %}
+            <tr>
+                <td>{{ ia.unit.name }} ({{ ia.unit.label }})</td>
+                <td>{{ ia.location }}</td>
+                <td>{{ ia.start_date|date:"d.m.Y" }}</td>
+                <td>{{ ia.end_date|date:"d.m.Y" }}</td>
+                <td>{{ ia.schedule_block.name }}</td>
+                <td style="white-space:nowrap">
+                    {% with assessment=ia.assessment %}
+                    {% if assessment %}
+                        <span class="badge bg-{{ assessment.status_badge }}">
+                            <i class="bi bi-clipboard-check me-1"></i> {{ assessment.get_status_display }}
+                        </span>
+                        {% with avg=assessment.average_grade %}
+                        {% if avg %}<span class="badge bg-light text-dark border ms-1">Ø {{ avg }}</span>{% endif %}
+                        {% endwith %}
+                        {% if not restricted_view %}
+                        <a href="{% url 'assessment:detail' assessment.public_id %}" class="btn btn-sm btn-outline-secondary ms-1" title="Beurteilung ansehen"><i class="bi bi-eye me-1"></i></a>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted small">–</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Tab: Noten ──────────────────────────────────────────────────────── #}
+    {% if not restricted_view %}
+    <div class="tab-pane fade" id="noten" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">
+                {% if student.course and student.course.job_profile %}
+                    Notenarten aus Berufsbild: <strong>{{ student.course.job_profile }}</strong>
+                {% else %}
+                    <i class="bi bi-exclamation-triangle text-warning me-1"></i> Kein Berufsbild zugewiesen – Notenarten nicht verfügbar.
+                {% endif %}
+            </span>
+            <a href="{% url 'student:grade_create' student.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Note hinzufügen
+            </a>
+        </div>
+
+        {% if grades %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="notenTable" style="width:100%">
+            <thead class="table-light">
+                <tr>
+                    <th>Notenart</th>
+                    <th>Note</th>
+                    <th>Datum</th>
+                    <th>Anmerkungen</th>
+                    <th>Anhang</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for grade in grades %}
+            <tr>
+                <td class="fw-semibold">{{ grade.grade_type.name }}</td>
+                <td>
+                    {% if grade.value %}
+                        <span class="badge bg-primary fs-6">{{ grade.value }}</span>
+                    {% else %}
+                        <span class="text-muted">–</span>
+                    {% endif %}
+                </td>
+                <td>{{ grade.date|date:"d.m.Y"|default:"–" }}</td>
+                <td>{{ grade.notes|default:"–" }}</td>
+                <td>
+                    {% if grade.paperless_document_id %}
+                        <a href="{% url 'services:paperless_preview' grade.paperless_document_id %}"
+                           target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-paperclip me-1"></i> Anhang
+                        </a>
+                    {% else %}
+                        <span class="text-muted">–</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{% url 'student:grade_edit' student.pk grade.pk %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-mortarboard" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Noch keine Noten eingetragen.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# ── Tab: Akte ───────────────────────────────────────────────────────── #}
+    {% if paperless_docs is not None %}
+    <div class="tab-pane fade" id="akte" role="tabpanel">
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center justify-content-between">
+            <div class="d-flex gap-2 align-items-center" style="flex: 1 1 auto; min-width: 0;">
+                <input type="search" id="akteSearch" class="kern-form-input__input"
+                       placeholder="Im Dokumententext suchen …" autocomplete="off"
+                       style="flex: 1 1 auto; min-width: 0;">
+                <span class="text-muted small" id="akteSearchHint"></span>
+            </div>
+            {% if can_edit %}
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="kernDialogOpen('uploadModal')">
+                    <i class="bi bi-upload me-1"></i> Hochladen
+                </button>
+                {% if document_templates %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-file-earmark-plus me-1"></i> Generieren
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% for tpl in document_templates %}
+                        <li>
+                            {% if tpl.extra_fields.all %}
+                            <a class="dropdown-item" href="{% url 'student:student_document_generate' student.pk tpl.pk %}">
+                                {{ tpl.name }} <i class="bi bi-pencil-square ms-1 text-muted small" title="Mit Eingabefeldern"></i>
+                            </a>
+                            {% else %}
+                            <form method="post" action="{% url 'student:student_document_generate' student.pk tpl.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">{{ tpl.name }}</button>
+                            </form>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if paperless_docs %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle" id="akteTable" style="width:100%">
+            <thead class="table-light">
+                <tr>
+                    <th>Titel</th>
+                    <th>ASN</th>
+                    <th>Ausfertigungsdatum</th>
+                    <th></th>
+                    <th>docid</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in paperless_docs %}
+                <tr>
+                    <td>
+                        <i class="bi bi-file-earmark-text text-muted me-1"></i>
+                        <span id="doc-title-{{ doc.id }}">{{ doc.title }}</span>
+                    </td>
+                    <td>
+                        {% if doc.archive_serial_number %}
+                        <span class="badge text-bg-secondary font-monospace" title="Archiv-Seriennummer">
+                            <i class="bi bi-upc me-1"></i> {{ doc.archive_serial_number }}
+                        </span>
+                        {% else %}–{% endif %}
+                    </td>
+                    <td id="doc-created-td-{{ doc.id }}" data-order="{{ doc.created|slice:':10'|default:'0000-00-00' }}">
+                        <span id="doc-created-{{ doc.id }}">{% if doc.created %}{{ doc.created|slice:"8:10" }}.{{ doc.created|slice:"5:7" }}.{{ doc.created|slice:":4" }}{% else %}–{% endif %}</span>
+                    </td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        {% if can_edit %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary doc-edit-btn"
+                                data-doc-id="{{ doc.id }}"
+                                data-url="{% url 'services:document_update' doc.id %}"
+                                data-title="{{ doc.title|escapejs }}"
+                                data-created="{{ doc.created|slice:':10' }}"
+                                title="Metadaten bearbeiten">
+                            <i class="bi bi-pencil me-1"></i>
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-primary doc-preview-btn"
+                                data-doc-id="{{ doc.id }}"
+                                data-doc-title="{{ doc.title }}">
+                            <i class="bi bi-eye me-1"></i> Öffnen
+                        </button>
+                    </td>
+                    <td>{{ doc.id }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-folder2-open" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Keine Dokumente in Paperless gefunden.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# ── Tab: Ausbildungsnachweise ────────────────────────────────────────── #}
+    {% if training_records is not None and student.course.job_profile.requires_proof_of_training %}
+    <div class="tab-pane fade" id="ausbildungsnachweise" role="tabpanel">
+        {% if training_records %}
+        <div class="d-flex justify-content-end mb-2">
+            <a href="{% url 'proofoftraining:admin_record_export' student_pk=student.pk %}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-file-earmark-word me-1"></i> Alle exportieren
+            </a>
+        </div>
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Woche</th>
+                    <th>Zeitraum</th>
+                    <th>Status</th>
+                    <th>Eingereicht am</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in training_records %}
+                <tr>
+                    <td><strong>KW {{ record.calendar_week }}/{{ record.week_start.year }}</strong></td>
+                    <td>{{ record.week_start|date:"d.m.Y" }} – {{ record.week_end|date:"d.m.Y" }}</td>
+                    <td>
+                        <span class="badge bg-{{ record.status_color }}">{{ record.get_status_display }}</span>
+                    </td>
+                    <td class="text-muted small">{{ record.submitted_at|date:"d.m.Y H:i"|default:"–" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'proofoftraining:admin_record_detail' student_pk=student.pk public_id=record.public_id %}"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i> Ansehen
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-journal-text" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Noch keine Ausbildungsnachweise vorhanden.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# ── Tab: Abwesenheiten ──────────────────────────────────────────────── #}
+    {% if can_view_absences %}
+    <div class="tab-pane fade" id="abwesenheiten" role="tabpanel">
+
+        {# Abwesenheitsampel #}
+        {% if traffic_light_info and student.course %}
+        <div class="d-flex align-items-center gap-3 mb-4 p-3 border rounded bg-light">
+            <i class="bi {{ traffic_light_info.icon }} text-{{ traffic_light_info.color }} fs-3"></i>
+            <div>
+                <div class="fw-semibold">Abwesenheitsampel</div>
+                <div class="text-muted small">{{ traffic_light_info.label }}</div>
+            </div>
+            {% if sick_leaves %}
+            <div class="ms-auto text-muted small">
+                {% with total_sick=0 %}
+                {{ sick_leaves|length }} Krankmeldung{{ sick_leaves|length|pluralize:"en" }}
+                {% endwith %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# Urlaubsanträge #}
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0"><i class="bi bi-sun me-1"></i> Urlaubsanträge</h5>
+            {% if can_edit %}
+            <a href="{% url 'absence:vacation_create' %}?student={{ student.pk }}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus me-1"></i> Antrag erfassen
+            </a>
+            {% endif %}
+        </div>
+        {% if vacation_requests %}
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-hover table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Art</th>
+                        <th>Von</th>
+                        <th>Bis</th>
+                        <th class="text-center">AT</th>
+                        <th>Status</th>
+                        <th>Resturlaub akt. / Vorjahr</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vr in vacation_requests %}
+                    <tr>
+                        <td>
+                            {% if vr.is_cancellation %}
+                            <span class="badge bg-dark">Stornierung</span>
+                            {% else %}
+                            <span class="badge bg-info text-dark">Urlaub</span>
+                            {% endif %}
+                            {% if vr.submitted_via_portal %}
+                            <span class="badge bg-light text-secondary border small">Portal</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ vr.start_date|date:"d.m.Y" }}</td>
+                        <td>{{ vr.end_date|date:"d.m.Y" }}</td>
+                        <td class="text-center">{{ vr.effective_working_days }}</td>
+                        <td><span class="badge bg-{{ vr.status_badge }}">{{ vr.get_status_display }}</span></td>
+                        <td class="text-muted small">
+                            {% if vr.remaining_days_current_year is not None %}
+                            {{ vr.remaining_days_current_year }} / {{ vr.remaining_days_previous_year|default:"–" }}
+                            {% else %}–{% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if vr.status == 'pending' and can_approve_vacation %}
+                            <a href="{% url 'absence:vacation_decide' vr.public_id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-check-circle me-1"></i>
+                            </a>
+                            {% else %}
+                            <a href="{% url 'absence:vacation_detail' vr.public_id %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye me-1"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-sun" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Keine Urlaubsanträge vorhanden.</p>
+        </div>
+        {% endif %}
+
+        {# Krankmeldungen #}
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0"><i class="bi bi-thermometer-high me-1"></i> Krankmeldungen</h5>
+            {% if can_edit %}
+            <a href="{% url 'absence:sick_leave_create' %}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus me-1"></i> Krankmeldung erfassen
+            </a>
+            {% endif %}
+        </div>
+        {% if sick_leaves %}
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-hover table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Art</th>
+                        <th>Erster Krankheitstag</th>
+                        <th>Letzter Krankheitstag</th>
+                        <th class="text-center">AT</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sl in sick_leaves %}
+                    <tr {% if sl.is_open %}class="table-warning"{% endif %}>
+                        <td><span class="badge bg-{{ sl.sick_type_badge }}">{{ sl.get_sick_type_display }}</span></td>
+                        <td>{{ sl.start_date|date:"d.m.Y" }}</td>
+                        <td>
+                            {% if sl.end_date %}{{ sl.end_date|date:"d.m.Y" }}
+                            {% else %}<span class="text-danger fw-semibold">offen</span>{% endif %}
+                        </td>
+                        <td class="text-center">{{ sl.duration_working_days }}</td>
+                        <td>
+                            {% if sl.is_open %}<span class="badge bg-danger">Offen</span>
+                            {% else %}<span class="badge bg-success">Geschlossen</span>{% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if sl.is_open and can_edit %}
+                            <a href="{% url 'absence:sick_leave_close' sl.public_id %}" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-check2 me-1"></i> Gesundmelden
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-thermometer-high" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Keine Krankmeldungen vorhanden.</p>
+        </div>
+        {% endif %}
+
+        {# Lerntage #}
+        {% if can_view_study_days and study_day_requests is not None and student.course.job_profile.study_day_policy %}
+        <hr class="my-4">
+        <h5 class="mb-3"><i class="bi bi-book me-1"></i> Lerntage</h5>
+
+        {# Guthaben-Widget #}
+        {% if study_day_balance %}
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <div class="row g-3 text-center">
+                    <div class="col">
+                        <div class="fs-5 fw-bold text-primary">{{ study_day_balance.total }}</div>
+                        <div class="text-muted small">Gesamt</div>
+                    </div>
+                    <div class="col">
+                        <div class="fs-5 fw-bold text-success">{{ study_day_balance.approved }}</div>
+                        <div class="text-muted small">Genommen</div>
+                    </div>
+                    <div class="col">
+                        <div class="fs-5 fw-bold text-warning">{{ study_day_balance.pending }}</div>
+                        <div class="text-muted small">Ausstehend</div>
+                    </div>
+                    <div class="col">
+                        <div class="fs-5 fw-bold {% if study_day_balance.remaining > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ study_day_balance.remaining }}
+                        </div>
+                        <div class="text-muted small">Verbleibend</div>
+                    </div>
+                </div>
+                {% if study_day_balance.total > 0 %}
+                <div class="progress mt-2" style="height:5px;">
+                    {% widthratio study_day_balance.approved study_day_balance.total 100 as pct %}
+                    <div class="progress-bar bg-success" style="width:{{ pct }}%"></div>
+                </div>
+                {% endif %}
+                <div class="text-muted small mt-1">
+                    <i class="bi bi-info-circle me-1"></i> {{ study_day_balance.policy.get_human_rule }}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            Für dieses Berufsbild ist keine Lerntage-Regelung hinterlegt.
+        </div>
+        {% endif %}
+
+        {# Antragsliste #}
+        {% if study_day_requests %}
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Datum</th>
+                    <th>Status</th>
+                    <th>Begründung</th>
+                    <th>Entschieden von</th>
+                    <th>Beantragt am</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for req in study_day_requests %}
+            <tr>
+                <td class="fw-semibold">{{ req.date|date:"d.m.Y" }}</td>
+                <td>
+                    {% if req.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">Ausstehend</span>
+                    {% elif req.status == 'approved' %}
+                        <span class="badge bg-success">Genehmigt</span>
+                    {% elif req.status == 'rejected' %}
+                        <span class="badge bg-danger">Abgelehnt</span>
+                    {% elif req.status == 'cancelled' %}
+                        <span class="badge bg-secondary">Storniert</span>
+                    {% endif %}
+                </td>
+                <td class="small text-muted">{{ req.reason|default:"–"|truncatechars:50 }}</td>
+                <td class="small text-muted">
+                    {% if req.approved_by %}
+                        {{ req.approved_by.get_full_name|default:req.approved_by.username }}
+                    {% else %}–{% endif %}
+                </td>
+                <td class="small text-muted">{{ req.created_at|date:"d.m.Y" }}</td>
+                <td>
+                    {% if req.status == 'pending' and can_approve_study_days %}
+                    <a href="{% url 'studyday:request_decide' req.public_id %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-check2-square me-1"></i> Entscheiden
+                    </a>
+                    {% elif req.status == 'approved' and can_approve_study_days %}
+                    <a href="{% url 'studyday:request_cancel' req.public_id %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-x-circle me-1"></i> Stornieren
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-book" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Noch keine Lerntag-Anträge vorhanden.</p>
+        </div>
+        {% endif %}
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+    {# ── Tab: Kontakthistorie ─────────────────────────────────────────────── #}
+    {% if can_view_contacts %}
+    <div class="tab-pane fade" id="kontakte" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">{{ contacts|length }} Einträge</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="kernDialogOpen('newContactModal')">
+                <i class="bi bi-plus-lg me-1"></i> Neuer Kontakt
+            </button>
+        </div>
+        {% if contacts %}
+        <div class="d-flex flex-column gap-3">
+            {% for entry in contacts %}
+            <div class="card shadow-sm border-start border-4
+                {% if entry.contact_type == 'phone' %}border-info
+                {% elif entry.contact_type == 'on_site' %}border-success
+                {% else %}border-warning{% endif %}">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="text-muted small">
+                            <span class="badge me-1
+                                {% if entry.contact_type == 'phone' %}text-bg-info
+                                {% elif entry.contact_type == 'on_site' %}text-bg-success
+                                {% else %}text-bg-warning{% endif %}">
+                                <i class="bi {{ entry.type_icon }}"></i>
+                                {{ entry.get_contact_type_display }}
+                            </span>
+                            <i class="bi bi-person me-1"></i>
+                            {{ entry.recorded_by.get_full_name|default:entry.recorded_by.username }}
+                            &nbsp;·&nbsp;
+                            <i class="bi bi-clock me-1"></i> {{ entry.contacted_at|date:"d.m.Y H:i" }}
+                        </span>
+                        <form method="post"
+                              action="{% url 'student:contact_entry_delete' student.pk entry.pk %}"
+                              onsubmit="return confirm('Diesen Kontakteintrag wirklich löschen?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Löschen">
+                                <i class="bi bi-trash3 me-1"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="row g-3">
+                        <div class="{% if entry.response %}col-md-6{% else %}col-12{% endif %}">
+                            <p class="text-muted small mb-1 fw-semibold">Anfrage / Anliegen</p>
+                            <p class="mb-0" style="white-space:pre-wrap;">{{ entry.inquiry }}</p>
+                        </div>
+                        {% if entry.response %}
+                        <div class="col-md-6">
+                            <p class="text-muted small mb-1 fw-semibold">Gegebene Antwort</p>
+                            <p class="mb-0" style="white-space:pre-wrap;">{{ entry.response }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-chat-left-text" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Noch keine Kontakteinträge vorhanden.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# ── Tab: Maßnahmen ──────────────────────────────────────────────────── #}
+    {% if can_view_interventions %}
+    <div class="tab-pane fade {% if request.GET.tab == 'massnahmen' %}show active{% endif %}"
+         id="massnahmen" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">{{ interventions|length }} Maßnahme{{ interventions|length|pluralize:",n" }}</span>
+            <a href="{% url 'intervention:create' %}?student={{ student.pk }}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-lg me-1"></i> Neue Maßnahme
+            </a>
+        </div>
+        {% if interventions %}
+        <div class="d-flex flex-column gap-3">
+            {% for iv in interventions %}
+            <div class="card shadow-sm border-start border-4
+                {% if iv.status == 'closed' %}border-success
+                {% elif iv.status == 'escalated' %}border-danger
+                {% elif iv.status == 'in_progress' %}border-primary
+                {% else %}border-warning{% endif %}">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <span class="badge bg-{{ iv.category.color }}">{{ iv.category }}</span>
+                            <span class="badge bg-{{ iv.status_badge }}">{{ iv.get_status_display }}</span>
+                            <span class="text-muted small">
+                                <i class="bi {{ iv.trigger_icon }} me-1"></i>{{ iv.get_trigger_type_display }}
+                            </span>
+                            <span class="text-muted small">
+                                <i class="bi bi-calendar me-1"></i>{{ iv.date|date:"d.m.Y" }}
+                            </span>
+                            {% if iv.followup_date %}
+                            <span class="small {% if iv.followup_date < today and iv.is_open %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                                <i class="bi bi-flag me-1"></i>Frist: {{ iv.followup_date|date:"d.m.Y" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'intervention:detail' iv.public_id %}"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>
+                        </a>
+                    </div>
+                    <p class="mb-0 small text-muted" style="white-space:pre-wrap;">
+                        {{ iv.description|truncatechars:200 }}
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-shield-check" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Keine Maßnahmen für diese Nachwuchskraft.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# ── Tab: Checklisten ─────────────────────────────────────────────────── #}
+    {% if can_manage_checklists %}
+    <div class="tab-pane fade {% if request.GET.tab == 'checklisten' %}show active{% endif %}" id="checklisten" role="tabpanel">
+
+        {# Neue Checkliste aus Vorlage anlegen #}
+        {% if checklist_templates %}
+        <form method="post" action="{% url 'student:checklist_create' student.pk %}" class="d-flex gap-2 mb-4">
+            {% csrf_token %}
+            <select name="template" class="kern-form-input__input" required>
+                <option value="">Vorlage wählen …</option>
+                {% for t in checklist_templates %}
+                <option value="{{ t.pk }}">{{ t.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Checkliste hinzufügen
+            </button>
+        </form>
+        {% else %}
+        <div class="alert alert-secondary mb-4">
+            Noch keine Checklisten-Vorlagen vorhanden. Bitte zuerst unter <a href="/admin/">Admin</a> Vorlagen anlegen.
+        </div>
+        {% endif %}
+
+        {% if checklists %}
+        {% for cl in checklists %}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ cl.name }}</strong>
+                    <span class="text-muted small ms-2">{{ cl.done_count }}/{{ cl.total_count }} erledigt</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress" style="width:120px;height:10px;">
+                        <div class="progress-bar {% if cl.progress == 100 %}bg-success{% elif cl.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}"
+                             style="width:{{ cl.progress }}%;"></div>
+                    </div>
+                    <span class="small text-muted">{{ cl.progress }}%</span>
+                    <form method="post" action="{% url 'student:checklist_delete' student.pk cl.pk %}" class="ms-2"
+                          onsubmit="return confirm('Checkliste wirklich löschen?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">
+                            <i class="bi bi-trash me-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for item in cl.items.all %}
+                <li class="list-group-item d-flex align-items-center gap-3 py-2">
+                    <form method="post" action="{% url 'student:checklist_item_toggle' student.pk cl.pk item.pk %}" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn p-0 border-0 bg-transparent">
+                            {% if item.completed %}
+                            <i class="bi bi-check-circle-fill text-success fs-5 me-1"></i>
+                            {% else %}
+                            <i class="bi bi-circle text-secondary fs-5 me-1"></i>
+                            {% endif %}
+                        </button>
+                    </form>
+                    <span class="{% if item.completed %}text-decoration-line-through text-muted{% endif %} flex-grow-1">
+                        {{ item.text }}
+                    </span>
+                    {% if item.completed and item.completed_by %}
+                    <span class="text-muted small text-nowrap">
+                        {{ item.completed_at|date:"d.m.Y" }} · {{ item.completed_by.get_full_name|default:item.completed_by.username }}
+                    </span>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted small">Keine Punkte in dieser Checkliste.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-check2-square" style="font-size:2.5rem;"></i>
+            <p class="mt-2 mb-0">Noch keine Checklisten für diese Nachwuchskraft.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# ── Tab: Nachrichten (Anfragen) ─────────────────────────────────────── #}
+    {% if inquiries %}
+    <div class="tab-pane fade {% if request.GET.tab == 'nachrichten' %}show active{% endif %}"
+         id="nachrichten" role="tabpanel">
+
+        {% for inq in inquiries %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex align-items-center gap-2 py-2">
+                <div class="flex-grow-1">
+                    <span class="fw-semibold small">{{ inq.subject }}</span>
+                    <span class="text-muted" style="font-size:.75rem;">{{ inq.created_at|date:"d.m.Y H:i" }}</span>
+                </div>
+                {% if inq.status == 'open' %}
+                <span class="badge bg-warning text-dark">Offen</span>
+                {% elif inq.status == 'in_progress' %}
+                <span class="badge bg-info">In Bearbeitung</span>
+                {% else %}
+                <span class="badge bg-secondary">Geschlossen</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="small mb-3" style="white-space:pre-wrap;">{{ inq.message }}</div>
+                {% if inq.attachment %}
+                <div class="mb-3">
+                    <a href="{{ inq.attachment.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                        <i class="bi bi-paperclip me-1"></i> {{ inq.attachment.name|cut:"inquiries/attachments/" }}
+                    </a>
+                </div>
+                {% endif %}
+
+                {% for reply in inq.replies.all %}
+                <div class="border-start {% if reply.is_staff_reply %}border-primary{% else %}border-secondary{% endif %} border-3 ps-3 mb-2">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        {% if reply.is_staff_reply %}
+                        <i class="bi bi-shield-check text-primary"></i>
+                        <strong class="small">Ausbildungsreferat</strong>
+                        {% if reply.author %}
+                        <span class="text-muted" style="font-size:.7rem;">({{ reply.author.get_full_name|default:reply.author.username }})</span>
+                        {% endif %}
+                        {% else %}
+                        <i class="bi bi-person text-secondary"></i>
+                        <strong class="small">{{ student.first_name }} {{ student.last_name }}</strong>
+                        {% endif %}
+                        <span class="text-muted ms-auto" style="font-size:.75rem;">{{ reply.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <div class="small" style="white-space:pre-wrap;">{{ reply.message }}</div>
+                    {% if reply.attachment %}{# Anhang-Anzeige – Original-Dateiname über attachment_filename, Fallback auf Pfad-Basisname #}
+                    <div class="mt-1">
+                        <a href="{{ reply.attachment.url }}" class="btn btn-sm btn-outline-secondary" target="_blank" style="font-size:.75rem;">
+                            <i class="bi bi-paperclip me-1"></i> {{ reply.attachment_filename|default:reply.attachment.name|cut:"inquiries/attachments/" }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {# Antwortformular #}
+                {% if inq.status != 'closed' %}
+                <form method="post" action="{% url 'student:student_inquiry_reply' student.pk inq.pk %}" enctype="multipart/form-data" class="mt-3">
+                    {% csrf_token %}
+                    <div class="kern-form-input mb-2">
+                        <textarea name="message" class="kern-form-input__input" rows="2"
+                                  placeholder="Antwort..." required></textarea>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-send me-1"></i> Antworten
+                        </button>
+                        <label class="btn btn-sm btn-outline-secondary mb-0">
+                            <i class="bi bi-paperclip me-1"></i> Anhang
+                            <input type="file" name="attachment" class="d-none"
+                                   accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.xlsx,.csv"
+                                   onchange="this.closest('label').querySelector('.att-name').textContent = this.files[0]?.name || ''">
+                            <span class="att-name small ms-1"></span>
+                        </label>
+                </form>
+                <form method="post" action="{% url 'student:student_inquiry_close' student.pk inq.pk %}">
+                    {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-check-circle me-1"></i> Schließen
+                        </button>
+                </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Tab: Ausbildungsplan (Soll-Ist) ────────────────────────────────── #}
+    {% if curriculum_status %}
+    <div class="tab-pane fade {% if request.GET.tab == 'ausbildungsplan' %}show active{% endif %}"
+         id="ausbildungsplan" role="tabpanel">
+
+        {% for item in curriculum_status %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-body d-flex gap-3">
+                <div class="flex-shrink-0 pt-1">
+                    {% if item.status == 'completed' %}
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    {% elif item.status == 'in_progress' %}
+                    <i class="bi bi-clock-fill text-warning fs-5"></i>
+                    {% else %}
+                    <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <span class="fw-semibold">{{ item.requirement.name }}</span>
+                        {% if item.requirement.is_mandatory %}
+                        <span class="badge bg-primary" style="font-size:.65rem;">Pflicht</span>
+                        {% else %}
+                        <span class="badge bg-secondary" style="font-size:.65rem;">Optional</span>
+                        {% endif %}
+                        {% if item.manually_completed %}
+                        <span class="badge bg-success" style="font-size:.65rem;">
+                            <i class="bi bi-person-check me-1"></i>Manuell bestätigt
+                        </span>
+                        {% endif %}
+                        <span class="text-muted small ms-auto">
+                            {{ item.total_days }} / {{ item.required_days }} Tage
+                            ({{ item.percent }}%)
+                        </span>
+                    </div>
+                    <div class="progress mb-2" style="height:5px;">
+                        <div class="progress-bar {% if item.status == 'completed' %}bg-success{% elif item.status == 'in_progress' %}bg-warning{% else %}bg-danger{% endif %}"
+                             style="width:{{ item.percent }}%;"></div>
+                    </div>
+                    {% if item.requirement.description %}
+                    <div class="text-muted small mb-2">{{ item.requirement.description }}</div>
+                    {% endif %}
+                    {% if item.matching_assignments %}
+                    <div class="small mb-2">
+                        {% for a in item.matching_assignments %}
+                        <div class="d-flex align-items-center gap-2 text-muted">
+                            <i class="bi bi-geo-alt" style="font-size:.7rem;"></i>
+                            <span>{{ a.unit }} – {{ a.start_date|date:"d.m.Y" }} bis {{ a.end_date|date:"d.m.Y" }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% elif item.status == 'missing' and not item.manually_completed %}
+                    <div class="text-danger small mb-2"><i class="bi bi-exclamation-triangle me-1"></i> Noch kein passender Einsatz zugewiesen.</div>
+                    {% endif %}
+                    {% if item.manually_completed and item.completion %}
+                    <div class="text-muted small mb-2">
+                        <i class="bi bi-person-check me-1"></i>
+                        Bestätigt von {{ item.completion.completed_by.get_full_name|default:item.completion.completed_by.username }}
+                        am {{ item.completion.completed_at|date:"d.m.Y" }}{% if item.completion.notes %} – {{ item.completion.notes }}{% endif %}
+                    </div>
+                    {% endif %}
+                    {# Manuelle Bestätigung (Staff) #}
+                    {% if can_edit %}
+                    <form method="post" action="{% url 'student:curriculum_toggle_completion' student.pk item.requirement.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        {% if item.manually_completed %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i> Bestätigung entfernen
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-check-lg me-1"></i> Als erledigt markieren
+                        </button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>{# /.tab-content #}
+
+{# ── Notizen (unterhalb der Tabs) ────────────────────────────────────────── #}
+{% if can_manage_notes %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-sticky text-muted me-1"></i>
+        <span class="fw-semibold small">{{ internal_notes|length }} Notiz{{ internal_notes|length|pluralize:",en" }}</span>
+        <button class="btn btn-sm btn-outline-primary ms-auto" onclick="kernDialogOpen('newNoteModal')">
+            <i class="bi bi-plus-lg me-1"></i> Neue Notiz
+        </button>
+    </div>
+    {% if internal_notes %}
+    <div class="card-body d-flex flex-column gap-3">
+        {% for note in internal_notes %}
+        <div class="card shadow-sm {% if note.is_pinned %}border-2{% endif %}">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small">
+                        {% if note.is_pinned %}
+                        <i class="bi bi-pin-angle-fill text-warning me-1"></i>
+                        {% endif %}
+                        <i class="bi bi-person me-1"></i>
+                        {{ note.created_by.get_full_name|default:note.created_by.username }}
+                        &nbsp;·&nbsp;
+                        <i class="bi bi-clock me-1"></i> {{ note.created_at|date:"d.m.Y H:i" }}
+                        {% if note.updated_at != note.created_at %}
+                        &nbsp;·&nbsp;<span title="{{ note.updated_at|date:'d.m.Y H:i' }}">bearbeitet</span>
+                        {% endif %}
+                    </span>
+                    <div class="d-flex gap-1">
+                        <form method="post" action="{% url 'student:internal_note_toggle_pin' student.pk note.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-{% if note.is_pinned %}warning{% else %}secondary{% endif %}"
+                                    title="{% if note.is_pinned %}Anpinnen aufheben{% else %}Anpinnen{% endif %}">
+                                <i class="bi bi-pin{% if note.is_pinned %}-angle-fill{% endif %} me-1"></i>
+                            </button>
+                        </form>
+                        <form method="post"
+                              action="{% url 'student:internal_note_delete' student.pk note.pk %}"
+                              onsubmit="return confirm('Diese Notiz wirklich löschen?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Löschen">
+                                <i class="bi bi-trash3 me-1"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <p class="mb-0" style="white-space:pre-wrap;">{{ note.text }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-body text-center text-muted py-5">
+        <i class="bi bi-sticky" style="font-size:2.5rem;"></i>
+        <p class="mt-2 mb-0">Noch keine Notizen vorhanden.</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{# ── Kalender (unterhalb der Tabs) ───────────────────────────────────────── #}
+{% if can_view_calendar and calendar_data %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-calendar3 text-muted me-1"></i>
+        <span class="fw-semibold small">Kalender {{ calendar_data.year }}</span>
+    </div>
+    <div class="card-body pb-2">
+        {% with year_url_base="?tab=kalender&year=" %}
+        {% include "_calendar_gantt.html" with cal=calendar_data year_url_base=year_url_base %}
+        {% endwith %}
+    </div>
+</div>
+{% endif %}
+
+<script>
+$(document).ready(function () {
+    // Tab per URL-Parameter aktivieren (?tab=akte)
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get('tab');
+    if (activeTab) {
+        const tabEl = document.querySelector(`[data-bs-target="#${activeTab}"]`);
+        if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
+    }
+
+    const dtOptions = {
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+        columnDefs: [{ orderable: false, targets: -1 }],
+    };
+    {% if assignments %}
+    $('#wohnheim-tab').one('shown.bs.tab', function () {
+        $('#wohnheimTable').DataTable($.extend({}, dtOptions, { order: [[2, 'desc']] }));
+    });
+    {% endif %}
+    {% if internship_assignments %}
+    $('#praktika-tab').one('shown.bs.tab', function () {
+        $('#praktikaTable').DataTable($.extend({}, dtOptions, { order: [[1, 'desc']], columnDefs: [{ orderable: false, targets: 4 }] }));
+    });
+    {% endif %}
+
+    {% if paperless_docs is not None and tab_akte %}
+    let akteTable = null;
+    const searchUrl = "{% url 'services:paperless_search' student.pk %}";
+
+    {% if paperless_docs %}
+    akteTable = $('#akteTable').DataTable($.extend({}, dtOptions, {
+        autoWidth: false,
+        order: [[2, 'desc']],
+        searching: true,
+        columnDefs: [
+            { orderable: false, targets: 3 },
+            { visible: false, searchable: true, targets: 4 },
+        ],
+    }));
+    $('#akte-tab').on('shown.bs.tab', function () { akteTable.columns.adjust(); });
+    {% endif %}
+
+    let searchTimer = null;
+    $('#akteSearch').on('input', function () {
+        const query = $(this).val().trim();
+        clearTimeout(searchTimer);
+
+        if (query.length === 0) {
+            $('#akteSearchHint').text('');
+            if (akteTable) {
+                akteTable.rows().every(function () { this.child.hide(); });
+                akteTable.column(4).search('').draw();
+            }
+            return;
+        }
+
+        if (query.length < 2) return;
+
+        searchTimer = setTimeout(function () {
+            $('#akteSearchHint').html('<span class="spinner-border spinner-border-sm"></span>');
+            $.getJSON(searchUrl, { q: query }, function (data) {
+                const hits = data.results;
+                const hitMap = new Map(hits.map(d => [d.id, d]));
+
+                if (akteTable) {
+                    // Alle Child-Zeilen zurücksetzen
+                    akteTable.rows().every(function () { this.child.hide(); });
+
+                    // Nur Treffer-IDs in hidden column suchen
+                    const regex = hits.length > 0
+                        ? '^(' + hits.map(d => d.id).join('|') + ')$'
+                        : '^$____no_match____$';
+                    akteTable.column(4).search(regex, true, false).draw();
+
+                    // Highlights als Child-Zeilen anzeigen
+                    akteTable.rows({ search: 'applied' }).every(function () {
+                        const docId = parseInt(this.data()[4]);
+                        const hit = hitMap.get(docId);
+                        if (hit) {
+                            const text = hit.highlights
+                                ? '<i class="bi bi-quote me-1"></i>' + hit.highlights
+                                : '<i class="bi bi-check-circle me-1 text-success"></i><span class="text-muted">Dokument enthält den Suchbegriff.</span>';
+                            this.child(
+                                $('<tr><td colspan="5" class="py-2 px-3 bg-warning-subtle small fst-italic akte-highlight-row">' + text + '</td></tr>')
+                            ).show();
+                        }
+                    });
+                }
+
+                $('#akteSearchHint').text(hits.length + ' Treffer');
+            }).fail(function () {
+                $('#akteSearchHint').text('Suche fehlgeschlagen.');
+            });
+        }, 400);
+    });
+    {% endif %}
+});
+</script>
+
+{# ── Dialog: Dokument hochladen ─────────────────────────────────────────── #}
+{% if can_edit %}
+<dialog class="kern-dialog" id="uploadModal" aria-labelledby="uploadModal_heading">
+    <form method="post" enctype="multipart/form-data"
+          action="{% url 'student:student_document_upload' student.pk %}" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="uploadModal_heading">
+                <i class="bi bi-upload me-1"></i> Dokument hochladen
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <div class="kern-form-input">
+                <label class="kern-label" for="uploadTitle">Titel <span class="text-danger">*</span></label>
+                <input type="text" name="title" id="uploadTitle" class="kern-form-input__input" required
+                       placeholder="z. B. Ausbildungsnachweis 2026">
+            </div>
+            <div class="kern-form-input">
+                <label class="kern-label" for="uploadFile">Datei <span class="text-danger">*</span></label>
+                <div class="kern-hint" id="uploadFile-hint"><i class="bi bi-info-circle me-1"></i>Das Dokument wird direkt in Paperless gespeichert und erscheint danach in der Akte. Der Upload kann einige Sekunden dauern.</div>
+                <input type="file" name="file" id="uploadFile" class="kern-form-input__input" required aria-describedby="uploadFile-hint">
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--upload" aria-hidden="true"></span>
+                <span class="kern-label">Hochladen</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+{% endif %}
+
+{# ── Modal: Dokumentvorschau ────────────────────────────────────────────── #}
+{% include "document/_document_preview_block.html" %}
+
+{# ── Dialog: Neuer Kontakteintrag ───────────────────────────────────────── #}
+{% if can_view_contacts %}
+<dialog class="kern-dialog kern-dialog--lg" id="newContactModal" aria-labelledby="newContactModal_heading">
+    <form method="post" action="{% url 'student:contact_entry_create' student.pk %}" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="newContactModal_heading">
+                <i class="bi bi-chat-left-text me-1"></i> Neuer Kontakteintrag
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="fw-semibold d-block mb-2">Art <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% for value, label in contact_type_choices %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="contact_type"
+                                   id="ct_{{ value }}" value="{{ value }}"
+                                   {% if forloop.first %}required checked{% endif %}>
+                            <label class="form-check-label" for="ct_{{ value }}">
+                                {% if value == 'phone' %}<i class="bi bi-telephone me-1"></i>
+                                {% elif value == 'on_site' %}<i class="bi bi-geo-alt me-1"></i>
+                                {% else %}<i class="bi bi-envelope me-1"></i>{% endif %}
+                                {{ label }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="contactedAt">Kontaktzeitpunkt <span class="text-danger">*</span></label>
+                        <input type="datetime-local" id="contactedAt" name="contacted_at"
+                               class="kern-form-input__input" required>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="contactInquiry">Anfrage / Anliegen <span class="text-danger">*</span></label>
+                        <textarea id="contactInquiry" name="inquiry" class="kern-form-input__input" rows="3"
+                                  placeholder="Was war der Inhalt der Anfrage?" required></textarea>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="contactResponse">Gegebene Antwort</label>
+                        <textarea id="contactResponse" name="response" class="kern-form-input__input" rows="3"
+                                  placeholder="Welche Antwort wurde gegeben?"></textarea>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Speichern</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+<script>
+// Kontaktzeitpunkt auf jetzt vorbelegen
+document.getElementById('newContactModal')?.addEventListener('toggle', function () {
+    if (!this.open) return;
+    const input = document.getElementById('contactedAt');
+    if (!input.value) {
+        const now = new Date();
+        now.setSeconds(0, 0);
+        const pad = n => String(n).padStart(2, '0');
+        input.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+});
+</script>
+{% endif %}
+
+{# ── Dialog: Neue Notiz ──────────────────────────────────────────────────── #}
+{% if can_manage_notes %}
+<dialog class="kern-dialog" id="newNoteModal" aria-labelledby="newNoteModal_heading">
+    <form method="post" action="{% url 'student:internal_note_create' student.pk %}" style="display:contents;">
+        {% csrf_token %}
+        <header class="kern-dialog__header">
+            <h2 class="kern-title kern-title--large" id="newNoteModal_heading">
+                <i class="bi bi-sticky me-1"></i> Neue interne Notiz
+            </h2>
+            <button type="button" class="kern-btn kern-btn--tertiary"
+                    onclick="kernDialogClose(this)" aria-label="Schließen">
+                <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+                <span class="kern-label kern-sr-only">Schließen</span>
+            </button>
+        </header>
+        <section class="kern-dialog__body">
+            <div class="kern-form-input">
+                <label class="kern-label" for="noteText">Notiz <span class="text-danger">*</span></label>
+                <textarea id="noteText" name="text" class="kern-form-input__input" rows="5"
+                          placeholder="Interne Notiz zur Nachwuchskraft …" required></textarea>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="is_pinned" value="1" id="notePin">
+                <label class="form-check-label" for="notePin">
+                    <i class="bi bi-pin-angle me-1"></i> Angepinnt (wird oben angezeigt)
+                </label>
+            </div>
+        </section>
+        <footer class="kern-dialog__footer">
+            <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+                <span class="kern-label">Abbrechen</span>
+            </button>
+            <button type="submit" class="kern-btn kern-btn--primary">
+                <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+                <span class="kern-label">Speichern</span>
+            </button>
+        </footer>
+    </form>
+</dialog>
+{% endif %}
+
+{# ── Dialog: Dokument bearbeiten ────────────────────────────────────────── #}
+{% if can_edit %}
+<dialog class="kern-dialog" id="editDocModal" aria-labelledby="editDocModal_heading">
+    <header class="kern-dialog__header">
+        <h2 class="kern-title kern-title--large" id="editDocModal_heading">
+            <i class="bi bi-pencil me-1"></i> Dokument bearbeiten
+        </h2>
+        <button type="button" class="kern-btn kern-btn--tertiary"
+                onclick="kernDialogClose(this)" aria-label="Schließen">
+            <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+            <span class="kern-label kern-sr-only">Schließen</span>
+        </button>
+    </header>
+    <section class="kern-dialog__body">
+        <input type="hidden" id="editCsrf" value="{{ csrf_token }}">
+        <div class="kern-form-input">
+            <label class="kern-label" for="editDocTitle">Titel</label>
+            <input type="text" id="editDocTitle" class="kern-form-input__input">
+        </div>
+        <div class="kern-form-input">
+            <label class="kern-label" for="editDocDate">Datum</label>
+            <input type="date" id="editDocDate" class="kern-form-input__input">
+        </div>
+    </section>
+    <footer class="kern-dialog__footer">
+        <button type="button" class="kern-btn kern-btn--tertiary" onclick="kernDialogClose(this)">
+            <span class="kern-label">Abbrechen</span>
+        </button>
+        <button type="button" id="editDocSaveBtn" class="kern-btn kern-btn--primary">
+            <span class="kern-icon kern-icon--check_circle" aria-hidden="true"></span>
+            <span class="kern-label">Speichern</span>
+        </button>
+    </footer>
+</dialog>
+<script>
+(function () {
+    const editDocModal = document.getElementById('editDocModal');
+    let _url = null, _id = null;
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.doc-edit-btn');
+        if (!btn) return;
+        _url = btn.dataset.url; _id = btn.dataset.docId;
+        document.getElementById('editDocTitle').value = btn.dataset.title;
+        document.getElementById('editDocDate').value = btn.dataset.created || '';
+        editDocModal.showModal();
+    });
+    document.getElementById('editDocSaveBtn').addEventListener('click', function () {
+        const title = document.getElementById('editDocTitle').value.trim();
+        const created = document.getElementById('editDocDate').value;
+        const btn = this;
+        btn.disabled = true; btn.querySelector('.kern-label').textContent = '…';
+        fetch(_url, {
+            method: 'POST',
+            headers: {'X-CSRFToken': document.getElementById('editCsrf').value, 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+            body: `title=${encodeURIComponent(title)}&created=${encodeURIComponent(created)}`,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                const titleEl = document.getElementById('doc-title-' + _id);
+                if (titleEl) titleEl.textContent = title;
+                const createdEl = document.getElementById('doc-created-' + _id);
+                if (createdEl) {
+                    createdEl.textContent = fmtDate(created);
+                    const td = document.getElementById('doc-created-td-' + _id);
+                    if (td) td.setAttribute('data-order', created || '');
+                }
+                document.querySelector(`.doc-edit-btn[data-doc-id="${_id}"]`).dataset.title = title;
+                document.querySelector(`.doc-edit-btn[data-doc-id="${_id}"]`).dataset.created = created;
+                editDocModal.close();
+            } else { alert('Fehler beim Speichern.'); }
+        })
+        .catch(() => alert('Netzwerkfehler.'))
+        .finally(() => { btn.disabled = false; btn.querySelector('.kern-label').textContent = 'Speichern'; });
+    });
+    function fmtDate(iso) { if (!iso) return '–'; const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
+})();
+</script>
+{% endif %}
+{% endblock %}

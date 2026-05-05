@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Bescheinigungen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Portal</a></li>
+        <li class="breadcrumb-item active">Bescheinigungen</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-4 gap-2">
+    <h2 class="mb-0"><i class="bi bi-file-earmark-text me-1"></i> Bescheinigungen</h2>
+</div>
+
+{% if document_templates %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center gap-2 py-2">
+                <i class="bi bi-file-earmark-plus text-muted me-1"></i>
+                <span class="fw-semibold small">Bescheinigung erstellen</span>
+            </div>
+            <div class="card-body p-0">
+                <p class="text-muted small px-3 pt-3 mb-2">
+                    Das Dokument wird automatisch mit Ihren Daten befüllt, in Ihrer Akte abgelegt und Ihnen per E-Mail als PDF zugesendet.
+                </p>
+                <div class="list-group list-group-flush">
+                    {% for tpl in document_templates %}
+                    <div class="list-group-item d-flex align-items-center justify-content-between gap-3 py-3">
+                        <div class="min-w-0">
+                            <div class="fw-semibold small">{{ tpl.name }}</div>
+                            {% if tpl.description %}
+                            <div class="text-muted" style="font-size:.75rem;">{{ tpl.description|truncatewords:15 }}</div>
+                            {% endif %}
+                        </div>
+                        <form method="post" action="{% url 'portal:dokument_generieren' tpl.pk %}" class="flex-shrink-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-file-earmark-plus me-1"></i> Erstellen
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+    <i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-25"></i>
+    <div class="small">Aktuell sind keine Vorlagen für Sie freigegeben.</div>
+</div>
+{% endif %}
+{% endblock %}

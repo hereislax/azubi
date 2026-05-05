@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Standort löschen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'organisation:location_list' %}">Standorte</a></li>
+        <li class="breadcrumb-item active">Löschen</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-6">
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-trash me-1"></i> Standort löschen</h5>
+            </div>
+            <div class="card-body">
+                <p>Soll der Standort <strong>{{ location.name }}</strong>
+                {% if location.address %}({{ location.address }}){% endif %}
+                wirklich gelöscht werden?</p>
+                <p class="text-muted small">Die zugehörige Adresse wird ebenfalls entfernt.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i> Endgültig löschen
+                        </button>
+                        <a href="{% url 'organisation:location_list' %}" class="btn btn-outline-secondary">
+                            Abbrechen
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

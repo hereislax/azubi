@@ -1,0 +1,37 @@
+# Lokales Keycloak für Entwickler-Tests des SSO-Flows.
+#
+# Start:
+#   docker compose -f docker/keycloak-test.compose.yml up -d
+# Stop:
+#   docker compose -f docker/keycloak-test.compose.yml down
+# Reset (Realm- und User-Daten löschen):
+#   docker compose -f docker/keycloak-test.compose.yml down -v
+#
+# Keycloak-Admin: http://localhost:8090  (admin / admin)
+# Realm-Issuer:   http://localhost:8090/realms/behoerde-a
+# Test-Login:     testuser / Testpass1!
+#
+# Nach dem ersten Hochfahren einmal:
+#   python manage.py setup_test_idp
+# damit SocialApp-Eintrag und passender Portal-User in der DB liegen.
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: azubi-keycloak-test
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: "8090"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      # Host 8090 (8080 ist vom Azubi-Dev-Server belegt) -> Container 8080
+      - "8090:8080"
+    volumes:
+      - ./keycloak-test-realm.json:/opt/keycloak/data/import/realm.json:ro
+      - keycloak_data:/opt/keycloak/data
+
+volumes:
+  keycloak_data:

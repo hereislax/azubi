@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Praktikumspläne werden generiert …{% endblock %}
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 60vh;">
+    <div class="spinner-border text-primary mb-4" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Wird generiert …</span>
+    </div>
+    <h5 class="mb-1">Praktikumspläne werden generiert …</h5>
+    <p class="text-muted">Block: <strong>{{ schedule_block.name }}</strong></p>
+    <p class="text-muted small" id="status-msg">Dokumente werden erstellt und in Paperless hochgeladen.</p>
+    <div id="error-box" class="alert alert-danger mt-3 d-none" style="max-width: 500px;"></div>
+</div>
+<script>
+(function () {
+    const url = '{% url "course:internship_plan_generate" course.pk schedule_block.public_id letter.pk %}';
+    fetch(url, { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} })
+    .then(r => r.json())
+    .then(data => {
+        if (data.redirect_url) { window.location.href = data.redirect_url; }
+        else if (data.error) {
+            document.getElementById('status-msg').textContent = '';
+            const box = document.getElementById('error-box');
+            box.textContent = data.error;
+            box.classList.remove('d-none');
+        }
+    })
+    .catch(err => {
+        document.getElementById('error-box').textContent = 'Unerwarteter Fehler: ' + err;
+        document.getElementById('error-box').classList.remove('d-none');
+    });
+})();
+</script>
+{% endblock %}

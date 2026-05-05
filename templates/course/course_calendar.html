@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Kurskalender {{ year }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Kurskalender</li>
+    </ol>
+</nav>
+<div class="container-fluid py-4">
+
+    <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+        <h2 class="mb-0"><i class="bi bi-calendar3 me-1"></i> Kurskalender</h2>
+        <div class="d-flex align-items-center gap-1">
+            <a href="?year={{ prev_year }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-left me-1"></i></a>
+            <span class="fw-bold px-2">{{ year }}</span>
+            <a href="?year={{ next_year }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-right me-1"></i></a>
+        </div>
+        <div class="d-flex gap-3 small text-muted ms-3">
+            <span><span style="display:inline-block;width:14px;height:14px;background:{{ color_lesson }};border-radius:3px;vertical-align:middle;"></span> Unterrichtsblock</span>
+            <span><span style="display:inline-block;width:14px;height:14px;background:{{ color_internship }};border-radius:3px;vertical-align:middle;"></span> Praktikumsblock</span>
+        </div>
+    </div>
+
+    {% if calendar_rows %}
+    <div class="card">
+        <div class="card-body p-0 overflow-auto">
+            <table class="table table-bordered mb-0" style="table-layout: fixed; min-width: 900px;">
+                <colgroup>
+                    <col style="width: 200px;">
+                    <col>
+                </colgroup>
+                <thead class="table-light">
+                    <tr>
+                        <th class="border-end align-middle py-2 px-3" style="width:200px;">Kurs</th>
+                        <th class="p-0">
+                            {# Monatsköpfe als relative Balken #}
+                            <div style="position: relative; height: 32px; width: 100%;">
+                                {% for m in months_data %}
+                                <div style="position: absolute;
+                                            left: {{ m.offset }}%;
+                                            width: {{ m.width }}%;
+                                            top: 0; bottom: 0;
+                                            border-right: 1px solid #dee2e6;
+                                            display: flex; align-items: center; justify-content: center;
+                                            font-size: 0.75rem; font-weight: 600; color: #6c757d;
+                                            overflow: hidden; white-space: nowrap;">
+                                    {{ m.short }}
+                                </div>
+                                {% endfor %}
+                                {% if today_offset %}
+                                <div style="position: absolute; left: {{ today_offset }}%; top: 0; bottom: 0;
+                                            width: 2px; background: {{ color_today }}; opacity:0.7; z-index: 5;"></div>
+                                {% endif %}
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in calendar_rows %}
+                    <tr>
+                        <td class="border-end align-middle px-3 py-2" style="width:200px;">
+                            <a href="{% url 'course:course_detail' row.course.pk %}" class="fw-semibold text-decoration-none">
+                                {{ row.course.title }}
+                            </a>
+                            <div class="text-muted" style="font-size:0.75rem;">
+                                {{ row.course.start_date|date:"d.m.Y" }} – {{ row.course.end_date|date:"d.m.Y" }}
+                            </div>
+                        </td>
+                        <td class="p-0" style="height: {{ row.row_height }}px; position: relative;">
+                            {# Monatstrennlinien im Hintergrund #}
+                            {% for m in months_data %}
+                            <div style="position:absolute; left:{{ m.offset }}%; top:0; bottom:0;
+                                        width:1px; background:#dee2e6; z-index:0;"></div>
+                            {% endfor %}
+                            {% if today_offset %}
+                            <div style="position:absolute; left:{{ today_offset }}%; top:0; bottom:0;
+                                        width:2px; background:{{ color_today }}; opacity:0.5; z-index:5;"></div>
+                            {% endif %}
+
+                            {# Blöcke #}
+                            {% for bar in row.bars %}
+                            <div style="position: absolute;
+                                        left: {{ bar.offset }}%;
+                                        width: {{ bar.width }}%;
+                                        top: {{ bar_gap }}px;
+                                        height: {{ bar_height }}px;
+                                        background: {{ bar.color }};
+                                        border-radius: 4px;
+                                        overflow: hidden;
+                                        z-index: 2;"
+                                 title="{{ bar.label }}&#10;{{ bar.start_fmt }} – {{ bar.end_fmt }}">
+                                <div style="padding: 0 6px; line-height: {{ bar_height }}px;
+                                            color: #fff; font-size: 0.75rem; white-space: nowrap;
+                                            overflow: hidden; text-overflow: ellipsis;">
+                                    {{ bar.label }}
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                            {% if not row.bars %}
+                            <div style="position:absolute;top:0;left:0;right:0;bottom:0;
+                                        display:flex;align-items:center;padding-left:8px;">
+                                <span class="text-muted small">Keine Blöcke in {{ year }}</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar3" style="font-size:2.5rem;"></i>
+        <p class="mt-2 mb-0">Keine Kurse mit Ablaufblöcken in {{ year }} vorhanden.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

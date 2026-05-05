@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}{{ workspace.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'workspace:workspace_list' %}">Raumbuchung</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ workspace.name }}</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="{{ workspace.workspace_type.icon|default:'bi-door-closed' }} me-1"></i>{{ workspace.name }}</h2>
+        <p class="text-muted mb-0">
+            {{ workspace.workspace_type.name }} · {{ workspace.location.name }}
+            {% if workspace.unit %} · {{ workspace.unit.name }}{% endif %}
+            · Kapazität {{ workspace.capacity }}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'workspace:closure_create_for_workspace' workspace.pk %}" class="btn btn-outline-warning btn-sm">
+            <i class="bi bi-slash-circle me-1"></i> Sperrung
+        </a>
+        <a href="{% url 'workspace:booking_create_for_workspace' workspace.pk %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Buchen
+        </a>
+    </div>
+</div>
+
+{% if workspace.equipment or workspace.description %}
+<div class="card mb-3"><div class="card-body py-2">
+    {% if workspace.equipment %}<div><strong>Ausstattung:</strong> {{ workspace.equipment }}</div>{% endif %}
+    {% if workspace.description %}<div class="text-muted">{{ workspace.description }}</div>{% endif %}
+</div></div>
+{% endif %}
+
+<div class="card mb-3">
+    <div class="card-header bg-light"><i class="bi bi-calendar3 me-1"></i> Belegung der nächsten Wochen</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:140px;">Datum</th>
+                    <th>Status</th>
+                    <th>Buchungen</th>
+                    <th class="text-end" style="width:120px;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in days %}
+                <tr {% if d.is_closed %}class="table-warning"{% endif %}>
+                    <td>{{ d.date|date:"D, d.m.Y" }}</td>
+                    <td>
+                        {% if d.is_closed %}
+                            <span class="badge bg-danger">Gesperrt</span>
+                        {% elif d.remaining == 0 %}
+                            <span class="badge bg-warning text-dark">Voll</span>
+                        {% else %}
+                            <span class="badge bg-success">{{ d.remaining }} von {{ workspace.capacity }} frei</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for b in d.bookings %}
+                        <span class="badge bg-light text-dark border me-1">
+                            {{ b.student.first_name }} {{ b.student.last_name }}
+                            <a href="{% url 'workspace:booking_cancel' b.public_id %}" class="text-danger ms-1" title="Stornieren"><i class="bi bi-x"></i></a>
+                        </span>
+                        {% empty %}
+                        <span class="text-muted">—</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-end">
+                        {% if not d.is_closed and d.remaining > 0 %}
+                        <a href="{% url 'workspace:booking_create_for_workspace' workspace.pk %}?date={{ d.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if closures %}
+<div class="card">
+    <div class="card-header bg-light"><i class="bi bi-slash-circle me-1"></i> Aktuelle Sperrzeiträume</div>
+    <ul class="list-group list-group-flush">
+        {% for c in closures %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ c.start_date|date:"d.m.Y" }} – {{ c.end_date|date:"d.m.Y" }}{% if c.reason %} – <em>{{ c.reason }}</em>{% endif %}</span>
+            <a href="{% url 'workspace:closure_delete' c.public_id %}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

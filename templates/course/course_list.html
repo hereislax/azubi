@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Kurse{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">Kurse</li>
+    </ol>
+</nav>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-journals me-1"></i> Kurse</h2>
+    </div>
+    <a href="{% url 'course:course_create' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Kurs hinzufügen
+    </a>
+</div>
+
+<table id="courseTable" class="table table-hover table-bordered align-middle" style="width:100%">
+    <thead class="table-light">
+        <tr>
+            <th>Bezeichnung</th>
+            <th>Berufsbild</th>
+            <th>Beginn</th>
+            <th>Abschluss</th>
+            <th>Nachwuchskräfte</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for course in courses %}
+        {% with student_count=course.Kurs.count %}
+        <tr>
+            <td>
+                <a href="{% url 'course:course_detail' course.pk %}" class="text-decoration-none fw-semibold">
+                    {{ course.title }}
+                </a>
+            </td>
+            <td>{{ course.job_profile|default:"–" }}</td>
+            <td>{{ course.start_date|date:"d.m.Y" }}</td>
+            <td>{{ course.end_date|date:"d.m.Y" }}</td>
+            <td>
+                <span class="badge bg-secondary">{{ student_count }}</span>
+            </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+$(document).ready(function () {
+    $('#courseTable').DataTable({
+        language: { url: '/static/i18n/de-DE.json' },
+        pageLength: 25,
+        order: [[2, 'desc']],
+    });
+});
+</script>
+{% endblock %}

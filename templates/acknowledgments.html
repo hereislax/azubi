@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Verwendete Bibliotheken{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mt-4 mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-heart me-1"></i> Verwendete Bibliotheken</h2>
+        <p class="text-muted mb-0">Diese Anwendung wurde mithilfe der folgenden Open-Source-Bibliotheken entwickelt.</p>
+    </div>
+</div>
+
+{# ── Frontend ─────────────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-browser-chrome me-1"></i> Frontend
+    </div>
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 22%">Bibliothek</th>
+                <th style="width: 10%">Version</th>
+                <th style="width: 12%">Lizenz</th>
+                <th>Beschreibung</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>KERN UX Design System</strong></td>
+                <td><span class="badge bg-secondary">2.4.0</span></td>
+                <td><span class="badge bg-secondary">EUPL</span></td>
+                <td class="text-muted small">Design-System des Bundes – Schriften, Farben, Komponenten und Layout-Rahmen der gesamten Anwendung</td>
+            </tr>
+            <tr>
+                <td><strong>Bootstrap</strong></td>
+                <td><span class="badge bg-secondary">5.3.3</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">CSS-Framework für responsives Design und UI-Komponenten</td>
+            </tr>
+            <tr>
+                <td><strong>Bootstrap Icons</strong></td>
+                <td><span class="badge bg-secondary">1.11.3</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Icon-Bibliothek als SVG- und Web-Font</td>
+            </tr>
+            <tr>
+                <td><strong>jQuery</strong></td>
+                <td><span class="badge bg-secondary">3.7.1</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">JavaScript-Bibliothek zur DOM-Manipulation und Event-Verarbeitung</td>
+            </tr>
+            <tr>
+                <td><strong>DataTables</strong></td>
+                <td><span class="badge bg-secondary">2.1.6</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">jQuery-Plugin für interaktive Tabellen mit Suche, Sortierung und Paginierung (inkl. Buttons-Erweiterung 3.1.2)</td>
+            </tr>
+            <tr>
+                <td><strong>pdfmake</strong></td>
+                <td><span class="badge bg-secondary">0.2.7</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Client-seitige PDF-Generierung im Browser</td>
+            </tr>
+            <tr>
+                <td><strong>Masonry</strong></td>
+                <td><span class="badge bg-secondary">4.2.2</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Kaskadierendes Grid-Layout für dynamische Kartenanordnung</td>
+            </tr>
+            <tr>
+                <td><strong>Chart.js</strong></td>
+                <td><span class="badge bg-secondary">4.4.0</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">JavaScript-Bibliothek zur Darstellung von Diagrammen und Statistiken</td>
+            </tr>
+            <tr>
+                <td><strong>Tom Select</strong></td>
+                <td><span class="badge bg-secondary">2.3.1</span></td>
+                <td><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Apache 2.0</span></td>
+                <td class="text-muted small">Erweitertes Select-Element mit Suchfunktion und Autocomplete</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+</div>
+
+{# ── Backend ──────────────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-server me-1"></i> Backend (Python)
+    </div>
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 22%">Bibliothek</th>
+                <th style="width: 10%">Version</th>
+                <th style="width: 12%">Lizenz</th>
+                <th>Beschreibung</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Django</strong></td>
+                <td><span class="badge bg-secondary">6.0.3</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">BSD 3-Clause</span></td>
+                <td class="text-muted small">Web-Framework für Python – Basis der gesamten Anwendung</td>
+            </tr>
+            <tr>
+                <td><strong>Celery</strong></td>
+                <td><span class="badge bg-secondary">5.4.0</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">BSD 3-Clause</span></td>
+                <td class="text-muted small">Verteilte Task-Queue für asynchrone Hintergrundprozesse (z.&nbsp;B. Dokumentengenerierung)</td>
+            </tr>
+            <tr>
+                <td><strong>psycopg</strong></td>
+                <td><span class="badge bg-secondary">3.3.3</span></td>
+                <td><span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">LGPL 2.1</span></td>
+                <td class="text-muted small">PostgreSQL-Datenbankadapter für Python</td>
+            </tr>
+            <tr>
+                <td><strong>whitenoise</strong></td>
+                <td><span class="badge bg-secondary">6.9.0</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Effizientes Ausliefern statischer Dateien direkt aus Django</td>
+            </tr>
+            <tr>
+                <td><strong>Requests</strong></td>
+                <td><span class="badge bg-secondary">2.33.1</span></td>
+                <td><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Apache 2.0</span></td>
+                <td class="text-muted small">HTTP-Bibliothek für die Kommunikation mit externen APIs</td>
+            </tr>
+            <tr>
+                <td><strong>python-dotenv</strong></td>
+                <td><span class="badge bg-secondary">1.2.2</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">BSD 3-Clause</span></td>
+                <td class="text-muted small">Laden von Umgebungsvariablen aus <code>.env</code>-Dateien</td>
+            </tr>
+            <tr>
+                <td><strong>python-dateutil</strong></td>
+                <td><span class="badge bg-secondary">2.9.0</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">BSD / Apache 2.0</span></td>
+                <td class="text-muted small">Erweiterte Datums- und Zeitverarbeitung</td>
+            </tr>
+            <tr>
+                <td><strong>holidays</strong></td>
+                <td><span class="badge bg-secondary">≥ 0.68</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Feiertags-Kalender für Deutschland – genutzt bei Abwesenheits- und Urlaubsberechnungen</td>
+            </tr>
+            <tr>
+                <td><strong>docxtpl</strong></td>
+                <td><span class="badge bg-secondary">0.20.2</span></td>
+                <td><span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">LGPL 2.1</span></td>
+                <td class="text-muted small">Rendern von Word-Dokumentvorlagen mit Jinja2 (Schreiben, Pläne, Quittungen)</td>
+            </tr>
+            <tr>
+                <td><strong>python-docx</strong></td>
+                <td><span class="badge bg-secondary">1.2.0</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Lesen und Schreiben von Word-Dokumenten (.docx)</td>
+            </tr>
+            <tr>
+                <td><strong>openpyxl</strong></td>
+                <td><span class="badge bg-secondary">3.1.5</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Lesen von Excel-Dateien (.xlsx) beim Nachwuchskräfte-Import</td>
+            </tr>
+            <tr>
+                <td><strong>qrcode</strong></td>
+                <td><span class="badge bg-secondary">8.2</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">MIT</span></td>
+                <td class="text-muted small">Generierung von QR-Codes für Inventar-Ausgabequittungen</td>
+            </tr>
+            <tr>
+                <td><strong>PyMuPDF</strong></td>
+                <td><span class="badge bg-secondary">1.27.2</span></td>
+                <td><span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">AGPL 3.0</span></td>
+                <td class="text-muted small">PDF-Parsing und QR-Code-Erkennung beim Verarbeiten eingescannter Ausgabequittungen</td>
+            </tr>
+            <tr>
+                <td><strong>zxing-cpp</strong></td>
+                <td><span class="badge bg-secondary">3.0.0</span></td>
+                <td><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Apache 2.0</span></td>
+                <td class="text-muted small">QR-Code-Dekodierung (C++-Bibliothek mit Python-Binding)</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+</div>
+
+{# ── Externe Dienste ──────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-plug me-1"></i> Externe Dienste
+    </div>
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 22%">Dienst</th>
+                <th style="width: 10%">Version</th>
+                <th style="width: 12%">Lizenz</th>
+                <th>Beschreibung</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Paperless-ngx</strong></td>
+                <td><span class="badge bg-secondary">–</span></td>
+                <td><span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">GPL v3</span></td>
+                <td class="text-muted small">Dokumentenverwaltungssystem – Speicherung und Verwaltung aller generierten Dokumente</td>
+            </tr>
+            <tr>
+                <td><strong>Redis</strong></td>
+                <td><span class="badge bg-secondary">–</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">BSD 3-Clause</span></td>
+                <td class="text-muted small">In-Memory-Datenspeicher als Message-Broker für Celery</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<p class="text-muted small mt-2">
+    <i class="bi bi-info-circle me-1"></i>
+    Alle genannten Bibliotheken und Dienste werden im Rahmen ihrer jeweiligen Lizenzbedingungen eingesetzt.
+</p>
+{% endblock %}

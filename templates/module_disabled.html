@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Modul nicht verfügbar{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center text-center py-5 mt-4">
+    <div class="mb-4" style="font-size: 4rem; line-height: 1; color: var(--bs-secondary);">
+        <i class="bi bi-toggles2"></i>
+    </div>
+    <h2 class="mb-2">Modul nicht verfügbar</h2>
+    <p class="text-muted mb-4" style="max-width: 420px;">
+        Das Modul <strong>{{ module_name }}</strong> ist in dieser Installation deaktiviert.
+        Wenden Sie sich an die Ausbildungsleitung, wenn Sie Zugriff benötigen.
+    </p>
+    <a href="/" class="btn btn-outline-secondary">
+        <i class="bi bi-house me-1"></i> Zur Startseite
+    </a>
+</div>
+{% endblock %}

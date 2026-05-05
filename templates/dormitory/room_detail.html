@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Zimmer {{ room.number }} – {{ room.dormitory.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dormitory:dormitory_list' %}">Wohnheime</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dormitory:dormitory_detail' room.dormitory.public_id %}">{{ room.dormitory.name }}</a></li>
+        <li class="breadcrumb-item active">Zimmer {{ room.number }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-door-open me-1"></i> Zimmer {{ room.number }}
+        <small class="text-muted fs-5">– {{ room.dormitory.name }}</small>
+    </h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dormitory:assignment_create_for_room' room.pk %}" class="btn btn-primary">
+            <i class="bi bi-person-plus me-1"></i> Reservierung hinzufügen
+        </a>
+        <a href="{% url 'dormitory:block_create_for_room' room.pk %}" class="btn btn-warning">
+            <i class="bi bi-slash-circle me-1"></i> Sperrung hinzufügen
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-info-circle me-1"></i> Zimmerdetails
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Maximale Kapazität</dt>
+            <dd class="col-sm-9">{{ room.capacity }}</dd>
+            {% if room.description %}
+            <dt class="col-sm-3">Beschreibung</dt>
+            <dd class="col-sm-9">{{ room.description }}</dd>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-calendar3 me-1"></i> Reservierungen
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0" id="assignmentsTable">
+            <thead class="table-light">
+                <tr>
+                    <th>Nachwuchskraft</th>
+                    <th>Einzugsdatum</th>
+                    <th>Auszugsdatum</th>
+                    <th>Notizen</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assignments %}
+                <tr>
+                    <td>{{ a.student }}</td>
+                    <td>{{ a.start_date|date:"d.m.Y" }}</td>
+                    <td>{{ a.end_date|date:"d.m.Y"|default:"–" }}</td>
+                    <td>{{ a.notes|default:"–" }}</td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        {% if a.paperless_confirmation_id %}
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary conf-btn"
+                                data-preview-url="{% url 'services:paperless_preview' a.paperless_confirmation_id %}"
+                                title="Bestätigung öffnen">
+                            <i class="bi bi-file-earmark-check me-1"></i>
+                        </button>
+                        {% else %}
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary conf-btn"
+                                data-generate-url="{% url 'dormitory:confirmation_generate' a.public_id %}"
+                                title="Bestätigung generieren">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>
+                        </button>
+                        {% endif %}
+                        <a href="{% url 'dormitory:assignment_edit' a.public_id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i>
+                        </a>
+                        <a href="{% url 'dormitory:assignment_delete' a.public_id %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-slash-circle text-warning me-1"></i> Sperrungen
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle mb-0" id="blocksTable">
+            <thead class="table-light">
+                <tr>
+                    <th>Von</th>
+                    <th>Bis</th>
+                    <th>Grund</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in blocks %}
+                <tr>
+                    <td>{{ b.start_date|date:"d.m.Y" }}</td>
+                    <td>{{ b.end_date|date:"d.m.Y" }}</td>
+                    <td>{{ b.reason|default:"–" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'dormitory:block_edit' b.public_id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i>
+                        </a>
+                        <a href="{% url 'dormitory:block_delete' b.public_id %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+{# Reservierungsbestätigung-Dialog #}
+<dialog class="kern-dialog kern-dialog--xl" id="confModal"
+        aria-labelledby="confModal_heading">
+    <header class="kern-dialog__header">
+        <h2 class="kern-title kern-title--large" id="confModal_heading">Reservierungsbestätigung</h2>
+        <button type="button" class="kern-btn kern-btn--tertiary"
+                onclick="document.getElementById('confModal').close()" aria-label="Schließen">
+            <span class="kern-icon kern-icon--close" aria-hidden="true"></span>
+            <span class="kern-label kern-sr-only">Schließen</span>
+        </button>
+    </header>
+    <section class="kern-dialog__body" style="padding:0; min-height:520px; position:relative;">
+        <div id="confSpinner" class="d-flex align-items-center justify-content-center" style="min-height:520px;">
+            <div class="text-center text-muted">
+                <div class="spinner-border mb-3" role="status"><span class="visually-hidden">Laden…</span></div>
+                <div>Bestätigung wird generiert…</div>
+            </div>
+        </div>
+        <div id="confError" class="d-none p-4">
+            <div class="kern-alert kern-alert--danger" role="alert">
+                <div class="kern-alert__header">
+                    <span class="kern-icon kern-icon--error" aria-hidden="true"></span>
+                    <span class="kern-title" id="confErrorMsg"></span>
+                </div>
+            </div>
+        </div>
+        <iframe id="confFrame" class="d-none w-100 border-0" style="height:75vh;" src="about:blank"></iframe>
+    </section>
+</dialog>
+
+<input type="hidden" id="confCsrf" value="{{ csrf_token }}">
+
+<script>
+    $(document).ready(function () {
+        $('#assignmentsTable').DataTable({
+            language: { url: '/static/i18n/de-DE.json' },
+            pageLength: 25,
+            order: [[1, 'desc']],
+        });
+        $('#blocksTable').DataTable({
+            language: { url: '/static/i18n/de-DE.json' },
+            pageLength: 25,
+            order: [[0, 'desc']],
+        });
+    });
+
+    (function () {
+        const spinner  = document.getElementById('confSpinner');
+        const errorDiv = document.getElementById('confError');
+        const errorMsg = document.getElementById('confErrorMsg');
+        const frame    = document.getElementById('confFrame');
+        const dialog   = document.getElementById('confModal');
+
+        function showSpinner() {
+            spinner.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            frame.classList.add('d-none');
+            frame.src = 'about:blank';
+        }
+
+        function showError(msg) {
+            spinner.classList.add('d-none');
+            errorDiv.classList.remove('d-none');
+            frame.classList.add('d-none');
+            errorMsg.textContent = msg;
+        }
+
+        function showPreview(url) {
+            spinner.classList.add('d-none');
+            errorDiv.classList.add('d-none');
+            frame.classList.remove('d-none');
+            frame.src = url;
+        }
+
+        dialog.addEventListener('close', function () {
+            frame.src = 'about:blank';
+        });
+
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.conf-btn');
+            if (!btn) return;
+
+            showSpinner();
+            dialog.showModal();
+
+            const previewUrl  = btn.dataset.previewUrl;
+            const generateUrl = btn.dataset.generateUrl;
+
+            if (previewUrl) {
+                showPreview(previewUrl);
+            } else if (generateUrl) {
+                const csrf = document.getElementById('confCsrf').value;
+                fetch(generateUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.preview_url) {
+                        btn.dataset.previewUrl = data.preview_url;
+                        delete btn.dataset.generateUrl;
+                        btn.classList.replace('btn-outline-secondary', 'btn-outline-primary');
+                        btn.querySelector('i').className = 'bi bi-file-earmark-check';
+                        showPreview(data.preview_url);
+                    } else {
+                        showError(data.error || 'Unbekannter Fehler.');
+                    }
+                })
+                .catch(() => showError('Netzwerkfehler. Bitte erneut versuchen.'));
+            }
+        });
+    })();
+</script>
+{% endblock %}

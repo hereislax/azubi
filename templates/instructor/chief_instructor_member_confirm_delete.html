@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Person entfernen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'instructor:chief_instructor_list' %}">Ausbildungskoordinationen</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'instructor:chief_instructor_detail' coordination.public_id %}">{{ coordination.name }}</a></li>
+        <li class="breadcrumb-item active">Person entfernen</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-trash me-1"></i> Person entfernen</h5>
+            </div>
+            <div class="card-body">
+                <p>Soll <strong>{{ chief }}</strong> wirklich aus der Ausbildungskoordination <strong>{{ coordination.name }}</strong> entfernt werden?</p>
+                {% if chief.user %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Das zugehörige Benutzerkonto <strong>{{ chief.user.username }}</strong> wird ebenfalls gelöscht.
+                </div>
+                {% endif %}
+                <dl class="row">
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">{{ chief }}</dd>
+                    <dt class="col-sm-4">E-Mail</dt>
+                    <dd class="col-sm-8">{{ chief.email }}</dd>
+                </dl>
+                <form method="post" class="d-flex gap-2 mt-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i> Ja, entfernen
+                    </button>
+                    <a href="{% url 'instructor:chief_instructor_detail' coordination.public_id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Abbrechen
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

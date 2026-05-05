@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Beurteilung eingereicht</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-icons.min.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-light bg-white border-bottom mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-semibold">
+            <i class="bi bi-clipboard-check text-primary"></i> Stationsbeurteilung
+        </span>
+    </div>
+</nav>
+
+<div class="container py-5" style="max-width: 600px;">
+    <div class="card shadow-sm text-center p-4">
+        {% if already_confirmed %}
+        <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+        </div>
+        <h4 class="mb-2">Beurteilung bereits bestätigt</h4>
+        <p class="text-muted">Diese Beurteilung wurde bereits durch die Ausbildungsabteilung bestätigt. Es sind keine weiteren Eingaben erforderlich.</p>
+        {% elif already_submitted %}
+        <div class="mb-3">
+            <i class="bi bi-hourglass-split text-warning" style="font-size: 3rem;"></i>
+        </div>
+        <h4 class="mb-2">Beurteilung bereits eingereicht</h4>
+        <p class="text-muted">Ihre Beurteilung wurde bereits erfolgreich übermittelt und wird derzeit von der Ausbildungsabteilung geprüft. Vielen Dank.</p>
+        {% else %}
+        <div class="mb-3">
+            <i class="bi bi-check2-circle text-success" style="font-size: 3rem;"></i>
+        </div>
+        <h4 class="mb-2">Vielen Dank für Ihre Beurteilung!</h4>
+        <p class="text-muted">
+            Die Beurteilung für <strong>{{ assessment.assignment.student.first_name }} {{ assessment.assignment.student.last_name }}</strong>
+            wurde erfolgreich übermittelt. Die Ausbildungsabteilung wird die Eingabe prüfen und bestätigen.
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>

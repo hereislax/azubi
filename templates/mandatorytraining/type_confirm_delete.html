@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Schulungs-Typ löschen{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'mandatorytraining:type_list' %}">Schulungs-Typen</a></li>
+        <li class="breadcrumb-item active">Löschen</li>
+    </ol>
+</nav>
+<div class="card"><div class="card-body">
+    <h2 class="card-title h5"><i class="bi bi-trash me-1 text-danger"></i> Schulungs-Typ löschen</h2>
+    <p>Möchtest du „<strong>{{ training_type.name }}</strong>" wirklich löschen?</p>
+    <p class="text-muted small">Achtung: Vorhandene Teilnahmen verhindern das Löschen
+    (FK PROTECT). In dem Fall: erst Teilnahmen entfernen oder Schulungs-Typ deaktivieren.</p>
+    <form method="post" class="d-flex gap-2 justify-content-end">
+        {% csrf_token %}
+        <a href="{% url 'mandatorytraining:type_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i> Löschen</button>
+    </form>
+</div></div>
+{% endblock %}

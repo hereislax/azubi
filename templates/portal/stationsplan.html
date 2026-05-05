@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Stationsplan{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Mein Portal</a></li>
+        <li class="breadcrumb-item active">Stationsplan</li>
+    </ol>
+</nav>
+
+<h2 class="mb-4"><i class="bi bi-map me-1"></i> Mein Stationsplan</h2>
+
+{% if not current and not upcoming and not past %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-map" style="font-size:2.5rem;"></i>
+    <p class="mt-2 mb-0">Noch keine Einsätze geplant.</p>
+</div>
+{% endif %}
+
+{# ── Aktueller Einsatz ──────────────────────────────────────────────────────── #}
+{% if current %}
+<h5 class="text-primary mb-2"><i class="bi bi-geo-alt-fill me-1"></i> Aktuell</h5>
+<div class="row g-3 mb-4">
+    {% for a in current %}
+    {% include "portal/_assignment_card.html" with assignment=a highlight=True %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ── Zukünftige Einsätze ────────────────────────────────────────────────────── #}
+{% if upcoming %}
+<h5 class="text-secondary mb-2"><i class="bi bi-calendar-arrow-up me-1"></i> Geplant</h5>
+<div class="row g-3 mb-4">
+    {% for a in upcoming %}
+    {% include "portal/_assignment_card.html" with assignment=a highlight=False %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ── Vergangene Einsätze ─────────────────────────────────────────────────────── #}
+{% if past %}
+<h5 class="text-muted mb-2"><i class="bi bi-clock-history me-1"></i> Vergangen</h5>
+<div class="row g-3 mb-4">
+    {% for a in past reversed %}
+    {% include "portal/_assignment_card.html" with assignment=a highlight=False past=True %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
