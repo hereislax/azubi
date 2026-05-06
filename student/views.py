@@ -2,7 +2,7 @@
 Views für die Nachwuchskräfte-Verwaltung (Student-App).
 
 Enthält Listen-, Detail-, Bearbeitungs-, Import- und Export-Views sowie
-Noten, Checklisten, Kontakteinträge, Notizen und Anfragen-Management.
+Noten, Checklisten, Kontakteinträge und Notizen.
 """
 # SPDX-License-Identifier: EUPL-1.2
 # SPDX-FileCopyrightText: 2026 devNicoLax
@@ -25,7 +25,6 @@ from .models import (
     Student, StudentFieldDefinition, StudentFieldValue, Status, Grade,
     StudentDocumentTemplate, StudentDocumentTemplateField, ContactEntry,
     ChecklistTemplate, StudentChecklist, StudentChecklistItem,
-    StudentInquiry, InquiryReply,
 )
 from .anonymization import (
     anonymize_student,
@@ -397,9 +396,6 @@ def student_detail(request, pk):
             'label':   icon_data[2],
         }
 
-    # Anfragen / Nachrichten
-    inquiries = StudentInquiry.objects.filter(student=student).prefetch_related('replies') if can_edit else []
-
     # Ausbildungsplan (Soll-Ist-Abgleich)
     curriculum_status = []
     if student.course and hasattr(student.course, 'job_profile') and student.course.job_profile:
@@ -455,7 +451,6 @@ def student_detail(request, pk):
         'can_view_interventions': can_view_interventions,
         'calendar_data': calendar_data,
         'can_view_calendar': can_view_calendar,
-        'inquiries': inquiries,
         'curriculum_status': curriculum_status,
     })
 
@@ -1719,119 +1714,6 @@ def coordinator_calendar(request):
         'course_cal': course_cal,
         'year': year,
     })
-
-
-# ── Anfragen / Nachrichten (Staff-Seite) ─────────────────────────────────────
-
-@login_required
-def student_inquiry_list(request):
-    """Zentrale Übersicht aller Anfragen für Ausbildungsreferat/Ausbildungsleitung."""
-    from services.roles import is_training_coordinator
-    if is_training_coordinator(request.user):
-        raise PermissionDenied
-
-    status_filter = request.GET.get('status', 'open')
-    qs = StudentInquiry.objects.select_related('student').prefetch_related('replies')
-    if status_filter in ('open', 'in_progress', 'closed'):
-        qs = qs.filter(status=status_filter)
-    elif status_filter == 'active':
-        qs = qs.filter(status__in=['open', 'in_progress'])
-    # else: alle
-
-    return render(request, 'student/inquiry_list.html', {
-        'inquiries': qs,
-        'status_filter': status_filter,
-        'counts': {
-            'open': StudentInquiry.objects.filter(status='open').count(),
-            'in_progress': StudentInquiry.objects.filter(status='in_progress').count(),
-            'closed': StudentInquiry.objects.filter(status='closed').count(),
-        },
-    })
-
-
-@login_required
-@require_POST
-def student_inquiry_reply(request, pk, inquiry_pk):
-    """Personal beantwortet eine Anfrage einer Nachwuchskraft."""
-    from services.roles import is_training_coordinator
-    if is_training_coordinator(request.user):
-        raise PermissionDenied
-
-    student = get_object_or_404(Student, pk=pk)
-    inquiry = get_object_or_404(StudentInquiry, pk=inquiry_pk, student=student)
-
-    message_text = request.POST.get('message', '').strip()
-    if not message_text:
-        messages.error(request, 'Bitte geben Sie eine Antwort ein.')
-        return redirect(f'/student/{pk}/?tab=nachrichten')
-
-    attachment = request.FILES.get('attachment')
-    InquiryReply.objects.create(
-        inquiry=inquiry,
-        author=request.user,
-        message=message_text,
-        attachment=attachment or '',
-        is_staff_reply=True,
-    )
-
-    if inquiry.status == 'open':
-        inquiry.status = 'in_progress'
-        inquiry.save(update_fields=['status', 'updated_at'])
-
-    # Nachwuchskraft benachrichtigen
-    if student.user:
-        from services.models import create_notification, NotificationTemplate
-        from django.urls import reverse
-
-        portal_url = request.build_absolute_uri(
-            reverse('portal:nachricht_detail', args=[inquiry.pk])
-        )
-
-        create_notification(
-            student.user,
-            message=f'Neue Antwort zu Ihrer Anfrage: „{inquiry.subject}"',
-            link=reverse('portal:nachricht_detail', args=[inquiry.pk]),
-            icon='bi-chat-left-text',
-            category='Anfrage',
-        )
-
-        # E-Mail
-        try:
-            from django.core.mail import send_mail
-            from django.conf import settings
-
-            anrede = f'Guten Tag {student.first_name} {student.last_name},'
-            subject, body = NotificationTemplate.render('inquiry_reply', {
-                'anrede': anrede,
-                'student_vorname': student.first_name,
-                'student_nachname': student.last_name,
-                'betreff': inquiry.subject,
-                'detail_url': portal_url,
-            })
-            email = student.email_private or (student.email_id or '')
-            if email:
-                send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=True)
-        except Exception:
-            pass
-
-    messages.success(request, 'Antwort wurde gesendet.')
-    return redirect(f'/student/{pk}/?tab=nachrichten')
-
-
-@login_required
-@require_POST
-def student_inquiry_close(request, pk, inquiry_pk):
-    """Anfrage schließen."""
-    from services.roles import is_training_coordinator
-    if is_training_coordinator(request.user):
-        raise PermissionDenied
-
-    student = get_object_or_404(Student, pk=pk)
-    inquiry = get_object_or_404(StudentInquiry, pk=inquiry_pk, student=student)
-    inquiry.status = 'closed'
-    inquiry.save(update_fields=['status', 'updated_at'])
-    messages.success(request, f'Anfrage „{inquiry.subject}" wurde geschlossen.')
-    return redirect(f'/student/{pk}/?tab=nachrichten')
 
 
 # ── Ausbildungsplan: Manuelle Bestätigung ────────────────────────────────────

@@ -48,11 +48,6 @@ urlpatterns = [
     path('dokumente/', views.dokumente, name='dokumente'),
     path('dokumente/generieren/<int:template_pk>/', views.dokument_generieren, name='dokument_generieren'),
 
-    # ── Nachrichten (Ticket-System) ──────────────────────────────────────────
-    path('nachrichten/', views.nachrichten, name='nachrichten'),
-    path('nachrichten/neu/', views.nachricht_create, name='nachricht_create'),
-    path('nachrichten/<uuid:pk>/', views.nachricht_detail, name='nachricht_detail'),
-
     # ── Persönliche Daten bearbeiten ─────────────────────────────────────────
     path('daten/bearbeiten/', views.daten_bearbeiten, name='daten_bearbeiten'),
 ]

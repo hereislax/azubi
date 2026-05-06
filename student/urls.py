@@ -16,7 +16,6 @@ urlpatterns = [
     path('importieren/', views.student_import, name='student_import'),
     path('importieren/vorlage/', views.student_import_template, name='student_import_template'),
     path('dokumentvorlagen/<int:template_pk>/felder/', views.student_document_template_fields, name='student_document_template_fields'),
-    path('anfragen/', views.student_inquiry_list, name='student_inquiry_list'),
     path('<str:pk>/', views.student_detail, name='student_detail'),
     path('<str:pk>/bearbeiten/', views.student_edit, name='student_edit'),
     path('<str:pk>/set-status/', views.student_set_status, name='student_set_status'),
@@ -36,6 +35,4 @@ urlpatterns = [
     path('<str:pk>/notizen/<uuid:note_public_id>/anpinnen/', views.internal_note_toggle_pin, name='internal_note_toggle_pin'),
     path('<str:pk>/ausbildungsplan/<uuid:requirement_public_id>/toggle/', views.curriculum_toggle_completion, name='curriculum_toggle_completion'),
     path('<str:pk>/kompetenzmatrix/', views.student_competence_matrix, name='competence_matrix'),
-    path('<str:pk>/nachrichten/<uuid:inquiry_pk>/antworten/', views.student_inquiry_reply, name='student_inquiry_reply'),
-    path('<str:pk>/nachrichten/<uuid:inquiry_pk>/schliessen/', views.student_inquiry_close, name='student_inquiry_close'),
 ]

@@ -2,7 +2,7 @@
 Django-Admin-Konfiguration für die Student-App.
 
 Registriert alle relevanten Modelle (Nachwuchskräfte, Felder, Vorlagen,
-Zugangsberechtigungen, Checklisten, Notizen, Anfragen) im Admin-Backend.
+Zugangsberechtigungen, Checklisten, Notizen) im Admin-Backend.
 """
 # SPDX-License-Identifier: EUPL-1.2
 # SPDX-FileCopyrightText: 2026 devNicoLax
@@ -14,7 +14,6 @@ from student.models import (
     Employment, Status, Student, StudentFieldDefinition, StudentFieldValue,
     StudentDocumentTemplate, TrainingResponsibleAccess,
     ChecklistTemplate, ChecklistTemplateItem, InternalNote,
-    StudentInquiry,
 )
 
 WIDGETS = {
@@ -92,15 +91,6 @@ class InternalNoteAdmin(admin.ModelAdmin):
     list_filter = ('is_pinned',)
     search_fields = ('student__first_name', 'student__last_name', 'text')
     raw_id_fields = ('student', 'created_by')
-    readonly_fields = ('created_at', 'updated_at')
-
-
-@admin.register(StudentInquiry)
-class StudentInquiryAdmin(admin.ModelAdmin):
-    list_display = ('student', 'subject', 'status', 'created_at')
-    list_filter = ('status',)
-    search_fields = ('student__first_name', 'student__last_name', 'subject')
-    raw_id_fields = ('student',)
     readonly_fields = ('created_at', 'updated_at')
 
 

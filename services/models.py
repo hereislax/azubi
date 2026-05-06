@@ -35,8 +35,6 @@ NOTIFICATION_KEYS = [
     ('assessment_reminder_urgent',   'Beurteilung: Dringende Erinnerung an Praxistutoren (Stufe 2)'),
     ('assessment_escalation',        'Beurteilung: Eskalation an Ausbildungskoordination (Stufe 3)'),
     ('assessment_submitted',         'Beurteilung: Praxistutoren hat eingereicht'),
-    ('inquiry_new',                  'Nachricht: Neue Anfrage von Nachwuchskraft'),
-    ('inquiry_reply',                'Nachricht: Antwort vom Ausbildungsreferat'),
     ('document_generated',           'Dokument: Bescheinigung erstellt'),
     ('change_request_submitted',     'Änderungsantrag: Neuer Antrag eingegangen'),
     ('change_request_approved',      'Änderungsantrag: Antrag genehmigt'),
@@ -209,19 +207,6 @@ NOTIFICATION_VARIABLES = {
         ('tage_offen',        'Anzahl Tage seit dem ersten Token-Versand'),
         ('anzahl_erinnerungen', 'Anzahl bereits gesendeter Erinnerungen'),
         ('detail_url',        'Link zur Beurteilungs-Detailseite (Eingriff durch Koordination)'),
-    ],
-    'inquiry_new': [
-        ('student_vorname',  'Vorname der Nachwuchskraft'),
-        ('student_nachname', 'Nachname der Nachwuchskraft'),
-        ('betreff',          'Betreff der Anfrage'),
-        ('detail_url',       'Link zum Studenten-Detail'),
-    ],
-    'inquiry_reply': [
-        ('anrede',           'Anredezeile'),
-        ('student_vorname',  'Vorname der Nachwuchskraft'),
-        ('student_nachname', 'Nachname der Nachwuchskraft'),
-        ('betreff',          'Betreff der Anfrage'),
-        ('detail_url',       'Link zur Nachricht im Portal'),
     ],
     'document_generated': [
         ('anrede',           'Anredezeile'),
@@ -593,25 +578,6 @@ NOTIFICATION_DEFAULTS = {
             'Bitte prüfen Sie den Vorgang. Sie können in der Detailansicht den Token verlängern, '
             'einen anderen Praxistutoren eintragen oder den Vorgang abschließen:\n'
             '{{ detail_url }}\n\n'
-            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
-        ),
-    },
-    'inquiry_new': {
-        'subject': 'Neue Anfrage: {{ betreff }}',
-        'body': (
-            'Guten Tag,\n\n'
-            '{{ student_vorname }} {{ student_nachname }} hat eine neue Anfrage gestellt:\n\n'
-            '  Betreff: {{ betreff }}\n\n'
-            'Zur Nachwuchskraft:\n{{ detail_url }}\n\n'
-            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
-        ),
-    },
-    'inquiry_reply': {
-        'subject': 'Antwort zu Ihrer Anfrage: {{ betreff }}',
-        'body': (
-            '{{ anrede }}\n\n'
-            'zu Ihrer Anfrage „{{ betreff }}" liegt eine neue Antwort vom Ausbildungsreferat vor.\n\n'
-            'Zur Nachricht:\n{{ detail_url }}\n\n'
             'Mit freundlichen Grüßen\nIhr Azubi-Portal'
         ),
     },
@@ -1148,7 +1114,6 @@ DASHBOARD_WIDGETS = {
         {'id': 'station_utilization','label': 'Stationsauslastung',     'icon': 'bi-speedometer2',        'default': True},
         {'id': 'pending_internships','label': 'Ausstehende Einsätze',   'icon': 'bi-briefcase',           'default': True},
         {'id': 'open_interventions', 'label': 'Offene Maßnahmen',       'icon': 'bi-exclamation-triangle','default': True},
-        {'id': 'open_inquiries',     'label': 'Offene Anfragen',        'icon': 'bi-chat-left-text',      'default': True},
         {'id': 'recently_rejected',  'label': 'Abgelehnte Nachweise',   'icon': 'bi-journal-x',           'default': True},
     ],
     'koord': [

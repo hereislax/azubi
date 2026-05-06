@@ -175,17 +175,6 @@
         </button>
     </li>
     {% endif %}
-    {# Nachrichten (Anfragen) #}
-    {% if inquiries %}
-    <li class="nav-item" role="presentation">
-        <button class="nav-link"
-                id="nachrichten-tab" data-bs-toggle="tab"
-                data-bs-target="#nachrichten" type="button" role="tab">
-            <i class="bi bi-chat-left-text me-1"></i> Nachrichten
-            <span class="badge bg-secondary ms-1">{{ inquiries|length }}</span>
-        </button>
-    </li>
-    {% endif %}
     {# Ausbildungsplan #}
     {% if curriculum_status %}
     <li class="nav-item" role="presentation">
@@ -1118,96 +1107,6 @@
             <p class="mt-2 mb-0">Noch keine Checklisten für diese Nachwuchskraft.</p>
         </div>
         {% endif %}
-    </div>
-    {% endif %}
-
-    {# ── Tab: Nachrichten (Anfragen) ─────────────────────────────────────── #}
-    {% if inquiries %}
-    <div class="tab-pane fade {% if request.GET.tab == 'nachrichten' %}show active{% endif %}"
-         id="nachrichten" role="tabpanel">
-
-        {% for inq in inquiries %}
-        <div class="card shadow-sm mb-3">
-            <div class="card-header d-flex align-items-center gap-2 py-2">
-                <div class="flex-grow-1">
-                    <span class="fw-semibold small">{{ inq.subject }}</span>
-                    <span class="text-muted" style="font-size:.75rem;">{{ inq.created_at|date:"d.m.Y H:i" }}</span>
-                </div>
-                {% if inq.status == 'open' %}
-                <span class="badge bg-warning text-dark">Offen</span>
-                {% elif inq.status == 'in_progress' %}
-                <span class="badge bg-info">In Bearbeitung</span>
-                {% else %}
-                <span class="badge bg-secondary">Geschlossen</span>
-                {% endif %}
-            </div>
-            <div class="card-body">
-                <div class="small mb-3" style="white-space:pre-wrap;">{{ inq.message }}</div>
-                {% if inq.attachment %}
-                <div class="mb-3">
-                    <a href="{{ inq.attachment.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
-                        <i class="bi bi-paperclip me-1"></i> {{ inq.attachment.name|cut:"inquiries/attachments/" }}
-                    </a>
-                </div>
-                {% endif %}
-
-                {% for reply in inq.replies.all %}
-                <div class="border-start {% if reply.is_staff_reply %}border-primary{% else %}border-secondary{% endif %} border-3 ps-3 mb-2">
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        {% if reply.is_staff_reply %}
-                        <i class="bi bi-shield-check text-primary"></i>
-                        <strong class="small">Ausbildungsreferat</strong>
-                        {% if reply.author %}
-                        <span class="text-muted" style="font-size:.7rem;">({{ reply.author.get_full_name|default:reply.author.username }})</span>
-                        {% endif %}
-                        {% else %}
-                        <i class="bi bi-person text-secondary"></i>
-                        <strong class="small">{{ student.first_name }} {{ student.last_name }}</strong>
-                        {% endif %}
-                        <span class="text-muted ms-auto" style="font-size:.75rem;">{{ reply.created_at|date:"d.m.Y H:i" }}</span>
-                    </div>
-                    <div class="small" style="white-space:pre-wrap;">{{ reply.message }}</div>
-                    {% if reply.attachment %}{# Anhang-Anzeige – Original-Dateiname über attachment_filename, Fallback auf Pfad-Basisname #}
-                    <div class="mt-1">
-                        <a href="{{ reply.attachment.url }}" class="btn btn-sm btn-outline-secondary" target="_blank" style="font-size:.75rem;">
-                            <i class="bi bi-paperclip me-1"></i> {{ reply.attachment_filename|default:reply.attachment.name|cut:"inquiries/attachments/" }}
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-
-                {# Antwortformular #}
-                {% if inq.status != 'closed' %}
-                <form method="post" action="{% url 'student:student_inquiry_reply' student.pk inq.pk %}" enctype="multipart/form-data" class="mt-3">
-                    {% csrf_token %}
-                    <div class="kern-form-input mb-2">
-                        <textarea name="message" class="kern-form-input__input" rows="2"
-                                  placeholder="Antwort..." required></textarea>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-send me-1"></i> Antworten
-                        </button>
-                        <label class="btn btn-sm btn-outline-secondary mb-0">
-                            <i class="bi bi-paperclip me-1"></i> Anhang
-                            <input type="file" name="attachment" class="d-none"
-                                   accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.xlsx,.csv"
-                                   onchange="this.closest('label').querySelector('.att-name').textContent = this.files[0]?.name || ''">
-                            <span class="att-name small ms-1"></span>
-                        </label>
-                </form>
-                <form method="post" action="{% url 'student:student_inquiry_close' student.pk inq.pk %}">
-                    {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-check-circle me-1"></i> Schließen
-                        </button>
-                </form>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
     </div>
     {% endif %}
 

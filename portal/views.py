@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: EUPL-1.2
 # SPDX-FileCopyrightText: 2026 devNicoLax
-"""Views für das Nachwuchskräfte-Portal (Dashboard, Stammdaten, Urlaub, Lerntage, Nachrichten etc.)."""
+"""Views für das Nachwuchskräfte-Portal (Dashboard, Stammdaten, Urlaub, Lerntage etc.)."""
 from datetime import date
 
 from django.contrib import messages
@@ -113,7 +113,6 @@ def home(request):
         {'url': reverse('portal:daten'),                'icon': 'bi-person-badge',     'label': 'Meine Daten'},
         {'url': reverse('portal:ausbildungsplan'),       'icon': 'bi-list-check',       'label': 'Ausbildungsplan'},
         {'url': reverse('portal:dokumente'),            'icon': 'bi-file-earmark-text','label': 'Bescheinigungen'},
-        {'url': reverse('portal:nachrichten'),          'icon': 'bi-chat-left-text',   'label': 'Nachrichten'},
         {'url': reverse('portal:kb_list'),              'icon': 'bi-journal-bookmark', 'label': 'Wissensdatenbank'},
         {'url': reverse('portal:announcement_list'),    'icon': 'bi-megaphone',        'label': 'Ankündigungen'},
         {'url': reverse('proofoftraining:record_list') if requires_proof else '',
@@ -143,15 +142,6 @@ def home(request):
         read_at__isnull=True,
     ).count()
 
-    # Ungelesene Nachrichten (Anfragen mit neuen Staff-Antworten)
-    from student.models import StudentInquiry
-    unread_messages = 0
-    for inq in StudentInquiry.objects.filter(student=student).prefetch_related('replies'):
-        last_own = inq.replies.filter(is_staff_reply=False).order_by('-created_at').first()
-        cutoff = last_own.created_at if last_own else inq.created_at
-        if inq.replies.filter(is_staff_reply=True, created_at__gt=cutoff).exists():
-            unread_messages += 1
-
     return render(request, 'portal/home.html', {
         'student': student,
         'today': today,
@@ -165,7 +155,6 @@ def home(request):
         'pending_self_assessments': pending_self_assessments,
         'calendar_preview': calendar_preview,
         'unread_announcements': unread_announcements,
-        'unread_messages': unread_messages,
         'curriculum_progress': curriculum_progress,
     })
 
@@ -904,130 +893,6 @@ def dokument_generieren(request, template_pk):
     else:
         messages.error(request, 'Upload zu Paperless fehlgeschlagen.')
     return redirect('portal:dokumente')
-
-
-# ── Nachrichten (Ticket-System) ──────────────────────────────────────────────
-
-@login_required
-def nachrichten(request):
-    """Liste aller eigenen Anfragen + Formular für neue Anfrage."""
-    student = _get_student_or_403(request)
-
-    from student.models import StudentInquiry
-    from portal.forms import StudentInquiryForm
-
-    inquiries = StudentInquiry.objects.filter(student=student)
-
-    # Zähle Anfragen mit neuen Staff-Antworten (nach letzter eigener Antwort)
-    unread_count = 0
-    for inq in inquiries:
-        last_student_reply = inq.replies.filter(is_staff_reply=False).order_by('-created_at').first()
-        cutoff = last_student_reply.created_at if last_student_reply else inq.created_at
-        if inq.replies.filter(is_staff_reply=True, created_at__gt=cutoff).exists():
-            unread_count += 1
-
-    form = StudentInquiryForm()
-
-    return render(request, 'portal/nachrichten.html', {
-        'student': student,
-        'inquiries': inquiries,
-        'form': form,
-        'unread_count': unread_count,
-    })
-
-
-@login_required
-def nachricht_create(request):
-    """Neue Anfrage erstellen."""
-    student = _get_student_or_403(request)
-
-    if request.method != 'POST':
-        return redirect('portal:nachrichten')
-
-    from portal.forms import StudentInquiryForm
-    form = StudentInquiryForm(request.POST, request.FILES)
-    if form.is_valid():
-        inquiry = form.save(commit=False)
-        inquiry.student = student
-        inquiry.save()
-
-        # Staff benachrichtigen
-        try:
-            from django.urls import reverse
-            from services.models import notify_staff, NotificationTemplate
-            from django.core.mail import send_mail
-            from django.conf import settings
-
-            detail_url = request.build_absolute_uri(
-                reverse('student:student_detail', args=[student.pk])
-            )
-            notify_staff(
-                message=f'Neue Anfrage von {student.first_name} {student.last_name}: „{inquiry.subject}"',
-                link=reverse('student:student_detail', args=[student.pk]),
-                icon='bi-chat-left-text',
-                category='Anfrage',
-            )
-
-            # E-Mail via NotificationTemplate
-            subject, body = NotificationTemplate.render('inquiry_new', {
-                'student_vorname': student.first_name,
-                'student_nachname': student.last_name,
-                'betreff': inquiry.subject,
-                'detail_url': detail_url,
-            })
-            from django.contrib.auth.models import User
-            staff_emails = list(
-                User.objects.filter(
-                    groups__name__in=['ausbildungsleitung', 'ausbildungsreferat'],
-                    is_active=True,
-                ).exclude(email='').values_list('email', flat=True).distinct()
-            )
-            if staff_emails:
-                send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, staff_emails, fail_silently=True)
-        except Exception:
-            pass
-
-        messages.success(request, 'Ihre Anfrage wurde gesendet.')
-    else:
-        for err in form.errors.values():
-            messages.error(request, ', '.join(err))
-
-    return redirect('portal:nachrichten')
-
-
-@login_required
-def nachricht_detail(request, pk):
-    """Konversationsansicht einer Anfrage + Antwort-Formular."""
-    student = _get_student_or_403(request)
-
-    from student.models import StudentInquiry, InquiryReply
-    from portal.forms import InquiryReplyForm
-
-    inquiry = get_object_or_404(StudentInquiry, pk=pk, student=student)
-
-    if request.method == 'POST' and inquiry.status != 'closed':
-        form = InquiryReplyForm(request.POST, request.FILES)
-        if form.is_valid():
-            InquiryReply.objects.create(
-                inquiry=inquiry,
-                author=request.user,
-                message=form.cleaned_data['message'],
-                attachment=form.cleaned_data.get('attachment') or '',
-                is_staff_reply=False,
-            )
-            messages.success(request, 'Ihre Antwort wurde gesendet.')
-            return redirect('portal:nachricht_detail', pk=pk)
-    else:
-        form = InquiryReplyForm()
-
-    replies = inquiry.replies.select_related('author')
-
-    return render(request, 'portal/nachricht_detail.html', {
-        'student': student,
-        'inquiry': inquiry,
-        'replies': replies,
-        'form': form,
-    })
 
 
 # ── Persönliche Daten bearbeiten ─────────────────────────────────────────────

@@ -649,20 +649,6 @@
                     <div class="snav-divider"></div>
                 {% endif %}
 
-                <a class="snav-link" href="{% url 'student:student_inquiry_list' %}">
-            <span class="position-relative flex-shrink-0" style="width:1.1em;text-align:center;display:inline-block;">
-                <i class="bi bi-chat-left-text"></i>
-                {% if open_inquiry_count %}
-                    <span class="position-absolute badge rounded-pill bg-danger"
-                          style="font-size:.5rem;top:-6px;right:-6px;min-width:1.1em;padding:.2em .3em;line-height:1.2;">
-                    {{ open_inquiry_count }}
-                </span>
-                {% endif %}
-            </span>
-                    Anfragen
-                </a>
-
-                <div class="snav-divider"></div>
                 {% if module_announcements %}
                     <a class="snav-link" href="{% url 'announcements:list' %}">
                         <i class="bi bi-megaphone"></i> Ankündigungen
@@ -831,8 +817,6 @@
                     Einsatzwünsche</a>
                 <a class="snav-link" href="{% url 'portal:dokumente' %}"><i class="bi bi-file-earmark-text"></i>
                     Bescheinigungen</a>
-                <a class="snav-link" href="{% url 'portal:nachrichten' %}"><i class="bi bi-chat-left-text"></i>
-                    Nachrichten</a>
                 {% if module_knowledge %}
                     <a class="snav-link" href="{% url 'portal:kb_list' %}"><i class="bi bi-journal-bookmark"></i>
                         Wissensdatenbank</a>{% endif %}

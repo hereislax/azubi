@@ -1,15 +1,13 @@
 # SPDX-License-Identifier: EUPL-1.2
 # SPDX-FileCopyrightText: 2026 devNicoLax
-"""Datenmodelle für Nachwuchskräfte, Noten, Checklisten, Kontakthistorie und Anfragen."""
+"""Datenmodelle für Nachwuchskräfte, Noten, Checklisten und Kontakthistorie."""
 
-import os
 import uuid
 from secrets import token_hex
 from django.core.validators import RegexValidator
 from django.db import models
 from course.models import Course
 from services.models import Gender, Adress  # noqa: F401 – Re-Export für Abwärtskompatibilität
-from services.storage import uuid_upload_to
 
 template_field_key_validator = RegexValidator(
     regex=r'^[a-z][a-z0-9_]*$',
@@ -492,95 +490,6 @@ class InternalNote(models.Model):
 
     def __str__(self):
         return f'Notiz ({self.student}, {self.created_at:%d.%m.%Y})'
-
-
-class StudentInquiry(models.Model):
-    """Anfrage einer Nachwuchskraft an das Ausbildungsreferat."""
-    id = models.CharField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    STATUS_CHOICES = [
-        ('open', 'Offen'),
-        ('in_progress', 'In Bearbeitung'),
-        ('closed', 'Geschlossen'),
-    ]
-
-    student = models.ForeignKey(
-        Student,
-        on_delete=models.CASCADE,
-        related_name='inquiries',
-        verbose_name='Nachwuchskraft',
-    )
-    subject = models.CharField(max_length=200, verbose_name='Betreff')
-    message = models.TextField(verbose_name='Nachricht')
-    attachment = models.FileField(
-        upload_to=uuid_upload_to('inquiries/attachments/'),
-        blank=True,
-        verbose_name='Anhang',
-    )
-    attachment_filename = models.CharField(
-        max_length=255, blank=True, verbose_name='Originalname des Anhangs',
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='open',
-        verbose_name='Status',
-    )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Erstellt am')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Aktualisiert am')
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'Anfrage'
-        verbose_name_plural = 'Anfragen'
-
-    def __str__(self):
-        return f'{self.subject} ({self.student}, {self.get_status_display()})'
-
-    def save(self, *args, **kwargs):
-        if self.attachment and not self.attachment_filename:
-            self.attachment_filename = os.path.basename(self.attachment.name)
-        super().save(*args, **kwargs)
-
-
-class InquiryReply(models.Model):
-    """Antwort auf eine Anfrage (von Nachwuchskraft oder Personal)."""
-    inquiry = models.ForeignKey(
-        StudentInquiry,
-        on_delete=models.CASCADE,
-        related_name='replies',
-        verbose_name='Anfrage',
-    )
-    author = models.ForeignKey(
-        'auth.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        verbose_name='Verfasser',
-    )
-    message = models.TextField(verbose_name='Nachricht')
-    attachment = models.FileField(
-        upload_to=uuid_upload_to('inquiries/attachments/'),
-        blank=True,
-        verbose_name='Anhang',
-    )
-    attachment_filename = models.CharField(
-        max_length=255, blank=True, verbose_name='Originalname des Anhangs',
-    )
-    is_staff_reply = models.BooleanField(default=False, verbose_name='Antwort vom Personal')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Erstellt am')
-
-    class Meta:
-        ordering = ['created_at']
-        verbose_name = 'Antwort'
-        verbose_name_plural = 'Antworten'
-
-    def __str__(self):
-        return f'Antwort auf „{self.inquiry.subject}" ({self.created_at:%d.%m.%Y})'
-
-    def save(self, *args, **kwargs):
-        if self.attachment and not self.attachment_filename:
-            self.attachment_filename = os.path.basename(self.attachment.name)
-        super().save(*args, **kwargs)
 
 
 class StudentFieldValue(models.Model):

@@ -1,62 +1,7 @@
 # SPDX-License-Identifier: EUPL-1.2
 # SPDX-FileCopyrightText: 2026 devNicoLax
-"""Formulare für das Nachwuchskräfte-Portal (Anfragen, Einsatzwünsche, persönliche Daten)."""
-import os
-
+"""Formulare für das Nachwuchskräfte-Portal (Einsatzwünsche, persönliche Daten)."""
 from django import forms
-
-from student.models import StudentInquiry
-
-_ALLOWED_ATTACHMENT_EXTENSIONS = {'pdf', 'docx', 'doc', 'jpg', 'jpeg', 'png', 'xlsx', 'csv'}
-_MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024  # 20 MB
-
-
-def _clean_attachment(f):
-    """Validierung für Dateianhänge bei Anfragen."""
-    ext = os.path.splitext(f.name)[1].lstrip('.').lower()
-    if ext not in _ALLOWED_ATTACHMENT_EXTENSIONS:
-        raise forms.ValidationError(
-            f'Dateityp „.{ext}" nicht erlaubt. '
-            f'Erlaubt: {", ".join(sorted(_ALLOWED_ATTACHMENT_EXTENSIONS))}.'
-        )
-    if f.size > _MAX_ATTACHMENT_SIZE:
-        raise forms.ValidationError('Die Datei darf maximal 20 MB groß sein.')
-    return f
-
-
-class StudentInquiryForm(forms.ModelForm):
-    """Formular zum Erstellen einer neuen Anfrage durch die Nachwuchskraft."""
-    class Meta:
-        model = StudentInquiry
-        fields = ['subject', 'message', 'attachment']
-        widgets = {
-            'subject': forms.TextInput(attrs={'placeholder': 'Betreff Ihrer Anfrage'}),
-            'message': forms.Textarea(attrs={
-                'rows': 4,
-                'placeholder': 'Beschreiben Sie Ihr Anliegen...',
-            }),
-        }
-
-    def clean_attachment(self):
-        f = self.cleaned_data.get('attachment')
-        if f:
-            return _clean_attachment(f)
-        return f
-
-
-class InquiryReplyForm(forms.Form):
-    """Formular für die Antwort auf eine bestehende Anfrage."""
-    message = forms.CharField(
-        widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Ihre Antwort...'}),
-        label='Antwort',
-    )
-    attachment = forms.FileField(required=False, label='Anhang')
-
-    def clean_attachment(self):
-        f = self.cleaned_data.get('attachment')
-        if f:
-            return _clean_attachment(f)
-        return f
 
 
 class InternshipPreferenceForm(forms.ModelForm):

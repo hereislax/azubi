@@ -85,15 +85,6 @@ def roles(request):
     training_office_profile = get_training_office_profile(request.user) if is_office and not is_director else None
     training_office_show_all = request.session.get('training_office_show_all', False) if is_office else False
 
-    # Offene Anfragen zählen (für Badge in der Navigation)
-    open_inquiry_count = 0
-    if is_director or is_office:
-        try:
-            from student.models import StudentInquiry
-            open_inquiry_count = StudentInquiry.objects.filter(status__in=['open', 'in_progress']).count()
-        except Exception:
-            pass
-
     return {
         # Rollen-Flags
         'is_training_coordinator': is_coordinator,
@@ -120,7 +111,6 @@ def roles(request):
         'training_office_can_approve_study_days': is_director or (training_office_profile and training_office_profile.can_approve_study_days),
         'training_office_can_manage_announcements': is_director or (training_office_profile and training_office_profile.can_manage_announcements),
         'training_office_can_manage_interventions': is_director or (training_office_profile and training_office_profile.can_manage_interventions),
-        'open_inquiry_count': open_inquiry_count,
         # Abwärtskompatibilität: Alte Variablennamen
         'is_ausbildungsleitung': is_director,
         'is_ausbildungsreferat': is_office,

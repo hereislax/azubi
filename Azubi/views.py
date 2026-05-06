@@ -361,17 +361,6 @@ def index(request):
         except Exception:
             pass
 
-        from student.models import StudentInquiry
-        open_inquiries = (
-            StudentInquiry.objects
-            .filter(status__in=['open', 'in_progress'])
-            .select_related('student')
-            .order_by('-created_at')[:10]
-        )
-        open_inquiry_count = StudentInquiry.objects.filter(
-            status__in=['open', 'in_progress']
-        ).count()
-
         ctx.update({
             'show_leitung_dashboard': True,
             'active_students': active_students,
@@ -382,8 +371,6 @@ def index(request):
             'pending_studyday_count': pending_studyday_count,
             'pending_assessment_count': pending_assessment_count,
             'open_interventions_count': open_interventions_count,
-            'open_inquiries': open_inquiries,
-            'open_inquiry_count': open_inquiry_count,
             'upcoming_blocks': upcoming_blocks,
             'pending_internships': pending_internships,
             'pending_letters': pending_letters,
