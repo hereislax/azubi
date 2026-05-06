@@ -73,9 +73,74 @@ class UserProfileInline(admin.StackedInline):
 
 admin.site.unregister(User)
 
+RESET_2FA_PERM = 'services.reset_user_2fa'
+
+
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     inlines = [UserProfileInline]
+    actions = ['reset_2fa']
+
+    def get_actions(self, request):
+        """Blende Reset-Action für User ohne dedizierte Permission aus."""
+        actions = super().get_actions(request)
+        if not request.user.has_perm(RESET_2FA_PERM):
+            actions.pop('reset_2fa', None)
+        return actions
+
+    @admin.action(description='2FA zurücksetzen (mit Audit-Eintrag)')
+    def reset_2fa(self, request, queryset):
+        """Löscht alle TOTP- und Static-Devices der ausgewählten User.
+
+        Erfordert die Permission ``services.reset_user_2fa``. Sie wird über
+        UserProfile.Meta.permissions definiert und kann in einer eigenen
+        "Sicherheits-Admin"-Gruppe an wenige Personen vergeben werden.
+
+        Auto-Tracking schreibt pro Device einen DELETE-Eintrag (siehe
+        auditlog.registry.TRACKED_FIELDS); zusätzlich vermerken wir hier
+        explizit, dass die Reset-Aktion durch einen Admin ausgelöst wurde.
+        """
+        # Defensiver Permission-Check, falls jemand die Action via direkter
+        # POST-Anfrage triggert (Bypass des Dropdown-Filters).
+        if not request.user.has_perm(RESET_2FA_PERM):
+            self.message_user(
+                request,
+                'Sie haben keine Berechtigung, 2FA für Benutzer zurückzusetzen.',
+                level=messages.ERROR,
+            )
+            return
+
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+        from django_otp.plugins.otp_static.models import StaticDevice
+
+        affected = 0
+        skipped = 0
+        with transaction.atomic():
+            for user in queryset:
+                had_totp = TOTPDevice.objects.filter(user=user).exists()
+                had_static = StaticDevice.objects.filter(user=user).exists()
+                if not (had_totp or had_static):
+                    skipped += 1
+                    continue
+
+                log_event(
+                    action=AuditLogEntry.ACTION_UPDATE,
+                    instance=user,
+                    user=request.user,
+                    changes={
+                        '2FA': {'old': 'aktiv', 'new': 'durch Admin zurückgesetzt'},
+                        'reset_by': request.user.username,
+                    },
+                )
+
+                TOTPDevice.objects.filter(user=user).delete()
+                StaticDevice.objects.filter(user=user).delete()
+                affected += 1
+
+        parts = [f'2FA für {affected} Benutzer zurückgesetzt.']
+        if skipped:
+            parts.append(f'{skipped} Benutzer hatten kein 2FA – übersprungen.')
+        self.message_user(request, ' '.join(parts), level=messages.SUCCESS)
 
 
 # ---------------------------------------------------------------------------

@@ -75,6 +75,9 @@ INSTALLED_APPS = [
     'workspace.apps.WorkspaceConfig',
     'mandatorytraining.apps.MandatorytrainingConfig',
     'axes',
+    'django_otp',
+    'django_otp.plugins.otp_totp',     # TOTP (Authenticator-App)
+    'django_otp.plugins.otp_static',   # Recovery-Codes
 ]
 
 MIDDLEWARE = [
@@ -84,6 +87,9 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # OTP-Middleware muss direkt nach AuthenticationMiddleware laufen,
+    # damit request.user.is_verified() in nachfolgenden Views verfügbar ist.
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'services.middleware.RoleAccessMiddleware',
@@ -248,12 +254,34 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # IdP hat E-Mail bereits verifiziert
 SOCIALACCOUNT_QUERY_EMAIL = True
+# Wir aktivieren bewusst NICHT SOCIALACCOUNT_LOGIN_ON_GET. Stattdessen rendert
+# unsere `sso_start`-View ein Auto-Submit-POST-Formular gegen die allauth-
+# Login-URL: Login-CSRF-Schutz bleibt aktiv, aber das User-Experience-Problem
+# (rohes Interstitial) entfällt.
 SOCIALACCOUNT_ADAPTER = 'services.sso_adapter.AzubiSocialAccountAdapter'
 
 # allauth-Account-Settings: irrelevant, da wir die lokalen Login-Flows nicht
 # über allauth, sondern weiterhin über django.contrib.auth bedienen. Wir
 # setzen Defaults aber ausdrücklich, damit nichts versehentlich greift.
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# ---------------------------------------------------------------------------
+# django-otp – TOTP-Aussteller in Authenticator-Apps
+# ---------------------------------------------------------------------------
+# Wird beim Scannen des QR-Codes als "Aussteller" / "Issuer" hinterlegt
+# (sonst zeigt Google/Microsoft Authenticator "Kein Aussteller" an).
+# Callable, damit der Wert aus SiteConfiguration.brand_name kommt – ändert
+# sich der App-Name in den Einstellungen, gilt das auch für künftig
+# eingerichtete 2FA-Geräte.
+def _otp_totp_issuer(device):
+    try:
+        from services.models import SiteConfiguration
+        name = (SiteConfiguration.get().brand_name or '').strip()
+        return name or 'Azubi-Portal'
+    except Exception:
+        return 'Azubi-Portal'
+
+OTP_TOTP_ISSUER = _otp_totp_issuer
 
 # ---------------------------------------------------------------------------
 # django-axes – Brute-Force-Schutz für Lokal-Login

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bestätigungscode{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="text-center mb-4">
+            <img src="{% url 'services:logo_svg' %}" alt="{{ brand_name }}" height="64">
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check me-1"></i> Zwei-Faktor-Authentifizierung
+                </h5>
+            </div>
+            <div class="card-body p-4">
+
+                {% if error %}
+                <div class="kern-alert kern-alert--danger mb-3" role="alert">
+                    <div class="kern-alert__header">
+                        <span class="kern-icon kern-icon--error" aria-hidden="true"></span>
+                        <span class="kern-title">{{ error }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <p class="text-muted small">
+                    Bitte geben Sie den 6-stelligen Code aus Ihrer
+                    Authenticator-App ein. Falls Sie keinen Zugriff darauf haben,
+                    können Sie stattdessen einen Recovery-Code verwenden.
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="kern-form-input">
+                        <label class="kern-label" for="id_token">Code</label>
+                        <input class="kern-form-input__input" type="text"
+                               name="token" id="id_token"
+                               autofocus required autocomplete="one-time-code"
+                               inputmode="numeric" pattern="[A-Za-z0-9 ]*">
+                    </div>
+
+                    <button type="submit" class="kern-btn kern-btn--primary kern-btn--block mt-2">
+                        <span class="kern-label">Bestätigen</span>
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <a href="{% url 'login' %}" class="text-muted small">
+                        <i class="bi bi-arrow-left me-1"></i> Zurück zur Anmeldung
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

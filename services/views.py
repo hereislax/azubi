@@ -1396,6 +1396,14 @@ def mein_konto(request):
         from organisation.models import Location
         locations = Location.objects.order_by('name')
 
+    # 2FA-Status für Profil-Karte: ist mindestens ein TOTP-Gerät bestätigt?
+    from django_otp.plugins.otp_totp.models import TOTPDevice as _TOTP
+    from django_otp.plugins.otp_static.models import StaticToken as _StaticToken
+    mfa_active = _TOTP.objects.filter(user=request.user, confirmed=True).exists()
+    mfa_recovery_remaining = _StaticToken.objects.filter(
+        device__user=request.user, device__confirmed=True,
+    ).count() if mfa_active else 0
+
     return render(request, 'services/mein_konto.html', {
         'password_form': password_form,
         'profile': profile,
@@ -1404,6 +1412,8 @@ def mein_konto(request):
         'locations': locations,
         'external_identity': external_identity,
         'external_provider_name': external_provider_name,
+        'mfa_active': mfa_active,
+        'mfa_recovery_remaining': mfa_recovery_remaining,
     })
 
 
@@ -1744,6 +1754,21 @@ class AzubiLoginView(LoginView):
         ctx.update(self._idp_context())
         return ctx
 
+    def form_valid(self, form):
+        # Standard-Pfad: Passwort war korrekt, User wurde authentifiziert.
+        # Wenn er 2FA aktiviert hat, NICHT direkt einloggen, sondern auf
+        # die OTP-Eingabe umleiten und User-PK + Backend in der Session
+        # zwischenspeichern.
+        user = form.get_user()
+        if _user_has_confirmed_otp(user):
+            self.request.session[PENDING_2FA_USER_PK] = user.pk
+            self.request.session[PENDING_2FA_BACKEND] = user.backend
+            redirect_to = self.get_redirect_url() or settings.LOGIN_REDIRECT_URL
+            self.request.session[PENDING_2FA_NEXT] = redirect_to
+            from django.urls import reverse
+            return HttpResponseRedirect(reverse("login_otp"))
+        return super().form_valid(form)
+
     def form_invalid(self, form):
         # Smart-Redirect: Wenn der eingegebene Username einen SSO-User
         # identifiziert, zeigen wir statt "Anmeldedaten falsch" einen
@@ -1769,13 +1794,23 @@ class AzubiLoginView(LoginView):
 
 @require_GET
 def sso_start(request, provider_id):
-    """Setzt die Last-IdP-Cookie und springt zum allauth-OIDC-Login."""
+    """Setzt Last-IdP-Cookie und triggert Auto-Submit-POST zum OIDC-Login.
+
+    Statt direkt 302 zu /sso/oidc/<id>/login/ zu redirecten (allauth zeigt
+    dort bei GET ein Interstitial), liefern wir ein winziges HTML mit einem
+    Form, das per JavaScript sofort POST-submitted wird. Vorteile:
+
+    * allauth's Login-CSRF-Schutz bleibt aktiv
+    * Kein rohes Interstitial-Template mehr sichtbar
+    * <noscript>-Fallback rendert einen klickbaren Knopf
+    """
     if not SocialApp.objects.filter(
         provider="openid_connect", provider_id=provider_id
     ).exists():
         return HttpResponseNotFound()
-    target = f"/sso/oidc/{provider_id}/login/"
-    response = HttpResponseRedirect(target)
+    response = render(request, "registration/sso_redirect.html", {
+        "post_target": f"/sso/oidc/{provider_id}/login/",
+    })
     response.set_cookie(
         LAST_IDP_COOKIE, provider_id,
         max_age=60 * 60 * 24 * 365,  # 1 Jahr
@@ -1784,3 +1819,177 @@ def sso_start(request, provider_id):
         secure=not settings.DEBUG,
     )
     return response
+
+
+# ---------------------------------------------------------------------------
+# 2FA (TOTP + Recovery-Codes via django-otp) – optional, Self-Service
+# ---------------------------------------------------------------------------
+import base64
+import io
+import secrets
+
+from django.contrib.auth import login as auth_login
+from django_otp import devices_for_user, login as otp_login
+from django_otp.plugins.otp_totp.models import TOTPDevice
+from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
+
+PENDING_2FA_USER_PK = "pending_2fa_user_pk"
+PENDING_2FA_BACKEND = "pending_2fa_backend"
+PENDING_2FA_NEXT    = "pending_2fa_next"
+RECOVERY_CODE_COUNT = 8
+RECOVERY_CODE_LEN   = 10
+
+
+def _user_has_confirmed_otp(user):
+    """True, wenn der User mindestens ein bestätigtes OTP-Gerät hat."""
+    return any(devices_for_user(user, confirmed=True))
+
+
+def _verify_otp_token(user, token):
+    """Prüft Token gegen alle bestätigten Geräte (TOTP + Static).
+
+    Gibt das matchende Device zurück oder None.
+    """
+    token = (token or "").replace(" ", "").strip()
+    if not token:
+        return None
+    for device in devices_for_user(user, confirmed=True):
+        if device.verify_token(token):
+            return device
+    return None
+
+
+def _qrcode_data_url(content):
+    """PNG-Data-URL eines QR-Codes als base64 für direkte Einbettung."""
+    import qrcode
+    img = qrcode.make(content, box_size=6, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
+
+
+def _generate_recovery_codes(user):
+    """Verwirft bisherige Static-Tokens und legt neue Recovery-Codes an.
+
+    Gibt die Codes als Liste zurück (nur einmal sichtbar – im Klartext werden
+    sie danach in der DB nicht mehr abrufbar, da nur Hashes geprüft werden).
+    """
+    StaticDevice.objects.filter(user=user).delete()
+    device = StaticDevice.objects.create(
+        user=user, name="Recovery-Codes", confirmed=True,
+    )
+    codes = []
+    alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
+    for _ in range(RECOVERY_CODE_COUNT):
+        code = "".join(secrets.choice(alphabet) for _ in range(RECOVERY_CODE_LEN))
+        StaticToken.objects.create(device=device, token=code)
+        codes.append(code)
+    return codes
+
+
+@login_required
+def mfa_setup(request):
+    """2FA aktivieren: QR-Code anzeigen, ersten Code prüfen, bestätigen."""
+    if _user_has_confirmed_otp(request.user):
+        messages.info(request, "2FA ist bereits aktiviert. "
+                               "Bitte zuerst deaktivieren, um neu einzurichten.")
+        return redirect("services:mein_konto")
+
+    # Bestehendes unbestätigtes Gerät wiederverwenden, sonst neu anlegen.
+    # So überlebt der QR-Code mehrere Versuche, falls der User den Code
+    # zunächst falsch tippt.
+    device = TOTPDevice.objects.filter(user=request.user, confirmed=False).first()
+    if device is None:
+        device = TOTPDevice.objects.create(
+            user=request.user, name="default", confirmed=False,
+        )
+
+    if request.method == "POST":
+        token = request.POST.get("token", "")
+        if device.verify_token(token):
+            device.confirmed = True
+            device.save(update_fields=["confirmed"])
+            recovery_codes = _generate_recovery_codes(request.user)
+            request.session["fresh_recovery_codes"] = recovery_codes
+            messages.success(request, "Zwei-Faktor-Authentifizierung wurde aktiviert.")
+            return redirect("services:mfa_recovery_codes")
+        messages.error(request, "Code nicht gültig. Bitte erneut versuchen.")
+
+    return render(request, "services/mfa_setup.html", {
+        "qr_data_url": _qrcode_data_url(device.config_url),
+        "secret": device.bin_key.hex(),  # Backup-Eingabe falls QR-Scan scheitert
+    })
+
+
+@login_required
+@require_POST
+def mfa_disable(request):
+    """Alle 2FA-Geräte des Users löschen."""
+    TOTPDevice.objects.filter(user=request.user).delete()
+    StaticDevice.objects.filter(user=request.user).delete()
+    messages.success(request, "Zwei-Faktor-Authentifizierung wurde deaktiviert.")
+    return redirect("services:mein_konto")
+
+
+@login_required
+def mfa_recovery_codes(request):
+    """Recovery-Codes anzeigen (frisch nach Setup) bzw. neu generieren."""
+    if not _user_has_confirmed_otp(request.user):
+        return redirect("services:mein_konto")
+
+    if request.method == "POST" and request.POST.get("action") == "regenerate":
+        codes = _generate_recovery_codes(request.user)
+        request.session["fresh_recovery_codes"] = codes
+        messages.success(request, "Neue Recovery-Codes wurden erzeugt. "
+                                  "Die alten Codes sind ungültig.")
+        return redirect("services:mfa_recovery_codes")
+
+    codes = request.session.pop("fresh_recovery_codes", None)
+    remaining = StaticToken.objects.filter(
+        device__user=request.user, device__confirmed=True,
+    ).count()
+    return render(request, "services/mfa_recovery_codes.html", {
+        "codes": codes,
+        "remaining": remaining,
+    })
+
+
+def login_otp(request):
+    """Zweistufiger Login: nach erfolgreichem Passwort-Submit landet hier,
+    wer 2FA aktiviert hat.
+
+    Holt den User-PK aus der Session, prüft den Token gegen TOTP/Static-Devices
+    und führt bei Erfolg den eigentlichen django.auth-Login durch.
+    """
+    user_pk = request.session.get(PENDING_2FA_USER_PK)
+    backend_path = request.session.get(PENDING_2FA_BACKEND)
+    if not user_pk or not backend_path:
+        return redirect("login")
+
+    try:
+        user = User.objects.get(pk=user_pk, is_active=True)
+    except User.DoesNotExist:
+        request.session.pop(PENDING_2FA_USER_PK, None)
+        request.session.pop(PENDING_2FA_BACKEND, None)
+        request.session.pop(PENDING_2FA_NEXT, None)
+        return redirect("login")
+
+    error = None
+    if request.method == "POST":
+        token = request.POST.get("token", "")
+        device = _verify_otp_token(user, token)
+        if device is not None:
+            user.backend = backend_path
+            auth_login(request, user)
+            otp_login(request, device)
+            # Falls ein Static-Token verwendet wurde: in der Static-Device-Logik
+            # werden Tokens nach erfolgreicher Verwendung automatisch entfernt
+            # – siehe django_otp.plugins.otp_static.models.StaticDevice.verify_token.
+            next_url = request.session.pop(PENDING_2FA_NEXT, None) \
+                       or settings.LOGIN_REDIRECT_URL
+            request.session.pop(PENDING_2FA_USER_PK, None)
+            request.session.pop(PENDING_2FA_BACKEND, None)
+            return redirect(next_url)
+        error = "Code nicht gültig. Bitte erneut versuchen."
+
+    return render(request, "registration/login_otp.html", {"error": error})

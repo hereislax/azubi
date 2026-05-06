@@ -216,6 +216,53 @@
     </div>
     {% endif %}
 
+    {# ── Zwei-Faktor-Authentifizierung ───────────────────────────────────── #}
+    {% if not external_identity %}
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-shield-check me-1"></i> Zwei-Faktor-Authentifizierung
+            </div>
+            <div class="card-body">
+                {% if mfa_active %}
+                <p class="mb-2">
+                    <span class="badge bg-success">aktiv</span>
+                    Bei jedem Login wird zusätzlich ein 6-stelliger Code
+                    aus Ihrer Authenticator-App abgefragt.
+                </p>
+                <p class="text-muted small mb-3">
+                    Verbleibende Recovery-Codes: <strong>{{ mfa_recovery_remaining }}</strong>
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'services:mfa_recovery_codes' %}" class="kern-btn kern-btn--secondary">
+                        <i class="bi bi-key" aria-hidden="true"></i>
+                        <span class="kern-label">Recovery-Codes verwalten</span>
+                    </a>
+                    <form method="post" action="{% url 'services:mfa_disable' %}"
+                          onsubmit="return confirm('2FA wirklich deaktivieren? Ihr Konto wird danach nur noch durch das Passwort geschützt.');">
+                        {% csrf_token %}
+                        <button type="submit" class="kern-btn kern-btn--secondary">
+                            <i class="bi bi-shield-slash" aria-hidden="true"></i>
+                            <span class="kern-label">Deaktivieren</span>
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <p>
+                    Schützen Sie Ihr Konto zusätzlich mit einem zeitbasierten
+                    Code aus einer Authenticator-App. Diese Funktion ist
+                    optional und kann jederzeit wieder deaktiviert werden.
+                </p>
+                <a href="{% url 'services:mfa_setup' %}" class="kern-btn kern-btn--primary">
+                    <i class="bi bi-shield-plus" aria-hidden="true"></i>
+                    <span class="kern-label">2FA aktivieren</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {# ── Benachrichtigungseinstellungen ───────────────────────────────────── #}
     <div class="col-lg-6">
         <div class="card shadow-sm">

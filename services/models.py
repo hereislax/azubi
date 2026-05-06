@@ -836,6 +836,12 @@ class UserProfile(models.Model):
     class Meta:
         verbose_name = "Benutzerprofil"
         verbose_name_plural = "Benutzerprofile"
+        permissions = [
+            (
+                'reset_user_2fa',
+                'Darf 2FA-Verknüpfungen anderer Benutzer zurücksetzen',
+            ),
+        ]
 
 
 class AusbildungsreferatProfile(models.Model):

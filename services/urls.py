@@ -13,6 +13,7 @@ from services.views import (
     notifications_list, notification_mark_read, notification_preferences,
     toggle_training_office_scope, mein_konto,
     backup_dashboard, backup_list, backup_settings, backup_trigger, backup_delete,
+    mfa_setup, mfa_disable, mfa_recovery_codes,
 )
 
 app_name = "services"
@@ -60,4 +61,7 @@ urlpatterns += [
     _path("benachrichtigungen/<int:pk>/lesen/", notification_mark_read, name="notification_mark_read"),
     _path("benachrichtigungen/praeferenzen/", notification_preferences, name="notification_preferences"),
     _path("mein-konto/", mein_konto, name="mein_konto"),
+    _path("mein-konto/2fa/einrichten/",      mfa_setup,           name="mfa_setup"),
+    _path("mein-konto/2fa/deaktivieren/",    mfa_disable,         name="mfa_disable"),
+    _path("mein-konto/2fa/recovery-codes/",  mfa_recovery_codes,  name="mfa_recovery_codes"),
 ]

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Weiterleitung …{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Lade …</span>
+            </div>
+            <p class="text-muted">Sie werden zum Identity-Provider weitergeleitet …</p>
+
+            <noscript>
+                <div class="kern-alert kern-alert--info mt-3" role="alert">
+                    <div class="kern-alert__header">
+                        <span class="kern-icon kern-icon--info" aria-hidden="true"></span>
+                        <span class="kern-title">JavaScript ist deaktiviert</span>
+                    </div>
+                    <p class="mb-2">
+                        Bitte klicken Sie auf den folgenden Button, um die
+                        Anmeldung fortzusetzen:
+                    </p>
+                    <button form="sso-form" type="submit"
+                            class="kern-btn kern-btn--primary">
+                        <i class="bi bi-shield-lock me-1"></i>
+                        <span class="kern-label">Weiter zum Identity-Provider</span>
+                    </button>
+                </div>
+            </noscript>
+        </div>
+
+        <form method="post" action="{{ post_target }}" id="sso-form" class="d-none">
+            {% csrf_token %}
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById("sso-form").submit();
+</script>
+{% endblock %}

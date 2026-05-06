@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Recovery-Codes{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:mein_konto' %}">Mein Konto</a></li>
+        <li class="breadcrumb-item active">Recovery-Codes</li>
+    </ol>
+</nav>
+
+<h2 class="mb-3"><i class="bi bi-key me-1"></i> Recovery-Codes</h2>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        {% if codes %}
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning fw-semibold">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Diese Codes werden nur EINMAL angezeigt
+            </div>
+            <div class="card-body">
+                <p>
+                    Bewahren Sie die folgenden Codes an einem sicheren Ort
+                    (Passwort-Manager, ausgedruckt im Tresor) auf. Jeder Code
+                    funktioniert genau einmal als Ersatz für Ihre
+                    Authenticator-App, falls Sie keinen Zugriff darauf haben.
+                </p>
+
+                <pre class="bg-light p-3 rounded user-select-all">{% for code in codes %}{{ code }}
+{% endfor %}</pre>
+
+                <p class="text-muted small mb-0">
+                    Sobald Sie diese Seite verlassen, sind die Codes hier nicht
+                    mehr abrufbar. Sie können bei Bedarf aber neue Codes erzeugen –
+                    die alten werden dann ungültig.
+                </p>
+            </div>
+        </div>
+        {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p>
+                    Es sind aktuell <strong>{{ remaining }}</strong>
+                    Recovery-Codes übrig. Diese werden bei Login verbraucht und
+                    bei Erschöpfung sollten Sie neue Codes erzeugen.
+                </p>
+                <p class="text-muted small">
+                    Aus Sicherheitsgründen können bestehende Codes nicht
+                    nochmals angezeigt werden. Erzeugen Sie neue Codes, falls
+                    Sie die ursprünglichen verloren haben.
+                </p>
+                <form method="post"
+                      onsubmit="return confirm('Neue Recovery-Codes erzeugen? Die alten werden sofort ungültig.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="regenerate">
+                    <button type="submit" class="kern-btn kern-btn--secondary">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        <span class="kern-label">Neue Codes erzeugen</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="mt-3">
+            <a href="{% url 'services:mein_konto' %}" class="kern-btn kern-btn--secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span class="kern-label">Zurück zu Mein Konto</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -21,6 +21,12 @@ _COMMON_ALLOWED = [
         r'^/impressum/$',
         r'^/datenschutz/$',
         r'^/acknowledgments/',
+        # Authentifizierungs-Pfade müssen für JEDE Rolle erreichbar sein:
+        # Logout, OTP-Schritt, Passwort-Reset etc. Ohne diese Freigabe läuft
+        # jeder User ohne expliziten Rollen-Whitelist-Eintrag auf 403, kann
+        # sich also auch nicht ausloggen.
+        r'^/accounts/',
+        r'^/sso/',
     ]
 ]
 

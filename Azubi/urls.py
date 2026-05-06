@@ -41,6 +41,7 @@ from services.views import (
     sso_error as sso_error_view,
     AzubiLoginView,
     sso_start as sso_start_view,
+    login_otp as login_otp_view,
 )
 
 
@@ -100,6 +101,9 @@ urlpatterns = [
     # Eigene Login-View VOR django.contrib.auth.urls einbinden, damit unsere
     # Variante mit SSO-Buttons + Smart-Redirect statt der Default-View greift.
     path('accounts/login/', AzubiLoginView.as_view(), name='login'),
+    # Zweiter Login-Schritt bei aktiviertem 2FA: nimmt User-PK aus Session
+    # entgegen, prüft TOTP-/Recovery-Code und schließt den Login ab.
+    path('accounts/login-otp/', login_otp_view, name='login_otp'),
     path('accounts/', include('django.contrib.auth.urls')),
     # Kleines Sprungbrett: setzt die Last-IdP-Cookie und leitet zum allauth-
     # OIDC-Login weiter. Login-Buttons zeigen nicht direkt auf /sso/oidc/...,

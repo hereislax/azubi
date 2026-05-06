@@ -121,6 +121,11 @@ TRACKED_FIELDS = {
     ('socialaccount', 'socialaccount'): [
         'user', 'provider', 'uid',
     ],
+
+    # ── 2FA-Geräte (django-otp) ──────────────────────────────────────────────
+    # Nur Aktivierung/Deaktivierung, NICHT last_t/drift (würde jeden Login loggen).
+    ('otp_totp',   'totpdevice'):   ['user', 'name', 'confirmed'],
+    ('otp_static', 'staticdevice'): ['user', 'name', 'confirmed'],
 }
 
 
