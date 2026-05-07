@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 devNicoLax
 """Django-Admin-Konfiguration für Praxistutoren und Ausbildungskoordinationen."""
 from django.contrib import admin
-from .models import Instructor, ChiefInstructor, TrainingCoordination, InstructorOrderTemplate
+from .models import Instructor, TrainingCoordination, InstructorOrderTemplate
 
 
 @admin.register(Instructor)
@@ -18,14 +18,6 @@ class TrainingCoordinationAdmin(admin.ModelAdmin):
     list_display = ('name', 'functional_email')
     search_fields = ('name', 'functional_email')
     filter_horizontal = ('units',)
-
-
-@admin.register(ChiefInstructor)
-class ChiefInstructorAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'salutation', 'email', 'coordination')
-    list_filter = ('salutation', 'coordination')
-    search_fields = ('first_name', 'last_name', 'email')
-    raw_id_fields = ('user',)
 
 
 @admin.register(InstructorOrderTemplate)

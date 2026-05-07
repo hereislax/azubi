@@ -33,20 +33,6 @@ class RoomAdmin(admin.ModelAdmin):
     inlines = [RoomAssignmentInline, RoomBlockInline]
 
 
-@admin.register(RoomAssignment)
-class RoomAssignmentAdmin(admin.ModelAdmin):
-    list_display = ("student", "room", "start_date", "end_date")
-    list_filter = ("room__dormitory", "room")
-    search_fields = ("student__first_name", "student__last_name")
-    readonly_fields = ("created_at", "updated_at")
-
-
-@admin.register(RoomBlock)
-class RoomBlockAdmin(admin.ModelAdmin):
-    list_display = ("room", "start_date", "end_date", "reason")
-    list_filter = ("room__dormitory", "room")
-
-
 @admin.register(ReservationTemplate)
 class ReservationTemplateAdmin(admin.ModelAdmin):
     list_display = ("name", "dormitory", "is_active", "uploaded_at")

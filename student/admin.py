@@ -1,8 +1,8 @@
 """
 Django-Admin-Konfiguration für die Student-App.
 
-Registriert alle relevanten Modelle (Nachwuchskräfte, Felder, Vorlagen,
-Zugangsberechtigungen, Checklisten, Notizen) im Admin-Backend.
+Registriert nur Stammdaten und Vorlagen. Operative Tabellen (InternalNote,
+TrainingResponsibleAccess) werden über die App-Views gepflegt.
 """
 # SPDX-License-Identifier: EUPL-1.2
 # SPDX-FileCopyrightText: 2026 devNicoLax
@@ -12,8 +12,8 @@ from django.contrib import admin
 from services.models import Gender
 from student.models import (
     Employment, Status, Student, StudentFieldDefinition, StudentFieldValue,
-    StudentDocumentTemplate, TrainingResponsibleAccess,
-    ChecklistTemplate, ChecklistTemplateItem, InternalNote,
+    StudentDocumentTemplate,
+    ChecklistTemplate, ChecklistTemplateItem,
 )
 
 WIDGETS = {
@@ -74,24 +74,6 @@ class StudentDocumentTemplateAdmin(admin.ModelAdmin):
     list_display = ('name', 'is_active', 'available_in_portal', 'uploaded_at')
     list_editable = ('is_active', 'available_in_portal')
     fields = ('name', 'description', 'template_file', 'is_active', 'available_in_portal')
-
-
-@admin.register(TrainingResponsibleAccess)
-class TrainingResponsibleAccessAdmin(admin.ModelAdmin):
-    list_display = ('user', 'student', 'granted_by', 'granted_at')
-    list_filter = ('user',)
-    search_fields = ('student__first_name', 'student__last_name', 'user__username')
-    raw_id_fields = ('user', 'student', 'granted_by')
-    readonly_fields = ('granted_at',)
-
-
-@admin.register(InternalNote)
-class InternalNoteAdmin(admin.ModelAdmin):
-    list_display = ('student', 'created_by', 'is_pinned', 'created_at')
-    list_filter = ('is_pinned',)
-    search_fields = ('student__first_name', 'student__last_name', 'text')
-    raw_id_fields = ('student', 'created_by')
-    readonly_fields = ('created_at', 'updated_at')
 
 
 class ChecklistTemplateItemInline(admin.TabularInline):

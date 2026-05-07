@@ -5,6 +5,7 @@ from django.apps import AppConfig
 
 class ServicesConfig(AppConfig):
     name = 'services'
+    verbose_name = 'System & Konfiguration'
 
     def ready(self):
         from django.db.models.signals import post_save, pre_save
