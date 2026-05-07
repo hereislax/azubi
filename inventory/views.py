@@ -619,7 +619,7 @@ def issuance_create(request, item_public_id):
         issued_at_raw = request.POST.get("issued_at", "").strip()
         notes = request.POST.get("notes", "").strip()
 
-        student = Student.objects.filter(public_id=student_id).first()
+        student = Student.objects.filter(pk=student_id).first()
         issued_at = None
         if issued_at_raw:
             issued_at = parse_datetime(issued_at_raw)

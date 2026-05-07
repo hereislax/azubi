@@ -84,7 +84,7 @@
                 <a href="{% url 'workspace:workspace_detail' ws.public_id %}" class="btn btn-sm btn-outline-primary flex-grow-1">
                     <i class="bi bi-calendar3 me-1"></i> Belegung
                 </a>
-                <a href="{% url 'workspace:booking_create_for_workspace' ws.pk %}" class="btn btn-sm btn-primary flex-grow-1">
+                <a href="{% url 'workspace:booking_create_for_workspace' ws.public_id %}" class="btn btn-sm btn-primary flex-grow-1">
                     <i class="bi bi-plus me-1"></i> Buchen
                 </a>
             </div>

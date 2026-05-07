@@ -999,7 +999,7 @@ def grade_create(request, student_pk):
 @login_required
 def grade_edit(request, student_pk, grade_public_id):
     student = get_object_or_404(Student.objects.select_related('course__job_profile'), pk=student_pk)
-    grade = get_object_or_404(Grade, pk=grade_public_id, student=student)
+    grade = get_object_or_404(Grade, public_id=grade_public_id, student=student)
     form = GradeForm(request.POST or None, request.FILES or None, instance=grade, student=student)
     if form.is_valid():
         grade = form.save()
@@ -1036,7 +1036,7 @@ def grade_edit(request, student_pk, grade_public_id):
 @require_POST
 def grade_delete(request, student_pk, grade_public_id):
     student = get_object_or_404(Student, pk=student_pk)
-    grade = get_object_or_404(Grade, pk=grade_public_id, student=student)
+    grade = get_object_or_404(Grade, public_id=grade_public_id, student=student)
     if grade.paperless_document_id:
         PaperlessService.delete_document(grade.paperless_document_id)
     grade.delete()
@@ -1239,13 +1239,13 @@ def contact_entry_create(request, pk):
 
 @login_required
 @require_POST
-def contact_entry_delete(request, pk, entry_public_id):
+def contact_entry_delete(request, pk, entry_pk):
     from django.core.exceptions import PermissionDenied
     from django.urls import reverse
     from services.roles import is_training_director, is_training_office
     if not (is_training_director(request.user) or is_training_office(request.user)):
         raise PermissionDenied
-    entry = get_object_or_404(ContactEntry, pk=entry_public_id, student__pk=pk)
+    entry = get_object_or_404(ContactEntry, pk=entry_pk, student__pk=pk)
     entry.delete()
     messages.success(request, 'Kontakteintrag gelöscht.')
     return redirect(reverse('student:student_detail', kwargs={'pk': pk}) + '?tab=kontakte')
@@ -1287,7 +1287,7 @@ def internal_note_delete(request, pk, note_public_id):
     from .models import InternalNote
     if not (is_training_director(request.user) or is_training_office(request.user)):
         raise PermissionDenied
-    note = get_object_or_404(InternalNote, pk=note_public_id, student__pk=pk)
+    note = get_object_or_404(InternalNote, public_id=note_public_id, student__pk=pk)
     note.delete()
     messages.success(request, 'Notiz gelöscht.')
     return redirect(reverse('student:student_detail', kwargs={'pk': pk}) + '?tab=notizen')
@@ -1302,7 +1302,7 @@ def internal_note_toggle_pin(request, pk, note_public_id):
     from .models import InternalNote
     if not (is_training_director(request.user) or is_training_office(request.user)):
         raise PermissionDenied
-    note = get_object_or_404(InternalNote, pk=note_public_id, student__pk=pk)
+    note = get_object_or_404(InternalNote, public_id=note_public_id, student__pk=pk)
     note.is_pinned = not note.is_pinned
     note.save(update_fields=['is_pinned'])
     return redirect(reverse('student:student_detail', kwargs={'pk': pk}) + '?tab=notizen')
@@ -1661,7 +1661,12 @@ def checklist_item_toggle(request, pk, checklist_public_id, item_public_id):
     if not (is_training_director(request.user) or is_training_office(request.user)):
         raise PermissionDenied
     student = get_object_or_404(Student, pk=pk)
-    item = get_object_or_404(StudentChecklistItem, pk=item_public_id, checklist_id=checklist_public_id, checklist__student=student)
+    item = get_object_or_404(
+        StudentChecklistItem,
+        public_id=item_public_id,
+        checklist__public_id=checklist_public_id,
+        checklist__student=student,
+    )
     item.completed = not item.completed
     if item.completed:
         item.completed_at = timezone.now()
@@ -1681,7 +1686,7 @@ def checklist_delete(request, pk, checklist_public_id):
     if not (is_training_director(request.user) or is_training_office(request.user)):
         raise PermissionDenied
     student = get_object_or_404(Student, pk=pk)
-    checklist = get_object_or_404(StudentChecklist, pk=checklist_public_id, student=student)
+    checklist = get_object_or_404(StudentChecklist, public_id=checklist_public_id, student=student)
     checklist.delete()
     messages.success(request, 'Checkliste gelöscht.')
     from django.urls import reverse
@@ -1729,7 +1734,7 @@ def curriculum_toggle_completion(request, pk, requirement_public_id):
     from course.models import CurriculumRequirement, CurriculumCompletion
 
     student = get_object_or_404(Student, pk=pk)
-    requirement = get_object_or_404(CurriculumRequirement, pk=requirement_public_id)
+    requirement = get_object_or_404(CurriculumRequirement, public_id=requirement_public_id)
 
     existing = CurriculumCompletion.objects.filter(student=student, requirement=requirement).first()
     if existing:

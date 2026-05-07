@@ -422,7 +422,7 @@ def _create_chief_user_and_notify(request, chief, coordination):
 
 @login_required
 def member_create(request, koordination_public_id):
-    coordination = get_object_or_404(TrainingCoordination, pk=koordination_public_id)
+    coordination = get_object_or_404(TrainingCoordination, public_id=koordination_public_id)
     form = ChiefInstructorForm(request.POST or None, initial={'coordination': coordination})
     if form.is_valid():
         chief = form.save(commit=False)
@@ -440,8 +440,8 @@ def member_create(request, koordination_public_id):
 
 @login_required
 def member_edit(request, koordination_public_id, member_public_id):
-    coordination = get_object_or_404(TrainingCoordination, pk=koordination_public_id)
-    chief = get_object_or_404(ChiefInstructor, pk=member_public_id, coordination=coordination)
+    coordination = get_object_or_404(TrainingCoordination, public_id=koordination_public_id)
+    chief = get_object_or_404(ChiefInstructor, public_id=member_public_id, coordination=coordination)
     form = ChiefInstructorForm(request.POST or None, instance=chief)
     if form.is_valid():
         form.save()
@@ -457,8 +457,8 @@ def member_edit(request, koordination_public_id, member_public_id):
 
 @login_required
 def member_delete(request, koordination_public_id, member_public_id):
-    coordination = get_object_or_404(TrainingCoordination, pk=koordination_public_id)
-    chief = get_object_or_404(ChiefInstructor, pk=member_public_id, coordination=coordination)
+    coordination = get_object_or_404(TrainingCoordination, public_id=koordination_public_id)
+    chief = get_object_or_404(ChiefInstructor, public_id=member_public_id, coordination=coordination)
     if request.method == 'POST':
         name = str(chief)
         user = chief.user
@@ -475,8 +475,8 @@ def member_delete(request, koordination_public_id, member_public_id):
 
 @login_required
 def member_create_user(request, koordination_public_id, member_public_id):
-    coordination = get_object_or_404(TrainingCoordination, pk=koordination_public_id)
-    chief = get_object_or_404(ChiefInstructor, pk=member_public_id, coordination=coordination)
+    coordination = get_object_or_404(TrainingCoordination, public_id=koordination_public_id)
+    chief = get_object_or_404(ChiefInstructor, public_id=member_public_id, coordination=coordination)
     if chief.user_id:
         messages.info(request, f'„{chief}" hat bereits ein Benutzerkonto.')
         return redirect('instructor:chief_instructor_detail', public_id=coordination.public_id)
@@ -640,7 +640,7 @@ def chief_instructor_approve_assignment(request, chief_public_id, assignment_pk)
     """Ausbildungskoordination nimmt einen Praktikumseinsatz an."""
     from course.models import ASSIGNMENT_STATUS_APPROVED
 
-    coordination = get_object_or_404(TrainingCoordination, pk=chief_public_id)
+    coordination = get_object_or_404(TrainingCoordination, public_id=chief_public_id)
     _require_coordination_member(request, coordination)
     assignment = _coordination_assignment_or_403(coordination, assignment_pk)
 
@@ -669,7 +669,7 @@ def chief_instructor_reject_assignment(request, chief_public_id, assignment_pk):
     """Ausbildungskoordination lehnt einen Praktikumseinsatz ab."""
     from course.models import ASSIGNMENT_STATUS_REJECTED
 
-    coordination = get_object_or_404(TrainingCoordination, pk=chief_public_id)
+    coordination = get_object_or_404(TrainingCoordination, public_id=chief_public_id)
     _require_coordination_member(request, coordination)
     assignment = _coordination_assignment_or_403(coordination, assignment_pk)
 
@@ -701,7 +701,7 @@ def chief_instructor_assignment_edit(request, chief_public_id, assignment_pk):
     from course.views import _get_unit_capacity_info
     from organisation.models import OrganisationalUnit
 
-    coordination = get_object_or_404(TrainingCoordination, pk=chief_public_id)
+    coordination = get_object_or_404(TrainingCoordination, public_id=chief_public_id)
     _require_coordination_member(request, coordination)
     assignment = get_object_or_404(
         InternshipAssignment.objects.select_related('student__course'), pk=assignment_pk
@@ -893,7 +893,7 @@ def change_request_create(request, chief_public_id, assignment_pk, change_type):
     from course.change_request_forms import get_form_class
     from course.change_handlers import apply_change_request
 
-    coordination = get_object_or_404(TrainingCoordination, pk=chief_public_id)
+    coordination = get_object_or_404(TrainingCoordination, public_id=chief_public_id)
     _require_coordination_member(request, coordination)
     assignment = get_object_or_404(
         InternshipAssignment.objects.select_related('student', 'unit'),

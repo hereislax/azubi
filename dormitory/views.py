@@ -54,7 +54,7 @@ def assignment_create(request, room_public_id=None):
     """Neue Zimmerbelegung anlegen."""
     initial = {}
     if room_public_id:
-        room = get_object_or_404(Room, pk=room_public_id)
+        room = get_object_or_404(Room, public_id=room_public_id)
         initial["room"] = room
     for key in ("start_date", "end_date", "room"):
         if key in request.GET and key not in initial:
@@ -94,7 +94,7 @@ def block_create(request, room_public_id=None):
     """Neue Zimmersperrung anlegen."""
     initial = {}
     if room_public_id:
-        room = get_object_or_404(Room, pk=room_public_id)
+        room = get_object_or_404(Room, public_id=room_public_id)
         initial["room"] = room
     for key in ("start_date", "end_date", "room"):
         if key in request.GET and key not in initial:

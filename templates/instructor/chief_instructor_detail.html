@@ -62,7 +62,7 @@
     <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
         <span><i class="bi bi-people me-1"></i> Mitglieder</span>
         {% if not is_training_coordinator %}
-        <a href="{% url 'instructor:member_create' coordination.pk %}" class="btn btn-sm btn-outline-primary">
+        <a href="{% url 'instructor:member_create' coordination.public_id %}" class="btn btn-sm btn-outline-primary">
             <i class="bi bi-person-plus me-1"></i> Person hinzufügen
         </a>
         {% endif %}
@@ -90,7 +90,7 @@
                 {% else %}
                     <span class="badge bg-warning text-dark"><i class="bi bi-person-x me-1"></i> Kein Konto</span>
                     {% if not is_training_coordinator %}
-                    <a href="{% url 'instructor:member_create_user' coordination.pk m.pk %}" class="btn btn-sm btn-outline-primary ms-2">
+                    <a href="{% url 'instructor:member_create_user' coordination.public_id m.public_id %}" class="btn btn-sm btn-outline-primary ms-2">
                         <i class="bi bi-person-plus me-1"></i> Konto anlegen
                     </a>
                     {% endif %}
@@ -98,10 +98,10 @@
             </td>
             {% if not is_training_coordinator %}
             <td class="text-end" style="white-space:nowrap">
-                <a href="{% url 'instructor:member_edit' coordination.pk m.pk %}" class="btn btn-sm btn-outline-secondary" title="Bearbeiten">
+                <a href="{% url 'instructor:member_edit' coordination.public_id m.public_id %}" class="btn btn-sm btn-outline-secondary" title="Bearbeiten">
                     <i class="bi bi-pencil me-1"></i>
                 </a>
-                <a href="{% url 'instructor:member_delete' coordination.pk m.pk %}" class="btn btn-sm btn-outline-danger" title="Entfernen">
+                <a href="{% url 'instructor:member_delete' coordination.public_id m.public_id %}" class="btn btn-sm btn-outline-danger" title="Entfernen">
                     <i class="bi bi-trash me-1"></i>
                 </a>
             </td>
@@ -189,13 +189,13 @@
                 <td>{{ a.schedule_block.name }}</td>
                 <td>{% if a.created_by %}{{ a.created_by.get_full_name|default:a.created_by.username }}{% else %}–{% endif %}</td>
                 <td class="text-end" style="white-space:nowrap">
-                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-success" title="Annehmen">
+                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.public_id a.pk %}" class="btn btn-sm btn-success" title="Annehmen">
                         <i class="bi bi-check-lg me-1"></i>
                     </a>
-                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen">
+                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.public_id a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen">
                         <i class="bi bi-x-lg me-1"></i>
                     </a>
-                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary" title="Bearbeiten">
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.public_id a.pk %}" class="btn btn-sm btn-outline-secondary" title="Bearbeiten">
                         <i class="bi bi-pencil me-1"></i>
                     </a>
                 </td>
@@ -247,10 +247,10 @@
                 </td>
                 <td class="text-end" style="white-space:nowrap">
                     {% if a.status == 'pending' %}
-                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-success" title="Annehmen"><i class="bi bi-check-lg me-1"></i></a>
-                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen"><i class="bi bi-x-lg me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.public_id a.pk %}" class="btn btn-sm btn-success" title="Annehmen"><i class="bi bi-check-lg me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.public_id a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen"><i class="bi bi-x-lg me-1"></i></a>
                     {% endif %}
-                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.public_id a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
                 </td>
             </tr>
             {% endfor %}
@@ -291,10 +291,10 @@
                 <td>{{ a.schedule_block.name }}</td>
                 <td class="text-end" style="white-space:nowrap">
                     {% if a.status == 'pending' %}
-                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-success" title="Annehmen"><i class="bi bi-check-lg me-1"></i></a>
-                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.pk a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen"><i class="bi bi-x-lg me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_approve_assignment' coordination.public_id a.pk %}" class="btn btn-sm btn-success" title="Annehmen"><i class="bi bi-check-lg me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_reject_assignment' coordination.public_id a.pk %}" class="btn btn-sm btn-danger" title="Ablehnen"><i class="bi bi-x-lg me-1"></i></a>
                     {% endif %}
-                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.public_id a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
                 </td>
             </tr>
             {% endfor %}
@@ -335,7 +335,7 @@
                     {% endwith %}
                 </td>
                 <td class="text-end">
-                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.pk a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
+                    <a href="{% url 'instructor:chief_instructor_assignment_edit' coordination.public_id a.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i></a>
                 </td>
             </tr>
             {% endfor %}

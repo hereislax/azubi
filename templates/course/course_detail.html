@@ -76,14 +76,14 @@
             {% endif %}
             {% if can_manage_checklists %}
             <li class="nav-item" role="presentation">
-                <button class="nav-link {% if request.GET.tab == 'kurs-checklisten' %}active{% endif %}"
+                <button class="nav-link"
                         id="kurs-checklisten-tab" data-bs-toggle="tab" data-bs-target="#kurs-checklisten"
                         type="button" role="tab">
                     <i class="bi bi-clipboard-check me-1"></i> Kurs-Checklisten
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link {% if request.GET.tab == 'checklisten' %}active{% endif %}"
+                <button class="nav-link"
                         id="checklisten-tab" data-bs-toggle="tab" data-bs-target="#checklisten"
                         type="button" role="tab">
                     <i class="bi bi-check2-square me-1"></i> NK-Checklisten
@@ -337,7 +337,7 @@
 
         {# ── Tab: Kurs-Checklisten ────────────────────────────────────────── #}
         {% if can_manage_checklists %}
-        <div class="tab-pane fade {% if request.GET.tab == 'kurs-checklisten' %}show active{% endif %}"
+        <div class="tab-pane fade"
              id="kurs-checklisten" role="tabpanel">
 
             {# Neue Kurs-Checkliste anlegen #}
@@ -438,7 +438,7 @@
 
         {# ── Tab: NK-Checklisten ──────────────────────────────────────────── #}
         {% if can_manage_checklists %}
-        <div class="tab-pane fade {% if request.GET.tab == 'checklisten' %}show active{% endif %}"
+        <div class="tab-pane fade"
              id="checklisten" role="tabpanel">
 
             {# Vorlage für alle NK anlegen #}

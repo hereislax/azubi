@@ -19,10 +19,10 @@
         </p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{% url 'workspace:closure_create_for_workspace' workspace.pk %}" class="btn btn-outline-warning btn-sm">
+        <a href="{% url 'workspace:closure_create_for_workspace' workspace.public_id %}" class="btn btn-outline-warning btn-sm">
             <i class="bi bi-slash-circle me-1"></i> Sperrung
         </a>
-        <a href="{% url 'workspace:booking_create_for_workspace' workspace.pk %}" class="btn btn-primary btn-sm">
+        <a href="{% url 'workspace:booking_create_for_workspace' workspace.public_id %}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-circle me-1"></i> Buchen
         </a>
     </div>
@@ -72,7 +72,7 @@
                     </td>
                     <td class="text-end">
                         {% if not d.is_closed and d.remaining > 0 %}
-                        <a href="{% url 'workspace:booking_create_for_workspace' workspace.pk %}?date={{ d.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{% url 'workspace:booking_create_for_workspace' workspace.public_id %}?date={{ d.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-plus"></i>
                         </a>
                         {% endif %}

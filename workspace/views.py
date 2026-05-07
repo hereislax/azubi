@@ -353,7 +353,7 @@ def booking_create(request, workspace_public_id=None):
     """Neue Buchung anlegen (Admin/Koordination)."""
     initial_workspace = None
     if workspace_public_id:
-        initial_workspace = get_object_or_404(Workspace, pk=workspace_public_id)
+        initial_workspace = get_object_or_404(Workspace, public_id=workspace_public_id)
 
     if request.method == 'POST':
         form = WorkspaceBookingForm(request.POST, initial_workspace=initial_workspace)
@@ -427,7 +427,7 @@ def closure_create(request, workspace_public_id=None):
     """Sperrzeitraum für einen Arbeitsplatz anlegen."""
     initial_workspace = None
     if workspace_public_id:
-        initial_workspace = get_object_or_404(Workspace, pk=workspace_public_id)
+        initial_workspace = get_object_or_404(Workspace, public_id=workspace_public_id)
 
     if request.method == 'POST':
         form = WorkspaceClosureForm(request.POST)
@@ -579,7 +579,7 @@ def portal_booking_create(request, workspace_public_id=None):
     student = _get_student_or_403(request)
     initial_workspace = None
     if workspace_public_id:
-        initial_workspace = get_object_or_404(Workspace, pk=workspace_public_id, is_active=True)
+        initial_workspace = get_object_or_404(Workspace, public_id=workspace_public_id, is_active=True)
 
     if request.method == 'POST':
         form = WorkspaceBookingPortalForm(request.POST, initial_workspace=initial_workspace)

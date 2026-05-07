@@ -199,7 +199,7 @@
 
             {% if row.assignments %}
                 {% for a in row.assignments %}
-                <a href="{% url 'instructor:chief_instructor_assignment_edit' chief.pk a.assignment.pk %}"
+                <a href="{% url 'instructor:chief_instructor_assignment_edit' chief.public_id a.assignment.pk %}"
                    class="asgn-bar"
                    style="left:{{ a.offset }}%; width:{{ a.width }}%; top:{{ a.top_px }}px; background:{{ a.color }};"
                    title="{{ a.label }}&#10;{{ a.start_fmt }} – {{ a.end_fmt }}">

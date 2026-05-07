@@ -475,7 +475,7 @@
                     {% endif %}
                 </td>
                 <td class="text-end">
-                    <a href="{% url 'student:grade_edit' student.pk grade.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <a href="{% url 'student:grade_edit' student.pk grade.public_id %}" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-pencil me-1"></i>
                     </a>
                 </td>
@@ -1064,7 +1064,7 @@
                              style="width:{{ cl.progress }}%;"></div>
                     </div>
                     <span class="small text-muted">{{ cl.progress }}%</span>
-                    <form method="post" action="{% url 'student:checklist_delete' student.pk cl.pk %}" class="ms-2"
+                    <form method="post" action="{% url 'student:checklist_delete' student.pk cl.public_id %}" class="ms-2"
                           onsubmit="return confirm('Checkliste wirklich löschen?');">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">
@@ -1076,7 +1076,7 @@
             <ul class="list-group list-group-flush">
                 {% for item in cl.items.all %}
                 <li class="list-group-item d-flex align-items-center gap-3 py-2">
-                    <form method="post" action="{% url 'student:checklist_item_toggle' student.pk cl.pk item.pk %}" class="m-0">
+                    <form method="post" action="{% url 'student:checklist_item_toggle' student.pk cl.public_id item.public_id %}" class="m-0">
                         {% csrf_token %}
                         <button type="submit" class="btn p-0 border-0 bg-transparent">
                             {% if item.completed %}
@@ -1173,7 +1173,7 @@
                     {% endif %}
                     {# Manuelle Bestätigung (Staff) #}
                     {% if can_edit %}
-                    <form method="post" action="{% url 'student:curriculum_toggle_completion' student.pk item.requirement.pk %}" class="d-inline">
+                    <form method="post" action="{% url 'student:curriculum_toggle_completion' student.pk item.requirement.public_id %}" class="d-inline">
                         {% csrf_token %}
                         {% if item.manually_completed %}
                         <button type="submit" class="btn btn-sm btn-outline-secondary">
@@ -1224,7 +1224,7 @@
                         {% endif %}
                     </span>
                     <div class="d-flex gap-1">
-                        <form method="post" action="{% url 'student:internal_note_toggle_pin' student.pk note.pk %}">
+                        <form method="post" action="{% url 'student:internal_note_toggle_pin' student.pk note.public_id %}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-{% if note.is_pinned %}warning{% else %}secondary{% endif %}"
                                     title="{% if note.is_pinned %}Anpinnen aufheben{% else %}Anpinnen{% endif %}">
@@ -1232,7 +1232,7 @@
                             </button>
                         </form>
                         <form method="post"
-                              action="{% url 'student:internal_note_delete' student.pk note.pk %}"
+                              action="{% url 'student:internal_note_delete' student.pk note.public_id %}"
                               onsubmit="return confirm('Diese Notiz wirklich löschen?')">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Löschen">

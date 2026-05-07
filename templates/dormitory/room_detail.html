@@ -16,10 +16,10 @@
         <small class="text-muted fs-5">– {{ room.dormitory.name }}</small>
     </h2>
     <div class="d-flex gap-2">
-        <a href="{% url 'dormitory:assignment_create_for_room' room.pk %}" class="btn btn-primary">
+        <a href="{% url 'dormitory:assignment_create_for_room' room.public_id %}" class="btn btn-primary">
             <i class="bi bi-person-plus me-1"></i> Reservierung hinzufügen
         </a>
-        <a href="{% url 'dormitory:block_create_for_room' room.pk %}" class="btn btn-warning">
+        <a href="{% url 'dormitory:block_create_for_room' room.public_id %}" class="btn btn-warning">
             <i class="bi bi-slash-circle me-1"></i> Sperrung hinzufügen
         </a>
     </div>
