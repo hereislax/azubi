@@ -2101,7 +2101,13 @@ def course_calendar(request):
     from services.colors import BUNDESFARBEN_BY_NAME as _BF
     color_lesson = _BF['Petrol']
     color_internship = _BF['Dunkelrot']
+    color_seminar = _BF['Hellblau']
     color_today = _BF['Rot']
+    block_colors = {
+        'normal':     color_lesson,
+        'internship': color_internship,
+        'seminar':    color_seminar,
+    }
 
     calendar_rows = []
     bar_height = 32
@@ -2121,7 +2127,7 @@ def course_calendar(request):
                 continue
             raw_offset = (clip_start - year_start).days / year_days * 100
             raw_width = max(((clip_end - clip_start).days + 1) / year_days * 100, 0.5)
-            color = color_internship if block.is_internship else color_lesson
+            color = block_colors.get(block.block_type, color_lesson)
             bars.append({
                 'block': block,
                 'offset': f'{raw_offset:.4f}',
@@ -2150,6 +2156,7 @@ def course_calendar(request):
         'bar_gap': bar_gap,
         'color_lesson': color_lesson,
         'color_internship': color_internship,
+        'color_seminar': color_seminar,
         'color_today': color_today,
     })
 
