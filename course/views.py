@@ -389,7 +389,7 @@ def schedule_block_create(request, course_pk):
 @login_required
 def schedule_block_edit(request, course_pk, block_public_id):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course)
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course)
     form = ScheduleBlockForm(request.POST or None, instance=block, course=course)
     if form.is_valid():
         form.save()
@@ -406,7 +406,7 @@ def schedule_block_edit(request, course_pk, block_public_id):
 @login_required
 def schedule_block_delete(request, course_pk, block_public_id):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course)
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course)
     if request.method == 'POST':
         name = block.name
         block.delete()
@@ -437,7 +437,7 @@ def course_delete(request, pk):
 @login_required
 def internship_calendar(request, course_pk, block_public_id):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
 
     block_start = block.start_date
     block_end = block.end_date
@@ -552,7 +552,7 @@ def internship_calendar(request, course_pk, block_public_id):
 @login_required
 def internship_assignment_create(request, course_pk, block_public_id):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     initial = {k: request.GET[k] for k in ('start_date', 'end_date', 'student', 'unit') if k in request.GET}
     from datetime import datetime as _dt
     def _parse_date(s):
@@ -590,7 +590,7 @@ def internship_assignment_create(request, course_pk, block_public_id):
 @login_required
 def internship_assignment_edit(request, course_pk, block_public_id, assignment_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     assignment = get_object_or_404(InternshipAssignment, pk=assignment_pk, schedule_block=block)
     previous_instructor_id = assignment.instructor_id
     full_pks, usage_map = _get_unit_capacity_info(block, exclude_assignment_pk=assignment.pk,
@@ -625,7 +625,7 @@ def internship_assignment_edit(request, course_pk, block_public_id, assignment_p
 @login_required
 def internship_assignment_delete(request, course_pk, block_public_id, assignment_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     assignment = get_object_or_404(InternshipAssignment, pk=assignment_pk, schedule_block=block)
     if request.method == 'POST':
         label = str(assignment)
@@ -648,7 +648,7 @@ def block_letter_create(request, course_pk, block_public_id):
     from services.roles import is_training_director, is_training_office
 
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course)
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course)
 
     if not (request.user.is_staff or is_training_director(request.user) or is_training_office(request.user)):
         raise PermissionDenied
@@ -712,7 +712,7 @@ def block_letter_generate(request, course_pk, block_public_id, letter_pk):
     logger = logging.getLogger(__name__)
 
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course)
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course)
     letter = get_object_or_404(BlockLetter, pk=letter_pk, schedule_block=block)
 
     if not (request.user.is_staff or is_training_director(request.user) or is_training_office(request.user)):
@@ -806,7 +806,7 @@ def block_letter_detail(request, course_pk, block_public_id, letter_pk):
     """Übersicht über einen Zuweisungsschreiben-Stapel."""
     from services.roles import is_training_director, is_training_office
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course)
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course)
     letter = get_object_or_404(BlockLetter, pk=letter_pk, schedule_block=block)
     items = letter.items.select_related('student__gender').order_by('student__last_name', 'student__first_name')
     return render(request, 'course/block_letter_detail.html', {
@@ -832,7 +832,7 @@ def block_letter_approve(request, course_pk, block_public_id, letter_pk):
     logger = logging.getLogger(__name__)
 
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course)
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course)
     letter = get_object_or_404(BlockLetter, pk=letter_pk, schedule_block=block)
 
     if not (request.user.is_staff or is_training_director(request.user)):
@@ -939,7 +939,7 @@ def _is_leitung_or_referat(user):
 def internship_plan_create(request, course_pk, block_public_id):
     from django.core.exceptions import PermissionDenied
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     if not _is_leitung_or_referat(request.user):
         raise PermissionDenied
 
@@ -996,7 +996,7 @@ def internship_plan_generate(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
 
     if not _is_leitung_or_referat(request.user):
@@ -1103,7 +1103,7 @@ def internship_plan_generate(request, course_pk, block_public_id, letter_pk):
 @login_required
 def internship_plan_detail(request, course_pk, block_public_id, letter_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
     items = letter.items.select_related('student__gender').order_by('student__last_name', 'student__first_name')
     return render(request, 'course/internship_plan_detail.html', {
@@ -1123,7 +1123,7 @@ def internship_plan_approve(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
 
     if not (request.user.is_staff or is_training_director(request.user)):
@@ -1248,7 +1248,7 @@ def internship_plan_approve(request, course_pk, block_public_id, letter_pk):
 def station_letter_create(request, course_pk, block_public_id):
     from django.core.exceptions import PermissionDenied
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     if not _is_leitung_or_referat(request.user):
         raise PermissionDenied
 
@@ -1310,7 +1310,7 @@ def station_letter_generate(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
 
     if not _is_leitung_or_referat(request.user):
@@ -1412,7 +1412,7 @@ def station_letter_generate(request, course_pk, block_public_id, letter_pk):
 @login_required
 def station_letter_detail(request, course_pk, block_public_id, letter_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
     items = (
         letter.items
@@ -1436,7 +1436,7 @@ def station_letter_approve(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
 
     if not (request.user.is_staff or is_training_director(request.user)):
@@ -1629,7 +1629,7 @@ def block_letter_item_regenerate(request, course_pk, block_public_id, letter_pk,
     from django.core.exceptions import PermissionDenied
 
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course)
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course)
     letter = get_object_or_404(BlockLetter, pk=letter_pk, schedule_block=block)
     item = get_object_or_404(BlockLetterItem, pk=item_pk, letter=letter)
 
@@ -1666,7 +1666,7 @@ def internship_plan_item_regenerate(request, course_pk, block_public_id, letter_
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
     item = get_object_or_404(InternshipPlanItem, pk=item_pk, letter=letter)
 
@@ -1780,7 +1780,7 @@ def station_letter_item_regenerate(request, course_pk, block_public_id, letter_p
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
     item = get_object_or_404(StationLetterItem, pk=item_pk, letter=letter)
 
@@ -2312,7 +2312,7 @@ def internship_suggestions(request, course_pk, block_public_id):
         raise PermissionDenied
 
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
+    block = get_object_or_404(ScheduleBlock, public_id=block_public_id, course=course, block_type='internship')
     student_pk = request.GET.get('student', '')
 
     from student.models import Student
@@ -2551,27 +2551,34 @@ def competence_target_delete(request, profile_pk, pk):
 # ── Seminar / Vortragsplanung ───────────────────────────────────────────────
 
 def _annotate_lecture_layout(lectures, grid_start_hour, hour_height_px=60):
-    """Setzt ``top_offset_px`` und ``height_px`` auf jedem Vortrag (in-place),
-    relativ zum Stundenraster (1 min = 1 px bei 60 px pro Stunde).
+    """Setzt ``top_offset_px``, ``height_px`` sowie ``local_date`` (lokaler
+    Kalendertag) und ``local_start``/``local_end`` (lokale datetimes) auf jedem
+    Vortrag in-place. Pixel-Berechnung in lokaler Zeit – die DB liefert UTC.
     """
+    from django.utils import timezone
     for lec in lectures:
+        start_local = timezone.localtime(lec.start_datetime)
+        end_local = timezone.localtime(lec.end_datetime)
+        lec.local_start = start_local
+        lec.local_end = end_local
+        lec.local_date = start_local.date()
         start_minutes_in_grid = (
-            (lec.start_datetime.hour - grid_start_hour) * 60 + lec.start_datetime.minute
+            (start_local.hour - grid_start_hour) * 60 + start_local.minute
         )
-        duration_minutes = int((lec.end_datetime - lec.start_datetime).total_seconds() // 60)
+        duration_minutes = int((end_local - start_local).total_seconds() // 60)
         lec.top_offset_px = max(0, start_minutes_in_grid * hour_height_px // 60)
         lec.height_px = max(20, duration_minutes * hour_height_px // 60)
 
 
 def _build_seminar_weeks(block, lectures):
     """Gruppiert die Wochentage des Blocks (Mo–Fr) in Kalenderwochen und ordnet
-    jedem Tag die zugehörigen Vorträge zu. Liefert eine Liste von Wochen, jede
-    Woche enthält die fünf Werktage mit ihren Lectures.
+    jedem Tag die zugehörigen Vorträge zu (basierend auf dem lokalen Kalendertag).
+    Setzt ``_annotate_lecture_layout`` voraus (für ``local_date``).
     """
     from collections import defaultdict
     by_date = defaultdict(list)
     for lec in lectures:
-        by_date[lec.start_datetime.date()].append(lec)
+        by_date[lec.local_date].append(lec)
 
     weeks = []
     cur = block.start_date
@@ -2585,7 +2592,7 @@ def _build_seminar_weeks(block, lectures):
             days.append({
                 'date': day,
                 'in_block': in_block,
-                'lectures': sorted(by_date.get(day, []), key=lambda l: l.start_datetime),
+                'lectures': sorted(by_date.get(day, []), key=lambda l: l.local_start),
             })
         weeks.append({
             'iso_week': week_start.isocalendar().week,
@@ -2599,15 +2606,17 @@ def _build_seminar_weeks(block, lectures):
 
 
 def _seminar_grid_bounds(lectures, default_start_hour=8, default_end_hour=18):
-    """Bestimmt die kleinste/größte Stunde, die im Stundenraster angezeigt wird."""
+    """Bestimmt die kleinste/größte Stunde, die im Stundenraster angezeigt wird –
+    in lokaler Zeit."""
+    from django.utils import timezone
     if not lectures:
         return default_start_hour, default_end_hour
-    min_h = min(l.start_datetime.hour for l in lectures)
-    max_h = max(
-        l.end_datetime.hour + (1 if l.end_datetime.minute else 0)
-        for l in lectures
-    )
-    return min(default_start_hour, min_h), max(default_end_hour, max_h)
+    min_h = min(timezone.localtime(l.start_datetime).hour for l in lectures)
+    max_h_values = []
+    for l in lectures:
+        end_local = timezone.localtime(l.end_datetime)
+        max_h_values.append(end_local.hour + (1 if end_local.minute else 0))
+    return min(default_start_hour, min_h), max(default_end_hour, max(max_h_values))
 
 
 @login_required
@@ -2704,14 +2713,74 @@ def lecture_edit(request, course_pk, block_public_id, lecture_public_id):
     })
 
 
+def _docx_set_cell_shading(cell, hex_color):
+    """Setzt die Hintergrundfarbe einer Tabellenzelle (z.B. '1F4E79')."""
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    tc_pr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:val'), 'clear')
+    shd.set(qn('w:color'), 'auto')
+    shd.set(qn('w:fill'), hex_color)
+    tc_pr.append(shd)
+
+
+def _docx_set_table_borders(table, hex_color='2C3E50', size_eighths='8'):
+    """Setzt einheitliche Rahmenlinien rund um alle Zellen einer Tabelle."""
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    tbl_pr = table._element.find(qn('w:tblPr'))
+    if tbl_pr is None:
+        tbl_pr = OxmlElement('w:tblPr')
+        table._element.insert(0, tbl_pr)
+    borders = OxmlElement('w:tblBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        b = OxmlElement(f'w:{edge}')
+        b.set(qn('w:val'), 'single')
+        b.set(qn('w:sz'), size_eighths)
+        b.set(qn('w:color'), hex_color)
+        borders.append(b)
+    tbl_pr.append(borders)
+
+
+def _floor_quarter(dt):
+    """Rundet ein datetime auf die vorherige volle Viertelstunde ab."""
+    return dt.replace(minute=(dt.minute // 15) * 15, second=0, microsecond=0)
+
+
+def _ceil_quarter(dt):
+    """Rundet ein datetime auf die nächste volle Viertelstunde auf."""
+    if dt.minute % 15 == 0 and dt.second == 0 and dt.microsecond == 0:
+        return dt.replace(microsecond=0)
+    floored = dt.replace(minute=(dt.minute // 15) * 15, second=0, microsecond=0)
+    return floored + timedelta(minutes=15)
+
+
 @login_required
 def seminar_plan_export(request, course_pk, block_public_id):
-    """Erzeugt einen Word-Export des kompletten Stundenplans eines Seminarblocks."""
+    """Erzeugt einen klassischen Wochen-Stundenplan im Word-Format (Schul-Optik):
+    pro Kalenderwoche eine Tabelle mit 15-Minuten-Raster links und Mo–Fr als
+    Spalten. Vorträge belegen mehrere Slots durch vertikales Cell-Merging.
+    """
+    from collections import defaultdict
+    from datetime import datetime as dt_, timedelta as td_
     from io import BytesIO
     from django.http import HttpResponse
+    from django.utils import timezone
     from docx import Document
-    from docx.shared import Cm, Pt
+    from docx.shared import Pt, Cm, RGBColor
     from docx.enum.section import WD_ORIENT
+    from docx.enum.table import WD_ALIGN_VERTICAL, WD_ROW_HEIGHT_RULE
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    HEADER_FILL      = '1F4E79'
+    TIME_COL_FILL    = 'D9E2F3'
+    HOUR_LINE_FILL   = 'C5D4EA'
+    CELL_CONFIRMED   = 'D5E8D4'
+    CELL_PENDING     = 'FFF2CC'
+    CELL_DECLINED    = 'F8CECC'
+    EMPTY_CELL_FILL  = 'FCFCFC'
+    BORDER_COLOR     = '2C3E50'
 
     course = get_object_or_404(Course, pk=course_pk)
     block = get_object_or_404(
@@ -2723,46 +2792,274 @@ def seminar_plan_export(request, course_pk, block_public_id):
     section = doc.sections[0]
     section.orientation = WD_ORIENT.LANDSCAPE
     section.page_width, section.page_height = section.page_height, section.page_width
+    section.left_margin = Cm(1.2)
+    section.right_margin = Cm(1.2)
+    section.top_margin = Cm(1.2)
+    section.bottom_margin = Cm(1.2)
 
-    title = doc.add_heading(f'Stundenplan: {block.name}', level=1)
-    doc.add_paragraph(
-        f'Kurs: {course.title}    •    Zeitraum: '
+    doc.add_heading(f'Stundenplan: {block.name}', level=1)
+    intro = doc.add_paragraph()
+    intro.add_run('Kurs: ').bold = True
+    intro.add_run(course.title)
+    intro.add_run('     •     ')
+    intro.add_run('Zeitraum: ').bold = True
+    intro.add_run(
         f'{block.start_date.strftime("%d.%m.%Y")} – {block.end_date.strftime("%d.%m.%Y")}'
     )
     if block.location:
-        doc.add_paragraph(f'Ort: {block.location}')
-    doc.add_paragraph()
+        intro.add_run('     •     ')
+        intro.add_run('Ort: ').bold = True
+        intro.add_run(block.location)
 
     if not lectures:
         doc.add_paragraph('Es sind keine Vorträge angelegt.')
     else:
-        table = doc.add_table(rows=1, cols=6)
-        table.style = 'Light Grid Accent 1'
-        hdr = table.rows[0].cells
-        for i, label in enumerate(['Datum', 'Zeit', 'Thema', 'Vortragender', 'Ort', 'Status']):
-            hdr[i].text = label
-            for run in hdr[i].paragraphs[0].runs:
-                run.bold = True
-
+        by_week = defaultdict(list)
         for lec in lectures:
-            row = table.add_row().cells
-            row[0].text = lec.start_datetime.strftime('%a, %d.%m.%Y')
-            row[1].text = (
-                f'{lec.start_datetime.strftime("%H:%M")}–{lec.end_datetime.strftime("%H:%M")}'
+            local_start = timezone.localtime(lec.start_datetime)
+            iso = local_start.isocalendar()
+            by_week[(iso.year, iso.week)].append((local_start, lec))
+
+        DUMMY = date(2000, 1, 3)  # ein Montag, irrelevant – nur zum Subtrahieren
+
+        for (iso_year, iso_week) in sorted(by_week.keys()):
+            entries = by_week[(iso_year, iso_week)]
+            first_local, _ = entries[0]
+            monday = (first_local - timedelta(days=first_local.weekday())).date()
+            week_dates = [monday + timedelta(days=i) for i in range(5)]
+
+            # ── Zeit-Bounds (gerundet auf Viertelstunden) ────────────────────
+            min_dt = None
+            max_dt = None
+            for local_start, lec in entries:
+                local_end = timezone.localtime(lec.end_datetime)
+                s_dt = dt_.combine(DUMMY, local_start.time())
+                e_dt = dt_.combine(DUMMY, local_end.time())
+                if min_dt is None or s_dt < min_dt:
+                    min_dt = s_dt
+                if max_dt is None or e_dt > max_dt:
+                    max_dt = e_dt
+            min_dt = _floor_quarter(min_dt)
+            max_dt = _ceil_quarter(max_dt)
+            total_minutes = int((max_dt - min_dt).total_seconds() // 60)
+            num_slots = total_minutes // 15
+
+            # ── Vorträge auf Slot-Indizes mappen ─────────────────────────────
+            # cell_map[(weekday, slot_idx)] = (lecture, span_in_slots)
+            cell_map = {}
+            covered = set()  # (weekday, slot_idx) für gemergte Folge-Zellen
+            for local_start, lec in entries:
+                local_end = timezone.localtime(lec.end_datetime)
+                lec_start_dt = _floor_quarter(dt_.combine(DUMMY, local_start.time()))
+                lec_end_dt   = _ceil_quarter(dt_.combine(DUMMY, local_end.time()))
+                slot_start = int((lec_start_dt - min_dt).total_seconds() // 60) // 15
+                span = int((lec_end_dt - lec_start_dt).total_seconds() // 60) // 15
+                wd = local_start.weekday()
+                cell_map[(wd, slot_start)] = (lec, max(1, span))
+                for k in range(1, max(1, span)):
+                    covered.add((wd, slot_start + k))
+
+            # ── Wochen-Überschrift ───────────────────────────────────────────
+            doc.add_paragraph()
+            wk_heading = doc.add_paragraph()
+            run = wk_heading.add_run(
+                f'KW {iso_week} – {monday.strftime("%d.%m.")} bis '
+                f'{week_dates[4].strftime("%d.%m.%Y")}'
             )
-            row[2].text = lec.topic + (f'\n{lec.description}' if lec.description else '')
-            row[3].text = f'{lec.speaker_name}\n<{lec.speaker_email}>'
-            row[4].text = lec.location or '–'
-            row[5].text = lec.get_status_display()
+            run.bold = True
+            run.font.size = Pt(13)
+
+            # ── Tabelle (Header + num_slots Slots) ───────────────────────────
+            table = doc.add_table(rows=1 + num_slots, cols=6)
+            table.autofit = False
+            _docx_set_table_borders(table, hex_color=BORDER_COLOR, size_eighths='8')
+
+            # Cell-Refs vor Mergen sammeln
+            data_cells = []
+            for r in range(1, 1 + num_slots):
+                data_cells.append([table.rows[r].cells[c] for c in range(6)])
+
+            # Header-Zeile (kompakt, exakte Höhe)
+            def _hdr_compact(p):
+                pf = p.paragraph_format
+                pf.space_before = Pt(0)
+                pf.space_after = Pt(0)
+                pf.line_spacing = 1.0
+
+            hdr_row = table.rows[0]
+            hdr_row.height = Cm(0.85)
+            hdr_row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+            hdr = hdr_row.cells
+            for c in hdr:
+                _docx_set_cell_shading(c, HEADER_FILL)
+                c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            hdr[0].text = ''
+            p_h0 = hdr[0].paragraphs[0]
+            p_h0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _hdr_compact(p_h0)
+            r_h0 = p_h0.add_run('Zeit')
+            r_h0.bold = True
+            r_h0.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            r_h0.font.size = Pt(9)
+
+            weekday_names = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
+            for i, name in enumerate(weekday_names, start=1):
+                cell = hdr[i]
+                cell.text = ''
+                p1 = cell.paragraphs[0]
+                p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _hdr_compact(p1)
+                r1 = p1.add_run(name)
+                r1.bold = True
+                r1.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                r1.font.size = Pt(9)
+                p2 = cell.add_paragraph()
+                p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _hdr_compact(p2)
+                r2 = p2.add_run(week_dates[i - 1].strftime('%d.%m.%Y'))
+                r2.font.size = Pt(7)
+                r2.font.color.rgb = RGBColor(0xDD, 0xE6, 0xF2)
+
+            # Spaltenbreiten
+            time_w = Cm(1.8)
+            day_w = Cm(4.9)
+            for row in table.rows:
+                row.cells[0].width = time_w
+                for i in range(1, 6):
+                    row.cells[i].width = day_w
+
+            # ── Zeitspalte + leere Zellen-Hintergrundfarbe ───────────────────
+            for slot_idx in range(num_slots):
+                slot_dt = min_dt + td_(minutes=15 * slot_idx)
+                slot_time = slot_dt.time()
+                cell_time = data_cells[slot_idx][0]
+                _docx_set_cell_shading(cell_time, TIME_COL_FILL)
+                cell_time.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+                cell_time.text = ''
+                p = cell_time.paragraphs[0]
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                pf = p.paragraph_format
+                pf.space_before = Pt(0)
+                pf.space_after = Pt(0)
+                pf.line_spacing = 1.0
+                if slot_time.minute == 0:
+                    # volle Stunde: fett
+                    r = p.add_run(slot_time.strftime('%H:%M'))
+                    r.bold = True
+                    r.font.size = Pt(8)
+                    r.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+                else:
+                    # Viertelstunde: klein und dezent
+                    r = p.add_run(slot_time.strftime(':%M'))
+                    r.font.size = Pt(6)
+                    r.font.color.rgb = RGBColor(0x6C, 0x75, 0x7D)
+
+                # Reihen-Höhe exakt fixieren – sonst streckt Word die Zeile am Inhalt
+                _row = table.rows[1 + slot_idx]
+                _row.height = Cm(0.42)
+                _row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+                # Tagesspalten initial: leerer Hintergrund je nach Slot
+                for d in range(5):
+                    cell = data_cells[slot_idx][1 + d]
+                    cell.text = ''
+                    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+                    if (d, slot_idx) in covered or (d, slot_idx) in cell_map:
+                        continue  # wird gleich mit Vortrag gefüllt / gemerged
+                    # Volle-Stunden-Linie subtil hervorheben
+                    if slot_time.minute == 0:
+                        _docx_set_cell_shading(cell, HOUR_LINE_FILL)
+                    else:
+                        _docx_set_cell_shading(cell, EMPTY_CELL_FILL)
+
+            # ── Vortragsinhalte schreiben ────────────────────────────────────
+            def _compact(p):
+                pf = p.paragraph_format
+                pf.space_before = Pt(0)
+                pf.space_after = Pt(0)
+                pf.line_spacing = 1.0
+
+            for (wd, slot_idx), (lec, span) in cell_map.items():
+                cell = data_cells[slot_idx][1 + wd]
+                if lec.is_confirmed:
+                    _docx_set_cell_shading(cell, CELL_CONFIRMED)
+                elif lec.is_declined:
+                    _docx_set_cell_shading(cell, CELL_DECLINED)
+                else:
+                    _docx_set_cell_shading(cell, CELL_PENDING)
+
+                cell.text = ''
+                cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+                local_start = timezone.localtime(lec.start_datetime)
+                local_end   = timezone.localtime(lec.end_datetime)
+
+                p_time = cell.paragraphs[0]
+                p_time.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _compact(p_time)
+                r_time = p_time.add_run(
+                    f'{local_start.strftime("%H:%M")}–{local_end.strftime("%H:%M")}'
+                )
+                r_time.font.size = Pt(7)
+                r_time.font.color.rgb = RGBColor(0x4A, 0x5C, 0x6F)
+
+                p_topic = cell.add_paragraph()
+                p_topic.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _compact(p_topic)
+                r_topic = p_topic.add_run(lec.topic)
+                r_topic.bold = True
+                r_topic.font.size = Pt(8)
+
+                p_speaker = cell.add_paragraph()
+                p_speaker.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _compact(p_speaker)
+                r_speaker = p_speaker.add_run(lec.speaker_name)
+                r_speaker.italic = True
+                r_speaker.font.size = Pt(7)
+
+                if lec.location:
+                    p_loc = cell.add_paragraph()
+                    p_loc.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    _compact(p_loc)
+                    r_loc = p_loc.add_run(lec.location)
+                    r_loc.font.size = Pt(7)
+                    r_loc.font.color.rgb = RGBColor(0x4A, 0x5C, 0x6F)
+
+                if lec.is_declined:
+                    p_status = cell.add_paragraph()
+                    p_status.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    _compact(p_status)
+                    r_status = p_status.add_run('— abgelehnt —')
+                    r_status.font.size = Pt(7)
+                    r_status.font.color.rgb = RGBColor(0xB0, 0x00, 0x30)
+                elif lec.is_pending:
+                    p_status = cell.add_paragraph()
+                    p_status.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    _compact(p_status)
+                    r_status = p_status.add_run('ausstehend')
+                    r_status.font.size = Pt(7)
+                    r_status.font.color.rgb = RGBColor(0x9C, 0x6F, 0x00)
+
+            # ── Vertikales Mergen für Vorträge mit span > 1 ──────────────────
+            for (wd, slot_idx), (lec, span) in cell_map.items():
+                if span <= 1:
+                    continue
+                top = data_cells[slot_idx][1 + wd]
+                for k in range(1, span):
+                    if slot_idx + k >= num_slots:
+                        break
+                    top.merge(data_cells[slot_idx + k][1 + wd])
 
         doc.add_paragraph()
-        doc.add_paragraph(
-            f'Stand: {date.today().strftime("%d.%m.%Y")}    •    '
-            f'Anzahl Vorträge: {len(lectures)}    •    '
-            f'Bestätigt: {sum(1 for l in lectures if l.is_confirmed)}    •    '
-            f'Ausstehend: {sum(1 for l in lectures if l.is_pending)}    •    '
+        footer = doc.add_paragraph()
+        footer_run = footer.add_run(
+            f'Stand: {date.today().strftime("%d.%m.%Y")}     •     '
+            f'Vorträge gesamt: {len(lectures)}     •     '
+            f'Bestätigt: {sum(1 for l in lectures if l.is_confirmed)}     •     '
+            f'Ausstehend: {sum(1 for l in lectures if l.is_pending)}     •     '
             f'Abgelehnt: {sum(1 for l in lectures if l.is_declined)}'
         )
+        footer_run.font.size = Pt(9)
+        footer_run.font.color.rgb = RGBColor(0x6c, 0x75, 0x7d)
 
     buf = BytesIO()
     doc.save(buf)

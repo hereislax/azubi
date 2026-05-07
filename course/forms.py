@@ -232,11 +232,12 @@ class SeminarLectureForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        from django.utils import timezone
         self._block = kwargs.pop('block', None)
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            local_start = self.instance.start_datetime
-            local_end = self.instance.end_datetime
+            local_start = timezone.localtime(self.instance.start_datetime)
+            local_end = timezone.localtime(self.instance.end_datetime)
             self.fields['lecture_date'].initial = local_start.date()
             self.fields['start_time'].initial = local_start.time().replace(microsecond=0)
             self.fields['end_time'].initial = local_end.time().replace(microsecond=0)

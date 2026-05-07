@@ -205,17 +205,14 @@
             </div>
             {% endfor %}
 
-            {# Vorträge des Tages absolut positionieren #}
             {% for lec in day.lectures %}
-            {% with start_min=lec.start_datetime|date:"G"|add:0 start_minutes=lec.start_datetime|date:"i"|add:0 %}
-            {% endwith %}
             <a href="{% url 'course:lecture_edit' course.pk schedule_block.public_id lec.public_id %}"
                class="seminar-lecture status-{{ lec.status }}"
                style="top: {{ lec.top_offset_px }}px; height: {{ lec.height_px }}px;"
-               title="{{ lec.topic }} – {{ lec.speaker_name }} ({{ lec.start_datetime|date:'H:i' }}–{{ lec.end_datetime|date:'H:i' }})">
+               title="{{ lec.topic }} – {{ lec.speaker_name }} ({{ lec.local_start|date:'H:i' }}–{{ lec.local_end|date:'H:i' }})">
                 <div class="topic">{{ lec.topic }}</div>
                 <div class="meta">
-                    {{ lec.start_datetime|date:"H:i" }}–{{ lec.end_datetime|date:"H:i" }} &middot; {{ lec.speaker_name }}
+                    {{ lec.local_start|date:"H:i" }}–{{ lec.local_end|date:"H:i" }} &middot; {{ lec.speaker_name }}
                 </div>
                 {% if lec.location %}
                 <div class="meta"><i class="bi bi-geo-alt"></i> {{ lec.location }}</div>

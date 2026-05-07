@@ -18,7 +18,7 @@ class LectureDeclineForm(forms.Form):
     decline_reason = forms.CharField(
         label='Begründung (optional)',
         required=False,
-        widget=forms.Textarea(attrs={'rows': 3, 'class': 'kern-form-input__input'}),
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
     )
 
 
