@@ -17,14 +17,16 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 
 from student.models import Student
-from .forms import CourseForm, ScheduleBlockForm, InternshipAssignmentForm
+from .forms import CourseForm, ScheduleBlockForm, InternshipAssignmentForm, SeminarLectureForm
 from .models import (
     Course, ScheduleBlock, InternshipAssignment,
     BlockLetter, BlockLetterItem, BlockLetterTemplate,
     InternshipPlanLetter, InternshipPlanItem, InternshipPlanTemplate,
     StationLetter, StationLetterItem, StationLetterTemplate,
+    SeminarLecture,
     ASSIGNMENT_STATUS_PENDING,
     BLOCK_LETTER_STATUS_PENDING, BLOCK_LETTER_STATUS_SENT,
+    LECTURE_STATUS_PENDING, LECTURE_STATUS_CONFIRMED, LECTURE_STATUS_DECLINED,
     pick_active_letter_template,
 )
 
@@ -435,7 +437,7 @@ def course_delete(request, pk):
 @login_required
 def internship_calendar(request, course_pk, block_public_id):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
 
     block_start = block.start_date
     block_end = block.end_date
@@ -550,7 +552,7 @@ def internship_calendar(request, course_pk, block_public_id):
 @login_required
 def internship_assignment_create(request, course_pk, block_public_id):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     initial = {k: request.GET[k] for k in ('start_date', 'end_date', 'student', 'unit') if k in request.GET}
     from datetime import datetime as _dt
     def _parse_date(s):
@@ -588,7 +590,7 @@ def internship_assignment_create(request, course_pk, block_public_id):
 @login_required
 def internship_assignment_edit(request, course_pk, block_public_id, assignment_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     assignment = get_object_or_404(InternshipAssignment, pk=assignment_pk, schedule_block=block)
     previous_instructor_id = assignment.instructor_id
     full_pks, usage_map = _get_unit_capacity_info(block, exclude_assignment_pk=assignment.pk,
@@ -623,7 +625,7 @@ def internship_assignment_edit(request, course_pk, block_public_id, assignment_p
 @login_required
 def internship_assignment_delete(request, course_pk, block_public_id, assignment_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     assignment = get_object_or_404(InternshipAssignment, pk=assignment_pk, schedule_block=block)
     if request.method == 'POST':
         label = str(assignment)
@@ -937,7 +939,7 @@ def _is_leitung_or_referat(user):
 def internship_plan_create(request, course_pk, block_public_id):
     from django.core.exceptions import PermissionDenied
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     if not _is_leitung_or_referat(request.user):
         raise PermissionDenied
 
@@ -994,7 +996,7 @@ def internship_plan_generate(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
 
     if not _is_leitung_or_referat(request.user):
@@ -1101,7 +1103,7 @@ def internship_plan_generate(request, course_pk, block_public_id, letter_pk):
 @login_required
 def internship_plan_detail(request, course_pk, block_public_id, letter_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
     items = letter.items.select_related('student__gender').order_by('student__last_name', 'student__first_name')
     return render(request, 'course/internship_plan_detail.html', {
@@ -1121,7 +1123,7 @@ def internship_plan_approve(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
 
     if not (request.user.is_staff or is_training_director(request.user)):
@@ -1246,7 +1248,7 @@ def internship_plan_approve(request, course_pk, block_public_id, letter_pk):
 def station_letter_create(request, course_pk, block_public_id):
     from django.core.exceptions import PermissionDenied
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     if not _is_leitung_or_referat(request.user):
         raise PermissionDenied
 
@@ -1308,7 +1310,7 @@ def station_letter_generate(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
 
     if not _is_leitung_or_referat(request.user):
@@ -1410,7 +1412,7 @@ def station_letter_generate(request, course_pk, block_public_id, letter_pk):
 @login_required
 def station_letter_detail(request, course_pk, block_public_id, letter_pk):
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
     items = (
         letter.items
@@ -1434,7 +1436,7 @@ def station_letter_approve(request, course_pk, block_public_id, letter_pk):
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
 
     if not (request.user.is_staff or is_training_director(request.user)):
@@ -1664,7 +1666,7 @@ def internship_plan_item_regenerate(request, course_pk, block_public_id, letter_
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(InternshipPlanLetter, pk=letter_pk, schedule_block=block)
     item = get_object_or_404(InternshipPlanItem, pk=item_pk, letter=letter)
 
@@ -1778,7 +1780,7 @@ def station_letter_item_regenerate(request, course_pk, block_public_id, letter_p
 
     logger = logging.getLogger(__name__)
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     letter = get_object_or_404(StationLetter, pk=letter_pk, schedule_block=block)
     item = get_object_or_404(StationLetterItem, pk=item_pk, letter=letter)
 
@@ -1926,7 +1928,7 @@ def capacity_planning(request):
 
     # Alle Einsätze in Praktikumsblöcken, die in den Zeitraum fallen
     assignments_qs = InternshipAssignment.objects.filter(
-        schedule_block__is_internship=True,
+        schedule_block__block_type='internship',
         start_date__lte=period_end,
         end_date__gte=period_start,
     ).select_related('unit')
@@ -2310,7 +2312,7 @@ def internship_suggestions(request, course_pk, block_public_id):
         raise PermissionDenied
 
     course = get_object_or_404(Course, pk=course_pk)
-    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, is_internship=True)
+    block = get_object_or_404(ScheduleBlock, pk=block_pk, course=course, block_type='internship')
     student_pk = request.GET.get('student', '')
 
     from student.models import Student
@@ -2543,4 +2545,256 @@ def competence_target_delete(request, profile_pk, pk):
         return redirect('course:job_profile_config', pk=profile.pk)
     return render(request, 'course/target_confirm_delete.html', {
         'profile': profile, 'target': target,
+    })
+
+
+# ── Seminar / Vortragsplanung ───────────────────────────────────────────────
+
+def _annotate_lecture_layout(lectures, grid_start_hour, hour_height_px=60):
+    """Setzt ``top_offset_px`` und ``height_px`` auf jedem Vortrag (in-place),
+    relativ zum Stundenraster (1 min = 1 px bei 60 px pro Stunde).
+    """
+    for lec in lectures:
+        start_minutes_in_grid = (
+            (lec.start_datetime.hour - grid_start_hour) * 60 + lec.start_datetime.minute
+        )
+        duration_minutes = int((lec.end_datetime - lec.start_datetime).total_seconds() // 60)
+        lec.top_offset_px = max(0, start_minutes_in_grid * hour_height_px // 60)
+        lec.height_px = max(20, duration_minutes * hour_height_px // 60)
+
+
+def _build_seminar_weeks(block, lectures):
+    """Gruppiert die Wochentage des Blocks (Mo–Fr) in Kalenderwochen und ordnet
+    jedem Tag die zugehörigen Vorträge zu. Liefert eine Liste von Wochen, jede
+    Woche enthält die fünf Werktage mit ihren Lectures.
+    """
+    from collections import defaultdict
+    by_date = defaultdict(list)
+    for lec in lectures:
+        by_date[lec.start_datetime.date()].append(lec)
+
+    weeks = []
+    cur = block.start_date
+    end = block.end_date
+    week_start = cur - timedelta(days=cur.weekday())
+    while week_start <= end:
+        days = []
+        for offset in range(5):  # Mo-Fr
+            day = week_start + timedelta(days=offset)
+            in_block = block.start_date <= day <= end
+            days.append({
+                'date': day,
+                'in_block': in_block,
+                'lectures': sorted(by_date.get(day, []), key=lambda l: l.start_datetime),
+            })
+        weeks.append({
+            'iso_week': week_start.isocalendar().week,
+            'iso_year': week_start.isocalendar().year,
+            'monday': week_start,
+            'friday': week_start + timedelta(days=4),
+            'days': days,
+        })
+        week_start += timedelta(days=7)
+    return weeks
+
+
+def _seminar_grid_bounds(lectures, default_start_hour=8, default_end_hour=18):
+    """Bestimmt die kleinste/größte Stunde, die im Stundenraster angezeigt wird."""
+    if not lectures:
+        return default_start_hour, default_end_hour
+    min_h = min(l.start_datetime.hour for l in lectures)
+    max_h = max(
+        l.end_datetime.hour + (1 if l.end_datetime.minute else 0)
+        for l in lectures
+    )
+    return min(default_start_hour, min_h), max(default_end_hour, max_h)
+
+
+@login_required
+def seminar_calendar(request, course_pk, block_public_id):
+    course = get_object_or_404(Course, pk=course_pk)
+    block = get_object_or_404(
+        ScheduleBlock, public_id=block_public_id, course=course, block_type='seminar'
+    )
+    lectures = list(block.lectures.all().order_by('start_datetime'))
+    start_hour, end_hour = _seminar_grid_bounds(lectures)
+    _annotate_lecture_layout(lectures, start_hour)
+    weeks = _build_seminar_weeks(block, lectures)
+    hours = list(range(start_hour, end_hour + 1))
+    return render(request, 'course/seminar_calendar.html', {
+        'course': course,
+        'schedule_block': block,
+        'weeks': weeks,
+        'lectures': lectures,
+        'hours': hours,
+        'grid_start_hour': start_hour,
+        'grid_end_hour': end_hour,
+    })
+
+
+@login_required
+def lecture_create(request, course_pk, block_public_id):
+    course = get_object_or_404(Course, pk=course_pk)
+    block = get_object_or_404(
+        ScheduleBlock, public_id=block_public_id, course=course, block_type='seminar'
+    )
+    initial = {}
+    prefill_date = request.GET.get('date')
+    if prefill_date:
+        initial['lecture_date'] = prefill_date
+    prefill_time = request.GET.get('time')
+    if prefill_time:
+        initial['start_time'] = prefill_time
+    form = SeminarLectureForm(request.POST or None, block=block, initial=initial)
+    if form.is_valid():
+        lecture = form.save(commit=False)
+        lecture.created_by = request.user
+        lecture.save()
+        from services.notifications import notify_lecture_request
+        notify_lecture_request(request, lecture)
+        messages.success(
+            request,
+            f'Vortrag „{lecture.topic}" wurde angelegt. Bestätigungs-E-Mail wurde an '
+            f'{lecture.speaker_email} gesendet.'
+        )
+        return redirect('course:seminar_calendar', course_pk=course.pk,
+                        block_public_id=block.public_id)
+    return render(request, 'course/lecture_form.html', {
+        'form': form,
+        'course': course,
+        'schedule_block': block,
+        'action': 'Anlegen',
+    })
+
+
+@login_required
+def lecture_edit(request, course_pk, block_public_id, lecture_public_id):
+    course = get_object_or_404(Course, pk=course_pk)
+    block = get_object_or_404(
+        ScheduleBlock, public_id=block_public_id, course=course, block_type='seminar'
+    )
+    lecture = get_object_or_404(SeminarLecture, public_id=lecture_public_id, schedule_block=block)
+    old_start = lecture.start_datetime
+    old_end = lecture.end_datetime
+    form = SeminarLectureForm(request.POST or None, instance=lecture, block=block)
+    if form.is_valid():
+        new_lecture = form.save(commit=False)
+        relevant_changed = (
+            new_lecture.start_datetime != old_start
+            or new_lecture.end_datetime != old_end
+            or new_lecture.location != lecture.location
+            or new_lecture.topic != lecture.topic
+        )
+        if relevant_changed and lecture.status != LECTURE_STATUS_DECLINED:
+            new_lecture.notification_sequence = lecture.notification_sequence + 1
+        new_lecture.save()
+        if relevant_changed and lecture.status != LECTURE_STATUS_DECLINED:
+            from services.notifications import notify_lecture_update
+            notify_lecture_update(request, new_lecture)
+            messages.info(request, 'Aktualisierte Termin-Einladung wurde an den Vortragenden gesendet.')
+        messages.success(request, f'Vortrag „{new_lecture.topic}" wurde gespeichert.')
+        return redirect('course:seminar_calendar', course_pk=course.pk,
+                        block_public_id=block.public_id)
+    return render(request, 'course/lecture_form.html', {
+        'form': form,
+        'course': course,
+        'schedule_block': block,
+        'lecture': lecture,
+        'action': 'Bearbeiten',
+    })
+
+
+@login_required
+def seminar_plan_export(request, course_pk, block_public_id):
+    """Erzeugt einen Word-Export des kompletten Stundenplans eines Seminarblocks."""
+    from io import BytesIO
+    from django.http import HttpResponse
+    from docx import Document
+    from docx.shared import Cm, Pt
+    from docx.enum.section import WD_ORIENT
+
+    course = get_object_or_404(Course, pk=course_pk)
+    block = get_object_or_404(
+        ScheduleBlock, public_id=block_public_id, course=course, block_type='seminar'
+    )
+    lectures = list(block.lectures.all().order_by('start_datetime'))
+
+    doc = Document()
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    section.page_width, section.page_height = section.page_height, section.page_width
+
+    title = doc.add_heading(f'Stundenplan: {block.name}', level=1)
+    doc.add_paragraph(
+        f'Kurs: {course.title}    •    Zeitraum: '
+        f'{block.start_date.strftime("%d.%m.%Y")} – {block.end_date.strftime("%d.%m.%Y")}'
+    )
+    if block.location:
+        doc.add_paragraph(f'Ort: {block.location}')
+    doc.add_paragraph()
+
+    if not lectures:
+        doc.add_paragraph('Es sind keine Vorträge angelegt.')
+    else:
+        table = doc.add_table(rows=1, cols=6)
+        table.style = 'Light Grid Accent 1'
+        hdr = table.rows[0].cells
+        for i, label in enumerate(['Datum', 'Zeit', 'Thema', 'Vortragender', 'Ort', 'Status']):
+            hdr[i].text = label
+            for run in hdr[i].paragraphs[0].runs:
+                run.bold = True
+
+        for lec in lectures:
+            row = table.add_row().cells
+            row[0].text = lec.start_datetime.strftime('%a, %d.%m.%Y')
+            row[1].text = (
+                f'{lec.start_datetime.strftime("%H:%M")}–{lec.end_datetime.strftime("%H:%M")}'
+            )
+            row[2].text = lec.topic + (f'\n{lec.description}' if lec.description else '')
+            row[3].text = f'{lec.speaker_name}\n<{lec.speaker_email}>'
+            row[4].text = lec.location or '–'
+            row[5].text = lec.get_status_display()
+
+        doc.add_paragraph()
+        doc.add_paragraph(
+            f'Stand: {date.today().strftime("%d.%m.%Y")}    •    '
+            f'Anzahl Vorträge: {len(lectures)}    •    '
+            f'Bestätigt: {sum(1 for l in lectures if l.is_confirmed)}    •    '
+            f'Ausstehend: {sum(1 for l in lectures if l.is_pending)}    •    '
+            f'Abgelehnt: {sum(1 for l in lectures if l.is_declined)}'
+        )
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    filename = f'Stundenplan_{block.name}_{date.today().strftime("%Y%m%d")}.docx'.replace(' ', '_')
+    response = HttpResponse(
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def lecture_delete(request, course_pk, block_public_id, lecture_public_id):
+    course = get_object_or_404(Course, pk=course_pk)
+    block = get_object_or_404(
+        ScheduleBlock, public_id=block_public_id, course=course, block_type='seminar'
+    )
+    lecture = get_object_or_404(SeminarLecture, public_id=lecture_public_id, schedule_block=block)
+    if request.method == 'POST':
+        topic = lecture.topic
+        if lecture.status != LECTURE_STATUS_DECLINED:
+            from services.notifications import notify_lecture_cancelled
+            notify_lecture_cancelled(request, lecture)
+        lecture.delete()
+        messages.success(request, f'Vortrag „{topic}" wurde gelöscht.')
+        return redirect('course:seminar_calendar', course_pk=course.pk,
+                        block_public_id=block.public_id)
+    return render(request, 'course/lecture_confirm_delete.html', {
+        'course': course,
+        'schedule_block': block,
+        'lecture': lecture,
     })

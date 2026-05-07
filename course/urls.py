@@ -54,4 +54,10 @@ urlpatterns = [
     path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/stationsschreiben/<int:letter_pk>/generieren/', views.station_letter_generate, name='station_letter_generate'),
     path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/stationsschreiben/<int:letter_pk>/freigeben/', views.station_letter_approve, name='station_letter_approve'),
     path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/stationsschreiben/<int:letter_pk>/eintrag/<int:item_pk>/neu-erstellen/', views.station_letter_item_regenerate, name='station_letter_item_regenerate'),
+    # Seminar / Vortragsplanung
+    path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/seminar/', views.seminar_calendar, name='seminar_calendar'),
+    path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/seminar/vortrag/neu/', views.lecture_create, name='lecture_create'),
+    path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/seminar/vortrag/<uuid:lecture_public_id>/bearbeiten/', views.lecture_edit, name='lecture_edit'),
+    path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/seminar/vortrag/<uuid:lecture_public_id>/entfernen/', views.lecture_delete, name='lecture_delete'),
+    path('<str:course_pk>/ablaufplan/<uuid:block_public_id>/seminar/export/', views.seminar_plan_export, name='seminar_plan_export'),
 ]

@@ -270,6 +270,16 @@ def create_schedule_block_id():
     return 'block-' + token_hex(4)
 
 
+BLOCK_TYPE_NORMAL = 'normal'
+BLOCK_TYPE_INTERNSHIP = 'internship'
+BLOCK_TYPE_SEMINAR = 'seminar'
+BLOCK_TYPE_CHOICES = [
+    (BLOCK_TYPE_NORMAL, 'Theoriephase'),
+    (BLOCK_TYPE_INTERNSHIP, 'Praktikum'),
+    (BLOCK_TYPE_SEMINAR, 'Seminar'),
+]
+
+
 class ScheduleBlock(models.Model):
     """Block im Ablaufplan"""
     # id = BigAutoField (Django-Default). public_id (UUID) wird in URLs verwendet.
@@ -298,7 +308,20 @@ class ScheduleBlock(models.Model):
     )
     start_date = models.DateField(verbose_name="Beginn")
     end_date = models.DateField(verbose_name="Ende")
-    is_internship = models.BooleanField(default=False, verbose_name="Ist Praktikum")
+    block_type = models.CharField(
+        max_length=20,
+        choices=BLOCK_TYPE_CHOICES,
+        default=BLOCK_TYPE_NORMAL,
+        verbose_name="Blocktyp",
+    )
+
+    @property
+    def is_internship(self) -> bool:
+        return self.block_type == BLOCK_TYPE_INTERNSHIP
+
+    @property
+    def is_seminar(self) -> bool:
+        return self.block_type == BLOCK_TYPE_SEMINAR
 
     def __str__(self):
         return f"{self.name} ({self.start_date} – {self.end_date})"
@@ -913,3 +936,85 @@ class CourseChecklistItem(models.Model):
         verbose_name = 'Kurs-Checklisten-Punkt'
         verbose_name_plural = 'Kurs-Checklisten-Punkte'
         ordering = ['checklist', 'order', 'text']
+
+
+LECTURE_STATUS_PENDING = 'pending'
+LECTURE_STATUS_CONFIRMED = 'confirmed'
+LECTURE_STATUS_DECLINED = 'declined'
+LECTURE_STATUS_CHOICES = [
+    (LECTURE_STATUS_PENDING, 'Bestätigung ausstehend'),
+    (LECTURE_STATUS_CONFIRMED, 'Bestätigt'),
+    (LECTURE_STATUS_DECLINED, 'Abgelehnt'),
+]
+
+
+class SeminarLecture(models.Model):
+    """Einzelner Vortrag innerhalb eines Seminarblocks."""
+    public_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+        verbose_name='Öffentliche ID',
+    )
+    schedule_block = models.ForeignKey(
+        ScheduleBlock,
+        on_delete=models.CASCADE,
+        related_name='lectures',
+        verbose_name='Seminarblock',
+    )
+    topic = models.CharField(max_length=200, verbose_name='Thema')
+    description = models.TextField(blank=True, verbose_name='Inhalt')
+    location = models.CharField(max_length=200, blank=True, verbose_name='Ort')
+    start_datetime = models.DateTimeField(verbose_name='Beginn')
+    end_datetime = models.DateTimeField(verbose_name='Ende')
+    speaker_name = models.CharField(max_length=150, verbose_name='Vortragender')
+    speaker_email = models.EmailField(verbose_name='E-Mail Vortragender')
+    status = models.CharField(
+        max_length=20,
+        choices=LECTURE_STATUS_CHOICES,
+        default=LECTURE_STATUS_PENDING,
+        verbose_name='Status',
+    )
+    confirmation_token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+        verbose_name='Bestätigungs-Token',
+    )
+    decline_reason = models.TextField(blank=True, verbose_name='Ablehnungsgrund')
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name='Anfrage gesendet')
+    responded_at = models.DateTimeField(null=True, blank=True, verbose_name='Antwort erhalten')
+    reminder_sent_at = models.DateTimeField(null=True, blank=True, verbose_name='Erinnerung gesendet')
+    notification_sequence = models.PositiveIntegerField(default=0, verbose_name='iCal-Sequenz')
+    created_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_lectures',
+        verbose_name='Erstellt von',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Erstellt am')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Aktualisiert am')
+
+    def __str__(self):
+        return f'{self.topic} – {self.speaker_name} ({self.start_datetime:%d.%m.%Y %H:%M})'
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == LECTURE_STATUS_PENDING
+
+    @property
+    def is_confirmed(self) -> bool:
+        return self.status == LECTURE_STATUS_CONFIRMED
+
+    @property
+    def is_declined(self) -> bool:
+        return self.status == LECTURE_STATUS_DECLINED
+
+    class Meta:
+        verbose_name = 'Vortrag'
+        verbose_name_plural = 'Vorträge'
+        ordering = ['start_datetime']

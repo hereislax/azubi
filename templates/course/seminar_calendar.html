@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Stundenplan: {{ schedule_block.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course:course_list' %}">Kurse</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course:course_detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item active">{{ schedule_block.name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2>
+        <i class="bi bi-calendar-week me-1"></i> {{ schedule_block.name }}
+        <small class="text-muted ms-2 fs-6">
+            {{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}
+        </small>
+    </h2>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'course:lecture_create' course.pk schedule_block.public_id %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Vortrag hinzufügen
+        </a>
+        <a href="{% url 'course:seminar_plan_export' course.pk schedule_block.public_id %}"
+           class="btn btn-outline-secondary btn-sm" title="Stundenplan als Word-Dokument herunterladen">
+            <i class="bi bi-file-earmark-word me-1"></i> Word-Export
+        </a>
+    </div>
+</div>
+
+<div class="d-flex gap-2 small mb-3">
+    <span class="badge text-bg-warning"><i class="bi bi-hourglass-split me-1"></i> Bestätigung ausstehend</span>
+    <span class="badge text-bg-success"><i class="bi bi-check-circle me-1"></i> Bestätigt</span>
+    <span class="badge text-bg-danger"><i class="bi bi-x-circle me-1"></i> Abgelehnt</span>
+</div>
+
+<style>
+    .seminar-week {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        background: #fff;
+    }
+    .seminar-week-header {
+        background: #f8f9fa;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    .seminar-grid {
+        display: grid;
+        grid-template-columns: 60px repeat(5, 1fr);
+    }
+    .seminar-grid-hcol-head {
+        background: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.5rem 0.25rem;
+    }
+    .seminar-grid-day-head {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-right: 1px solid #ececec;
+        padding: 0.5rem 0.25rem;
+        text-align: center;
+        font-size: 0.85rem;
+    }
+    .seminar-grid-day-head:last-child { border-right: none; }
+    .seminar-grid-day-head.outside { color: #adb5bd; background: #fcfcfc; }
+    .seminar-grid-day-head .weekday { font-weight: 600; }
+    .seminar-grid-day-head .date { color: #6c757d; font-size: 0.75rem; }
+
+    .seminar-grid-time-col {
+        position: relative;
+        border-right: 1px solid #dee2e6;
+        background: #fafbfc;
+    }
+    .seminar-grid-day-col {
+        position: relative;
+        border-right: 1px solid #ececec;
+        background: #fff;
+    }
+    .seminar-grid-day-col:last-child { border-right: none; }
+    .seminar-grid-day-col.outside {
+        background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f0f0f0 6px, #f0f0f0 12px);
+    }
+    .seminar-hour-row {
+        height: 60px;
+        border-bottom: 1px solid #f0f0f0;
+        position: relative;
+    }
+    .seminar-time-label {
+        position: absolute;
+        top: -8px;
+        right: 4px;
+        font-size: 0.7rem;
+        color: #6c757d;
+        background: #fafbfc;
+        padding: 0 2px;
+    }
+    .seminar-add-link {
+        position: absolute;
+        inset: 0;
+        text-decoration: none;
+        color: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        transition: background 0.15s, color 0.15s;
+    }
+    .seminar-add-link:hover {
+        background: rgba(13, 110, 253, 0.04);
+        color: #0d6efd;
+    }
+    .seminar-lecture {
+        position: absolute;
+        left: 2px;
+        right: 2px;
+        border-radius: 4px;
+        padding: 4px 6px;
+        font-size: 0.72rem;
+        line-height: 1.15;
+        overflow: hidden;
+        cursor: pointer;
+        text-decoration: none;
+        color: #212529;
+        z-index: 2;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .seminar-lecture:hover {
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        color: #212529;
+    }
+    .seminar-lecture .topic {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .seminar-lecture .meta {
+        font-size: 0.66rem;
+        opacity: 0.85;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .seminar-lecture.status-pending {
+        background: #fff3cd; border-left: 4px solid #ffc107;
+    }
+    .seminar-lecture.status-confirmed {
+        background: #d1e7dd; border-left: 4px solid #198754;
+    }
+    .seminar-lecture.status-declined {
+        background: #f8d7da; border-left: 4px solid #dc3545;
+        text-decoration: line-through;
+    }
+</style>
+
+{% if not weeks %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-1"></i>
+    Noch keine Vorträge angelegt.
+    <a href="{% url 'course:lecture_create' course.pk schedule_block.public_id %}">Jetzt ersten Vortrag anlegen</a>.
+</div>
+{% endif %}
+
+{% for week in weeks %}
+<div class="seminar-week">
+    <div class="seminar-week-header">
+        KW&nbsp;{{ week.iso_week }} &middot; {{ week.monday|date:"d.m." }} – {{ week.friday|date:"d.m.Y" }}
+    </div>
+    <div class="seminar-grid">
+        {# Kopfzeile #}
+        <div class="seminar-grid-hcol-head"></div>
+        {% for day in week.days %}
+        <div class="seminar-grid-day-head{% if not day.in_block %} outside{% endif %}">
+            <div class="weekday">{{ day.date|date:"D" }}</div>
+            <div class="date">{{ day.date|date:"d.m." }}</div>
+        </div>
+        {% endfor %}
+
+        {# Stundenraster: linke Stundenleiste + 5 Tage-Spalten #}
+        <div class="seminar-grid-time-col">
+            {% for h in hours %}
+            <div class="seminar-hour-row">
+                <span class="seminar-time-label">{{ h }}:00</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% for day in week.days %}
+        <div class="seminar-grid-day-col{% if not day.in_block %} outside{% endif %}">
+            {% for h in hours %}
+            <div class="seminar-hour-row">
+                {% if day.in_block %}
+                <a href="{% url 'course:lecture_create' course.pk schedule_block.public_id %}?date={{ day.date|date:'Y-m-d' }}&time={{ h }}:00"
+                   class="seminar-add-link" title="Vortrag um {{ h }}:00 anlegen">
+                    <i class="bi bi-plus"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            {# Vorträge des Tages absolut positionieren #}
+            {% for lec in day.lectures %}
+            {% with start_min=lec.start_datetime|date:"G"|add:0 start_minutes=lec.start_datetime|date:"i"|add:0 %}
+            {% endwith %}
+            <a href="{% url 'course:lecture_edit' course.pk schedule_block.public_id lec.public_id %}"
+               class="seminar-lecture status-{{ lec.status }}"
+               style="top: {{ lec.top_offset_px }}px; height: {{ lec.height_px }}px;"
+               title="{{ lec.topic }} – {{ lec.speaker_name }} ({{ lec.start_datetime|date:'H:i' }}–{{ lec.end_datetime|date:'H:i' }})">
+                <div class="topic">{{ lec.topic }}</div>
+                <div class="meta">
+                    {{ lec.start_datetime|date:"H:i" }}–{{ lec.end_datetime|date:"H:i" }} &middot; {{ lec.speaker_name }}
+                </div>
+                {% if lec.location %}
+                <div class="meta"><i class="bi bi-geo-alt"></i> {{ lec.location }}</div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

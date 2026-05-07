@@ -535,12 +535,12 @@ def station_feedback_overview(request):
 
     # Filter-Selectboxen befüllen
     all_units  = OrganisationalUnit.objects.filter(is_active=True).order_by('name')
-    all_blocks = ScheduleBlock.objects.filter(is_internship=True).order_by('-start_date')
+    all_blocks = ScheduleBlock.objects.filter(block_type='internship').order_by('-start_date')
 
     # ── Trend-Analyse: Durchschnitt pro OE über ScheduleBlocks (chronologisch) ──
     trend_blocks = list(
         ScheduleBlock.objects
-        .filter(is_internship=True, station_feedbacks__isnull=False)
+        .filter(block_type='internship', station_feedbacks__isnull=False)
         .distinct()
         .order_by('start_date')
     )

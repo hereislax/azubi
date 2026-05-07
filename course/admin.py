@@ -7,6 +7,7 @@ from course.models import (
     BlockLetterTemplate, InternshipPlanTemplate, StationLetterTemplate,
     CourseChecklist, CourseChecklistItem,
     CurriculumRequirement, CompetenceTarget,
+    SeminarLecture,
 )
 
 
@@ -102,3 +103,12 @@ class CourseChecklistAdmin(admin.ModelAdmin):
     list_display = ['name', 'course', 'template', 'created_by', 'created_at']
     list_filter = ['course']
     inlines = [CourseChecklistItemInline]
+
+
+@admin.register(SeminarLecture)
+class SeminarLectureAdmin(admin.ModelAdmin):
+    list_display = ['topic', 'speaker_name', 'start_datetime', 'end_datetime', 'status', 'schedule_block']
+    list_filter = ['status', 'schedule_block__course']
+    search_fields = ['topic', 'speaker_name', 'speaker_email']
+    readonly_fields = ['public_id', 'confirmation_token', 'sent_at', 'responded_at',
+                       'reminder_sent_at', 'notification_sequence', 'created_at', 'updated_at']

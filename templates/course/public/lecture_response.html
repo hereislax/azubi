@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rückmeldung erfasst – {{ lecture.topic }}</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-icons.min.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-light bg-white border-bottom mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-semibold">
+            <i class="bi bi-mic text-primary"></i> Rückmeldung erfasst
+        </span>
+    </div>
+</nav>
+
+<div class="container pb-5" style="max-width: 720px;">
+    {% if action == 'confirmed' %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle-fill me-1"></i>
+        Vielen Dank! Ihre Bestätigung für den Vortrag „<strong>{{ lecture.topic }}</strong>"
+        am {{ lecture.start_datetime|date:"d.m.Y" }} um {{ lecture.start_datetime|date:"H:i" }} Uhr
+        wurde erfasst. Die Veranstalter wurden benachrichtigt.
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-x-octagon-fill me-1"></i>
+        Ihre Absage für den Vortrag „<strong>{{ lecture.topic }}</strong>"
+        am {{ lecture.start_datetime|date:"d.m.Y" }} wurde erfasst. Die Veranstalter wurden benachrichtigt.
+    </div>
+    {% endif %}
+
+    <p class="text-muted small">
+        Sie können dieses Fenster nun schließen.
+    </p>
+</div>
+</body>
+</html>

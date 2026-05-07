@@ -40,6 +40,12 @@ NOTIFICATION_KEYS = [
     ('change_request_approved',      'Änderungsantrag: Antrag genehmigt'),
     ('change_request_rejected',      'Änderungsantrag: Antrag abgelehnt'),
     ('assignment_decision_for_office', 'Praktikumseinsatz: Entscheidung der Koordination (Info Referat)'),
+    ('lecture_request',          'Vortrag: Bestätigungsanfrage an Vortragenden'),
+    ('lecture_reminder',         'Vortrag: Erinnerung an Vortragenden'),
+    ('lecture_update',           'Vortrag: Termin geändert'),
+    ('lecture_cancelled',        'Vortrag: Termin storniert'),
+    ('lecture_confirmed_creator',  'Vortrag: Bestätigung – Information an Ersteller'),
+    ('lecture_declined_creator',   'Vortrag: Ablehnung – Information an Ersteller'),
 ]
 
 # Verfügbare Template-Variablen je Schlüssel – wird als Hilfetext im Admin angezeigt.
@@ -253,6 +259,60 @@ NOTIFICATION_VARIABLES = {
         ('block',            'Name des Ausbildungsblocks'),
         ('ablehnungsgrund',  'Begründung (nur bei Ablehnung)'),
         ('detail_url',       'Link zur Nachwuchskraft'),
+    ],
+    'lecture_request': [
+        ('anrede',           'Anredezeile, z. B. „Guten Tag Max Mustermann,"'),
+        ('thema',            'Thema des Vortrags'),
+        ('inhalt',           'Inhalt/Beschreibung des Vortrags'),
+        ('ort',              'Veranstaltungsort'),
+        ('datum',            'Datum des Vortrags (TT.MM.JJJJ)'),
+        ('beginn',           'Beginn (HH:MM)'),
+        ('ende',             'Ende (HH:MM)'),
+        ('seminar',          'Name des Seminarblocks'),
+        ('confirm_url',      'Link zur Bestätigung'),
+        ('decline_url',      'Link zur Ablehnung'),
+    ],
+    'lecture_reminder': [
+        ('anrede',           'Anredezeile'),
+        ('thema',            'Thema des Vortrags'),
+        ('datum',            'Datum des Vortrags (TT.MM.JJJJ)'),
+        ('beginn',           'Beginn (HH:MM)'),
+        ('ende',             'Ende (HH:MM)'),
+        ('confirm_url',      'Link zur Bestätigung'),
+        ('decline_url',      'Link zur Ablehnung'),
+    ],
+    'lecture_update': [
+        ('anrede',           'Anredezeile'),
+        ('thema',            'Thema des Vortrags'),
+        ('datum',            'Datum des Vortrags (TT.MM.JJJJ)'),
+        ('beginn',           'Beginn (HH:MM)'),
+        ('ende',             'Ende (HH:MM)'),
+        ('ort',              'Veranstaltungsort'),
+    ],
+    'lecture_cancelled': [
+        ('anrede',           'Anredezeile'),
+        ('thema',            'Thema des Vortrags'),
+        ('datum',            'Datum des Vortrags (TT.MM.JJJJ)'),
+        ('beginn',           'Beginn (HH:MM)'),
+    ],
+    'lecture_confirmed_creator': [
+        ('vorname',          'Vorname der erstellenden Person'),
+        ('nachname',         'Nachname der erstellenden Person'),
+        ('vortragender',     'Name des Vortragenden'),
+        ('thema',            'Thema des Vortrags'),
+        ('datum',            'Datum des Vortrags (TT.MM.JJJJ)'),
+        ('beginn',           'Beginn (HH:MM)'),
+        ('detail_url',       'Link zum Stundenplan'),
+    ],
+    'lecture_declined_creator': [
+        ('vorname',          'Vorname der erstellenden Person'),
+        ('nachname',         'Nachname der erstellenden Person'),
+        ('vortragender',     'Name des Vortragenden'),
+        ('thema',            'Thema des Vortrags'),
+        ('datum',            'Datum des Vortrags (TT.MM.JJJJ)'),
+        ('beginn',           'Beginn (HH:MM)'),
+        ('ablehnungsgrund',  'Begründung der Ablehnung (kann leer sein)'),
+        ('detail_url',       'Link zum Stundenplan'),
     ],
 }
 
@@ -647,6 +707,91 @@ NOTIFICATION_DEFAULTS = {
             '  Block:          {{ block }}\n\n'
             '{% if ablehnungsgrund %}Begründung der Ablehnung: {{ ablehnungsgrund }}\n\n{% endif %}'
             'Zur Nachwuchskraft:\n{{ detail_url }}\n\n'
+            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
+        ),
+    },
+    'lecture_request': {
+        'subject': 'Vortragsanfrage: {{ thema }} am {{ datum }}',
+        'body': (
+            '{{ anrede }}\n\n'
+            'wir möchten Sie als Vortragenden für das Seminar „{{ seminar }}" einladen:\n\n'
+            '  Thema:    {{ thema }}\n'
+            '{% if inhalt %}  Inhalt:   {{ inhalt }}\n{% endif %}'
+            '  Datum:    {{ datum }}\n'
+            '  Uhrzeit:  {{ beginn }} – {{ ende }} Uhr\n'
+            '{% if ort %}  Ort:      {{ ort }}\n{% endif %}\n'
+            'Bitte bestätigen oder lehnen Sie den Termin über die folgenden Links ab:\n\n'
+            '  Bestätigen: {{ confirm_url }}\n'
+            '  Ablehnen:   {{ decline_url }}\n\n'
+            'Im Anhang finden Sie eine Kalender-Einladung (.ics), die Sie direkt in Ihren '
+            'Outlook-Kalender übernehmen können.\n\n'
+            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
+        ),
+    },
+    'lecture_reminder': {
+        'subject': 'Erinnerung: Vortragsanfrage „{{ thema }}" am {{ datum }}',
+        'body': (
+            '{{ anrede }}\n\n'
+            'vor einigen Tagen haben wir Sie als Vortragenden für folgenden Termin '
+            'angefragt – bisher liegt uns noch keine Rückmeldung vor:\n\n'
+            '  Thema:    {{ thema }}\n'
+            '  Datum:    {{ datum }}\n'
+            '  Uhrzeit:  {{ beginn }} – {{ ende }} Uhr\n\n'
+            'Bitte bestätigen oder lehnen Sie den Termin ab:\n\n'
+            '  Bestätigen: {{ confirm_url }}\n'
+            '  Ablehnen:   {{ decline_url }}\n\n'
+            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
+        ),
+    },
+    'lecture_update': {
+        'subject': 'Aktualisierung: Vortrag „{{ thema }}"',
+        'body': (
+            '{{ anrede }}\n\n'
+            'Ihr bestätigter Vortragstermin wurde aktualisiert:\n\n'
+            '  Thema:    {{ thema }}\n'
+            '  Datum:    {{ datum }}\n'
+            '  Uhrzeit:  {{ beginn }} – {{ ende }} Uhr\n'
+            '{% if ort %}  Ort:      {{ ort }}\n{% endif %}\n'
+            'Im Anhang finden Sie eine aktualisierte Kalender-Einladung (.ics).\n\n'
+            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
+        ),
+    },
+    'lecture_cancelled': {
+        'subject': 'Absage: Vortrag „{{ thema }}" am {{ datum }}',
+        'body': (
+            '{{ anrede }}\n\n'
+            'der folgende Vortrag wurde abgesagt:\n\n'
+            '  Thema:    {{ thema }}\n'
+            '  Datum:    {{ datum }}\n'
+            '  Beginn:   {{ beginn }} Uhr\n\n'
+            'Im Anhang finden Sie eine Storno-Information für Ihren Kalender.\n\n'
+            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
+        ),
+    },
+    'lecture_confirmed_creator': {
+        'subject': 'Vortrag bestätigt: {{ vortragender }} – {{ thema }}',
+        'body': (
+            'Hallo {{ vorname }} {{ nachname }},\n\n'
+            'der angefragte Vortrag wurde vom Vortragenden bestätigt:\n\n'
+            '  Vortragender: {{ vortragender }}\n'
+            '  Thema:        {{ thema }}\n'
+            '  Datum:        {{ datum }}\n'
+            '  Beginn:       {{ beginn }} Uhr\n\n'
+            'Zum Stundenplan: {{ detail_url }}\n\n'
+            'Mit freundlichen Grüßen\nIhr Azubi-Portal'
+        ),
+    },
+    'lecture_declined_creator': {
+        'subject': 'Vortrag abgelehnt: {{ vortragender }} – {{ thema }}',
+        'body': (
+            'Hallo {{ vorname }} {{ nachname }},\n\n'
+            'der angefragte Vortrag wurde vom Vortragenden abgelehnt:\n\n'
+            '  Vortragender: {{ vortragender }}\n'
+            '  Thema:        {{ thema }}\n'
+            '  Datum:        {{ datum }}\n'
+            '  Beginn:       {{ beginn }} Uhr\n'
+            '{% if ablehnungsgrund %}  Begründung:   {{ ablehnungsgrund }}\n{% endif %}\n'
+            'Zum Stundenplan: {{ detail_url }}\n\n'
             'Mit freundlichen Grüßen\nIhr Azubi-Portal'
         ),
     },

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: EUPL-1.2
 # SPDX-FileCopyrightText: 2026 devNicoLax
 from django import forms
-from .models import Course, ScheduleBlock, InternshipAssignment
+from .models import Course, ScheduleBlock, InternshipAssignment, SeminarLecture
 
 
 class CourseForm(forms.ModelForm):
@@ -65,7 +65,7 @@ class ScheduleBlockForm(forms.ModelForm):
 
     class Meta:
         model = ScheduleBlock
-        fields = ['name', 'is_internship', 'location', 'start_date', 'end_date']
+        fields = ['name', 'block_type', 'location', 'start_date', 'end_date']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'end_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
@@ -205,3 +205,101 @@ class InternshipAssignmentForm(forms.ModelForm):
             'end_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+class SeminarLectureForm(forms.ModelForm):
+    lecture_date = forms.DateField(
+        label='Datum',
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+    )
+    start_time = forms.TimeField(
+        label='Beginn',
+        widget=forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+    )
+    end_time = forms.TimeField(
+        label='Ende',
+        widget=forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+    )
+
+    field_order = ['topic', 'description', 'speaker_name', 'speaker_email',
+                   'location', 'lecture_date', 'start_time', 'end_time']
+
+    class Meta:
+        model = SeminarLecture
+        fields = ['topic', 'description', 'speaker_name', 'speaker_email', 'location']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self._block = kwargs.pop('block', None)
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            local_start = self.instance.start_datetime
+            local_end = self.instance.end_datetime
+            self.fields['lecture_date'].initial = local_start.date()
+            self.fields['start_time'].initial = local_start.time().replace(microsecond=0)
+            self.fields['end_time'].initial = local_end.time().replace(microsecond=0)
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'kern-form-check__checkbox')
+            elif isinstance(field.widget, forms.Textarea):
+                field.widget.attrs.setdefault('class', 'kern-form-input__input')
+            else:
+                field.widget.attrs.setdefault('class', 'kern-form-input__input')
+
+    def clean(self):
+        from datetime import datetime
+        from django.utils import timezone
+        cleaned = super().clean()
+        date = cleaned.get('lecture_date')
+        start_time = cleaned.get('start_time')
+        end_time = cleaned.get('end_time')
+        if not (date and start_time and end_time):
+            return cleaned
+
+        if date.weekday() >= 5:
+            raise forms.ValidationError('Vorträge können nur Montag bis Freitag stattfinden.')
+
+        if end_time <= start_time:
+            raise forms.ValidationError('Die Endzeit muss nach der Startzeit liegen.')
+
+        if self._block:
+            if date < self._block.start_date or date > self._block.end_date:
+                raise forms.ValidationError(
+                    f'Das Datum muss innerhalb des Seminarblocks liegen '
+                    f'({self._block.start_date.strftime("%d.%m.%Y")} – '
+                    f'{self._block.end_date.strftime("%d.%m.%Y")}).'
+                )
+
+        tz = timezone.get_current_timezone()
+        start_dt = timezone.make_aware(datetime.combine(date, start_time), tz)
+        end_dt = timezone.make_aware(datetime.combine(date, end_time), tz)
+        cleaned['start_datetime'] = start_dt
+        cleaned['end_datetime'] = end_dt
+
+        if self._block:
+            qs = SeminarLecture.objects.filter(
+                schedule_block=self._block,
+                start_datetime__lt=end_dt,
+                end_datetime__gt=start_dt,
+            )
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            conflict = qs.first()
+            if conflict:
+                raise forms.ValidationError(
+                    f'Zeitlicher Konflikt mit „{conflict.topic}" '
+                    f'({conflict.start_datetime:%d.%m.%Y %H:%M} – {conflict.end_datetime:%H:%M}).'
+                )
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.start_datetime = self.cleaned_data['start_datetime']
+        instance.end_datetime = self.cleaned_data['end_datetime']
+        if self._block:
+            instance.schedule_block = self._block
+        if commit:
+            instance.save()
+        return instance

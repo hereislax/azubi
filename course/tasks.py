@@ -116,3 +116,38 @@ def _create_and_send_assessment_token(assignment, instructor):
     assessment.token_sent_at = timezone.now()
     assessment.save(update_fields=['token_sent_at'])
     logger.info('Assessment-Token gesendet → %s (Assignment: %s)', instructor.email, assignment.pk)
+
+
+LECTURE_REMINDER_AFTER_DAYS = 10
+
+
+@shared_task(name='course.send_lecture_reminders')
+def send_lecture_reminders():
+    """Erinnert Vortragende, die nach 10 Tagen noch nicht reagiert haben.
+
+    Bedingungen für Erinnerungs-Versand:
+    - Status = pending
+    - sent_at liegt mehr als 10 Tage zurück
+    - reminder_sent_at ist noch nicht gesetzt (genau eine Erinnerung)
+    """
+    from django.utils import timezone
+    from course.models import SeminarLecture, LECTURE_STATUS_PENDING
+    from services.notifications import notify_lecture_reminder
+
+    cutoff = timezone.now() - timedelta(days=LECTURE_REMINDER_AFTER_DAYS)
+    qs = SeminarLecture.objects.filter(
+        status=LECTURE_STATUS_PENDING,
+        sent_at__isnull=False,
+        sent_at__lte=cutoff,
+        reminder_sent_at__isnull=True,
+    )
+
+    sent = 0
+    for lecture in qs:
+        try:
+            notify_lecture_reminder(lecture)
+            sent += 1
+        except Exception as exc:
+            logger.warning('Vortrags-Erinnerung pk=%s fehlgeschlagen: %s', lecture.pk, exc)
+    logger.info('send_lecture_reminders abgeschlossen: %d Erinnerung(en) gesendet.', sent)
+    return sent

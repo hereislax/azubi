@@ -87,6 +87,11 @@ def sync_periodic_tasks(config):
         'assessment.escalate_pending_assessments',
         config.assessment_escalation_hour, config.assessment_escalation_minute,
     )
+    _upsert_crontab_task(
+        'erinnerungen-vortragsbestaetigung',
+        'course.send_lecture_reminders',
+        config.reminder_hour, config.reminder_minute,
+    )
     _upsert_interval_task(
         'paperless-eingangskorb-cache',
         'services.refresh_paperless_unassigned',

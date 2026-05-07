@@ -27,6 +27,11 @@
                        class="btn btn-outline-primary btn-sm py-0 px-2" title="Praktikumsplanung">
                         <i class="bi bi-calendar3 me-1"></i> Praktikumsplanung
                     </a>
+                {% elif schedule_block.is_seminar %}
+                    <a href="{% url 'course:seminar_calendar' course.pk schedule_block.public_id %}"
+                       class="btn btn-outline-primary btn-sm py-0 px-2" title="Stundenplan">
+                        <i class="bi bi-calendar-week me-1"></i> Stundenplan
+                    </a>
                 {% endif %}
 
                 {% if is_training_director or is_training_office %}

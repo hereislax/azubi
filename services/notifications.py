@@ -970,3 +970,218 @@ def notify_chiefs_of_assignment(request, assignment, is_new: bool = True):
                 send_mail(subject=subject, body_text=body, recipient_list=[recipient])
             except Exception as exc:
                 logger.warning('Benachrichtigung an %s konnte nicht gesendet werden: %s', recipient, exc)
+
+
+# ── Vorträge / Seminarblock ──────────────────────────────────────────────────
+
+def _build_lecture_ics(lecture, *, method, sequence=None):
+    """Baut ein iCal-Attachment-Tupel für einen Vortrag."""
+    from django.conf import settings
+    from services.calendar import (
+        build_event_ics,
+        ics_attachment_tuple,
+        stable_uid,
+        METHOD_REQUEST,
+        METHOD_CANCEL,
+    )
+    if sequence is None:
+        sequence = lecture.notification_sequence
+    description_parts = []
+    if lecture.description:
+        description_parts.append(lecture.description)
+    description_parts.append(f'Vortragender: {lecture.speaker_name}')
+    description_parts.append(f'Seminar: {lecture.schedule_block.name}')
+    ics_bytes = build_event_ics(
+        uid=stable_uid(lecture, 'vortrag'),
+        summary=f'Vortrag: {lecture.topic}',
+        start=lecture.start_datetime,
+        end=lecture.end_datetime,
+        description='\n'.join(description_parts),
+        location=lecture.location or '',
+        organizer_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or None,
+        attendee_emails=[lecture.speaker_email],
+        sequence=sequence,
+        method=method,
+    )
+    filename = 'vortrag-storno.ics' if method == METHOD_CANCEL else 'vortrag.ics'
+    return ics_attachment_tuple(filename, ics_bytes, method)
+
+
+def _lecture_links(request, lecture):
+    confirm_url = request.build_absolute_uri(f'/vortrag/{lecture.confirmation_token}/bestaetigen/')
+    decline_url = request.build_absolute_uri(f'/vortrag/{lecture.confirmation_token}/ablehnen/')
+    return confirm_url, decline_url
+
+
+def notify_lecture_request(request, lecture):
+    """Sendet die initiale Bestätigungsanfrage an den Vortragenden (mit .ics-REQUEST)."""
+    from django.utils import timezone
+    from services.email import send_mail
+    from services.models import NotificationTemplate
+    from services.calendar import METHOD_REQUEST
+
+    confirm_url, decline_url = _lecture_links(request, lecture)
+    subject, body = NotificationTemplate.render('lecture_request', {
+        'anrede':      f'Guten Tag {lecture.speaker_name},',
+        'thema':       lecture.topic,
+        'inhalt':      lecture.description,
+        'ort':         lecture.location,
+        'datum':       lecture.start_datetime.strftime('%d.%m.%Y'),
+        'beginn':      lecture.start_datetime.strftime('%H:%M'),
+        'ende':        lecture.end_datetime.strftime('%H:%M'),
+        'seminar':     lecture.schedule_block.name,
+        'confirm_url': confirm_url,
+        'decline_url': decline_url,
+    })
+    attachments = None
+    try:
+        attachments = [_build_lecture_ics(lecture, method=METHOD_REQUEST)]
+    except Exception as exc:
+        logger.warning('iCal-Anhang für Vortrag pk=%s konnte nicht erzeugt werden: %s', lecture.pk, exc)
+    try:
+        send_mail(subject=subject, body_text=body,
+                  recipient_list=[lecture.speaker_email],
+                  attachments=attachments)
+        lecture.sent_at = timezone.now()
+        lecture.save(update_fields=['sent_at'])
+    except Exception as exc:
+        logger.error('Vortragsanfrage an %s fehlgeschlagen: %s', lecture.speaker_email, exc)
+
+
+def notify_lecture_reminder(lecture):
+    """Sendet eine Erinnerung an den Vortragenden, wenn nach 10 Tagen keine Antwort kam.
+    Diese Funktion läuft im Celery-Task – kein request verfügbar, daher absolute URLs
+    aus settings."""
+    from django.conf import settings
+    from django.utils import timezone
+    from services.email import send_mail
+    from services.models import NotificationTemplate
+
+    base = getattr(settings, 'SITE_BASE_URL', '').rstrip('/')
+    confirm_url = f'{base}/vortrag/{lecture.confirmation_token}/bestaetigen/'
+    decline_url = f'{base}/vortrag/{lecture.confirmation_token}/ablehnen/'
+    subject, body = NotificationTemplate.render('lecture_reminder', {
+        'anrede':      f'Guten Tag {lecture.speaker_name},',
+        'thema':       lecture.topic,
+        'datum':       lecture.start_datetime.strftime('%d.%m.%Y'),
+        'beginn':      lecture.start_datetime.strftime('%H:%M'),
+        'ende':        lecture.end_datetime.strftime('%H:%M'),
+        'confirm_url': confirm_url,
+        'decline_url': decline_url,
+    })
+    try:
+        send_mail(subject=subject, body_text=body, recipient_list=[lecture.speaker_email])
+        lecture.reminder_sent_at = timezone.now()
+        lecture.save(update_fields=['reminder_sent_at'])
+    except Exception as exc:
+        logger.error('Vortrags-Erinnerung an %s fehlgeschlagen: %s', lecture.speaker_email, exc)
+
+
+def notify_lecture_update(request, lecture):
+    """Sendet ein iCal-UPDATE an den Vortragenden, wenn sich Details nach Bestätigung ändern."""
+    from services.email import send_mail
+    from services.models import NotificationTemplate
+    from services.calendar import METHOD_REQUEST
+
+    subject, body = NotificationTemplate.render('lecture_update', {
+        'anrede': f'Guten Tag {lecture.speaker_name},',
+        'thema':  lecture.topic,
+        'datum':  lecture.start_datetime.strftime('%d.%m.%Y'),
+        'beginn': lecture.start_datetime.strftime('%H:%M'),
+        'ende':   lecture.end_datetime.strftime('%H:%M'),
+        'ort':    lecture.location,
+    })
+    attachments = None
+    try:
+        attachments = [_build_lecture_ics(lecture, method=METHOD_REQUEST)]
+    except Exception as exc:
+        logger.warning('iCal-Update für Vortrag pk=%s konnte nicht erzeugt werden: %s', lecture.pk, exc)
+    try:
+        send_mail(subject=subject, body_text=body,
+                  recipient_list=[lecture.speaker_email],
+                  attachments=attachments)
+    except Exception as exc:
+        logger.error('Vortrags-Update an %s fehlgeschlagen: %s', lecture.speaker_email, exc)
+
+
+def notify_lecture_cancelled(request, lecture):
+    """Sendet eine Storno-Mail mit iCal-CANCEL an den Vortragenden."""
+    from services.email import send_mail
+    from services.models import NotificationTemplate
+    from services.calendar import METHOD_CANCEL
+
+    subject, body = NotificationTemplate.render('lecture_cancelled', {
+        'anrede': f'Guten Tag {lecture.speaker_name},',
+        'thema':  lecture.topic,
+        'datum':  lecture.start_datetime.strftime('%d.%m.%Y'),
+        'beginn': lecture.start_datetime.strftime('%H:%M'),
+    })
+    attachments = None
+    try:
+        attachments = [_build_lecture_ics(
+            lecture,
+            method=METHOD_CANCEL,
+            sequence=lecture.notification_sequence + 1,
+        )]
+    except Exception as exc:
+        logger.warning('iCal-Storno für Vortrag pk=%s konnte nicht erzeugt werden: %s', lecture.pk, exc)
+    try:
+        send_mail(subject=subject, body_text=body,
+                  recipient_list=[lecture.speaker_email],
+                  attachments=attachments)
+    except Exception as exc:
+        logger.error('Vortrags-Storno an %s fehlgeschlagen: %s', lecture.speaker_email, exc)
+
+
+def notify_lecture_decision(lecture):
+    """Benachrichtigt den Ersteller über die Entscheidung des Vortragenden – per
+    E-Mail und als Portal-Notification."""
+    from django.conf import settings
+    from services.email import send_mail
+    from services.models import NotificationTemplate, create_notification
+
+    creator = lecture.created_by
+    if not creator:
+        return
+
+    base = getattr(settings, 'SITE_BASE_URL', '').rstrip('/')
+    block = lecture.schedule_block
+    detail_url = f'{base}/kurs/{block.course_id}/ablaufplan/{block.public_id}/seminar/'
+
+    is_confirmed = lecture.status == 'confirmed'
+    key = 'lecture_confirmed_creator' if is_confirmed else 'lecture_declined_creator'
+
+    if is_confirmed:
+        message = f'Vortrag bestätigt: {lecture.speaker_name} – {lecture.topic}'
+        icon = 'bi-check-circle'
+    else:
+        message = f'Vortrag abgelehnt: {lecture.speaker_name} – {lecture.topic}'
+        icon = 'bi-x-circle'
+
+    try:
+        create_notification(
+            creator,
+            message=message,
+            link=f'/kurs/{block.course_id}/ablaufplan/{block.public_id}/seminar/',
+            icon=icon,
+            category='Vortrag',
+        )
+    except Exception:
+        logger.exception('Portal-Notification für Vortragsentscheidung pk=%s fehlgeschlagen', lecture.pk)
+
+    if not creator.email or not is_email_enabled(creator, key):
+        return
+    subject, body = NotificationTemplate.render(key, {
+        'vorname':         creator.first_name,
+        'nachname':        creator.last_name,
+        'vortragender':    lecture.speaker_name,
+        'thema':           lecture.topic,
+        'datum':           lecture.start_datetime.strftime('%d.%m.%Y'),
+        'beginn':          lecture.start_datetime.strftime('%H:%M'),
+        'ablehnungsgrund': lecture.decline_reason,
+        'detail_url':      detail_url,
+    })
+    try:
+        send_mail(subject=subject, body_text=body, recipient_list=[creator.email])
+    except Exception as exc:
+        logger.warning('Vortrags-Entscheidungs-Mail an %s fehlgeschlagen: %s', creator.email, exc)

@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vortrag ablehnen – {{ lecture.topic }}</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-icons.min.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-light bg-white border-bottom mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-semibold">
+            <i class="bi bi-mic text-primary"></i> Vortragsablehnung
+        </span>
+    </div>
+</nav>
+
+<div class="container pb-5" style="max-width: 720px;">
+    {% if already_responded %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-1"></i>
+        Diese Anfrage wurde bereits beantwortet
+        ({{ lecture.get_status_display }}, am {{ lecture.responded_at|date:"d.m.Y H:i" }} Uhr).
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-x-octagon me-1"></i> Vortrag ablehnen</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-3 small">
+                <dt class="col-sm-4">Thema</dt>
+                <dd class="col-sm-8 fw-semibold">{{ lecture.topic }}</dd>
+                <dt class="col-sm-4">Datum</dt>
+                <dd class="col-sm-8">{{ lecture.start_datetime|date:"l, d.m.Y" }}</dd>
+                <dt class="col-sm-4">Uhrzeit</dt>
+                <dd class="col-sm-8 mb-0">{{ lecture.start_datetime|date:"H:i" }} – {{ lecture.end_datetime|date:"H:i" }} Uhr</dd>
+            </dl>
+
+            {% if not already_responded %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="{{ form.decline_reason.id_for_label }}" class="form-label">
+                        {{ form.decline_reason.label }}
+                    </label>
+                    {{ form.decline_reason }}
+                    <small class="text-muted">
+                        Eine kurze Begründung hilft den Veranstaltern bei der Umplanung.
+                    </small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i> Termin endgültig ablehnen
+                    </button>
+                    <a href="{% url 'lecture_public:lecture_confirm' lecture.confirmation_token %}"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Zurück
+                    </a>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</body>
+</html>

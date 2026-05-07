@@ -72,16 +72,16 @@
 
 <script>
 (function () {
-    const isInternship = document.getElementById('id_is_internship');
+    const blockType = document.getElementById('id_block_type');
     const locationRows = document.querySelectorAll('.location-row');
 
     function toggleLocation() {
-        const hide = isInternship && isInternship.checked;
+        const hide = blockType && blockType.value === 'internship';
         locationRows.forEach(row => { row.style.display = hide ? 'none' : ''; });
     }
 
-    if (isInternship) {
-        isInternship.addEventListener('change', toggleLocation);
+    if (blockType) {
+        blockType.addEventListener('change', toggleLocation);
         toggleLocation();
     }
 })();

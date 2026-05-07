@@ -81,6 +81,7 @@ urlpatterns = [
     path("", include("services.urls")),
     path("student/", include("student.urls")),
     path("kurs/", include("course.urls")),
+    path("vortrag/", include("course.public_urls")),
     path("dokumente/", include("document.urls")),
     path("wohnheim/", include("dormitory.urls")),
     path("organisation/", include("organisation.urls")),

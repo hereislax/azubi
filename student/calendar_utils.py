@@ -14,11 +14,13 @@ from django.db import models as dj_models
 
 from services.colors import BUNDESFARBEN_BY_NAME as _BF
 
-CAL_COLOR_LESSON       = _BF['Blau']         # Lehrphasen
+CAL_COLOR_LESSON       = _BF['Blau']         # Theoriephasen
 CAL_COLOR_BLOCK        = _BF['Petrol']       # Praktikumsphasen (Block)
+CAL_COLOR_SEMINAR      = _BF['Hellblau']     # Seminarphasen
 CAL_COLOR_INTERNSHIP   = _BF['Türkis']       # Einzelpraktika
 CAL_COLOR_VACATION     = _BF['Grün']         # Urlaub
 CAL_COLOR_STUDY_DAY    = _BF['Oliv']         # Lerntage
+CAL_COLOR_LECTURE      = _BF['Hellorange']   # Einzelvorträge im Seminarblock
 CAL_COLOR_SICK         = _BF['Rot']          # Krankmeldungen
 CAL_COLOR_INTERVENTION = _BF['Violett']      # Maßnahmen-Fristen (Fallback)
 
@@ -62,20 +64,46 @@ def build_student_calendar(student, year, include_interventions=False, portal_vi
 
     # ── 1. Ausbildungsplan (ScheduleBlöcke) ───────────────────────────────────
     if student.course_id:
-        from course.models import ScheduleBlock
-        blocks = ScheduleBlock.objects.filter(
+        from course.models import ScheduleBlock, SeminarLecture, LECTURE_STATUS_DECLINED
+        blocks = list(ScheduleBlock.objects.filter(
             course_id=student.course_id,
             end_date__gte=year_start,
             start_date__lte=year_end,
-        ).order_by('start_date')
+        ).order_by('start_date'))
+        block_color_map = {
+            'internship': CAL_COLOR_BLOCK,
+            'seminar':    CAL_COLOR_SEMINAR,
+            'normal':     CAL_COLOR_LESSON,
+        }
         events = [
             b(blk.name, blk.start_date, blk.end_date,
-              CAL_COLOR_BLOCK if blk.is_internship else CAL_COLOR_LESSON)
+              block_color_map.get(blk.block_type, CAL_COLOR_LESSON))
             for blk in blocks
         ]
         events = [e for e in events if e]
         if events:
             rows.append({'label': 'Ausbildungsplan', 'icon': 'bi-calendar3', 'events': events})
+
+        # ── 1b. Einzelvorträge (alle Lectures der Seminarblöcke des Kurses) ───
+        seminar_block_ids = [blk.pk for blk in blocks if blk.block_type == 'seminar']
+        if seminar_block_ids:
+            lectures = SeminarLecture.objects.filter(
+                schedule_block_id__in=seminar_block_ids,
+                start_datetime__date__gte=year_start,
+                start_datetime__date__lte=year_end,
+            ).exclude(status=LECTURE_STATUS_DECLINED).select_related('schedule_block')
+            lec_events = []
+            for lec in lectures:
+                day = lec.start_datetime.date()
+                course_pk = lec.schedule_block.course_id
+                url = '' if portal_view else (
+                    f'/kurs/{course_pk}/ablaufplan/{lec.schedule_block.public_id}/seminar/'
+                )
+                e = b(lec.topic, day, day, CAL_COLOR_LECTURE, url, is_marker=True)
+                if e:
+                    lec_events.append(e)
+            if lec_events:
+                rows.append({'label': 'Vorträge', 'icon': 'bi-mic', 'events': lec_events})
 
     # ── 2. Praktikumseinsätze (genehmigt) ─────────────────────────────────────
     from course.models import InternshipAssignment, ASSIGNMENT_STATUS_APPROVED

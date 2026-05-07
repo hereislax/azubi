@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vortrag bestätigen – {{ lecture.topic }}</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-icons.min.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-light bg-white border-bottom mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-semibold">
+            <i class="bi bi-mic text-primary"></i> Vortragsbestätigung
+        </span>
+    </div>
+</nav>
+
+<div class="container pb-5" style="max-width: 720px;">
+    {% if already_responded %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-1"></i>
+        Diese Anfrage wurde bereits beantwortet
+        ({{ lecture.get_status_display }}, am {{ lecture.responded_at|date:"d.m.Y H:i" }} Uhr).
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-card-text me-1"></i> Vortrag</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0 small">
+                <dt class="col-sm-4">Thema</dt>
+                <dd class="col-sm-8 fw-semibold">{{ lecture.topic }}</dd>
+                {% if lecture.description %}
+                <dt class="col-sm-4">Inhalt</dt>
+                <dd class="col-sm-8">{{ lecture.description|linebreaksbr }}</dd>
+                {% endif %}
+                <dt class="col-sm-4">Datum</dt>
+                <dd class="col-sm-8">{{ lecture.start_datetime|date:"l, d.m.Y" }}</dd>
+                <dt class="col-sm-4">Uhrzeit</dt>
+                <dd class="col-sm-8">{{ lecture.start_datetime|date:"H:i" }} – {{ lecture.end_datetime|date:"H:i" }} Uhr</dd>
+                {% if lecture.location %}
+                <dt class="col-sm-4">Ort</dt>
+                <dd class="col-sm-8">{{ lecture.location }}</dd>
+                {% endif %}
+                <dt class="col-sm-4">Vortragender</dt>
+                <dd class="col-sm-8 mb-0">{{ lecture.speaker_name }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    {% if not already_responded %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <p class="mb-3">
+                Bitte bestätigen Sie den oben aufgeführten Vortragstermin. Mit der Bestätigung
+                wird der Termin in den Kalender der Veranstaltung eingetragen.
+            </p>
+            <form method="post" class="d-flex gap-2 flex-wrap">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle me-1"></i> Termin bestätigen
+                </button>
+                <a href="{% url 'lecture_public:lecture_decline' lecture.confirmation_token %}"
+                   class="btn btn-outline-danger">
+                    <i class="bi bi-x-circle me-1"></i> Termin ablehnen
+                </a>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>

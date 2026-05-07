@@ -400,7 +400,7 @@ def get_study_day_balance(student):
         from course.models import ScheduleBlock
         qs = ScheduleBlock.objects.filter(course=course, start_date__lte=today)
         if policy.scope == SCOPE_INTERNSHIP:
-            qs = qs.filter(is_internship=True)
+            qs = qs.filter(block_type='internship')
         total = qs.count() * current_year_amount
 
     elif policy.allocation_type == ALLOC_PER_WEEK:
@@ -479,7 +479,7 @@ def _calc_days_based_total(policy, course, today, divisor, amount=None):
         from course.models import ScheduleBlock
         blocks = ScheduleBlock.objects.filter(
             course=course,
-            is_internship=True,
+            block_type='internship',
             start_date__lte=today,
         )
         total_days = sum(

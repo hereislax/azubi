@@ -26,7 +26,7 @@ TRACKED_FIELDS = {
         'title', 'start_date', 'end_date', 'job_profile',
     ],
     ('course', 'scheduleblock'): [
-        'course', 'name', 'location', 'start_date', 'end_date', 'is_internship',
+        'course', 'name', 'location', 'start_date', 'end_date', 'block_type',
     ],
     ('course', 'internshipassignment'): [
         'student', 'unit', 'start_date', 'end_date',
