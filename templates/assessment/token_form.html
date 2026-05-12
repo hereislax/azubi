@@ -26,10 +26,13 @@
 
 <div class="container pb-5" style="max-width: 780px;">
 
+    <h1 class="h4 mb-3"><i class="bi bi-clipboard-check text-primary me-2" aria-hidden="true"></i>Stationsbeurteilung
+        – {{ assignment.student.first_name }} {{ assignment.student.last_name }}</h1>
+
     {# Kontextbox #}
-    <div class="card shadow-sm mb-4">
+    <section class="card shadow-sm mb-4" aria-labelledby="kontext-heading">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-person-badge"></i> Beurteilung für den Praxisabschnitt</h5>
+            <h2 id="kontext-heading" class="h5 mb-0"><i class="bi bi-person-badge" aria-hidden="true"></i> Beurteilung für den Praxisabschnitt</h2>
         </div>
         <div class="card-body">
             <dl class="row mb-0 small">
@@ -46,23 +49,23 @@
                 <dd class="col-sm-8 mb-0">{{ assignment.schedule_block.name }}</dd>
             </dl>
         </div>
-    </div>
+    </section>
 
     {% if template.instructions_assessor %}
     <div class="alert alert-info mb-4">
-        <i class="bi bi-info-circle-fill me-2"></i>
+        <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>
         {{ template.instructions_assessor|linebreaksbr }}
     </div>
     {% endif %}
 
     {% if template.rating_scale == 'grade' %}
-    <div class="alert alert-secondary small mb-4 py-2">
-        <i class="bi bi-rulers me-1"></i>
+    <div class="alert alert-secondary small mb-4 py-2" id="rating-scale-hint">
+        <i class="bi bi-rulers me-1" aria-hidden="true"></i>
         <strong>Bewertungsskala:</strong> Notenskala (1,0 = sehr gut · 6,0 = ungenügend)
     </div>
     {% else %}
-    <div class="alert alert-secondary small mb-4 py-2">
-        <i class="bi bi-rulers me-1"></i>
+    <div class="alert alert-secondary small mb-4 py-2" id="rating-scale-hint">
+        <i class="bi bi-rulers me-1" aria-hidden="true"></i>
         <strong>Bewertungsskala:</strong> Punkteskala (0–15 Punkte)
     </div>
     {% endif %}
@@ -71,7 +74,7 @@
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="alert alert-danger">
+        <div class="alert alert-danger" role="alert">
             {% for error in form.non_field_errors %}{{ error }}{% endfor %}
         </div>
         {% endif %}
@@ -81,29 +84,35 @@
         {% for tc, rating_field, comment_field in form.get_criterion_pairs %}
 
             {% if tc.criterion.category and tc.criterion.category != prev_category %}
-            <div class="category-header px-3 py-2 mb-3 fw-semibold text-secondary small">
-                <i class="bi bi-tag me-1"></i> {{ tc.criterion.category }}
-            </div>
+            <h2 class="category-header h6 px-3 py-2 mb-3 fw-semibold text-secondary">
+                <i class="bi bi-tag me-1" aria-hidden="true"></i> {{ tc.criterion.category }}
+            </h2>
             {% endif %}
             {% with prev_category=tc.criterion.category %}{% endwith %}
 
             <div class="card criterion-card shadow-sm mb-3">
                 <div class="card-body pb-2">
-                    <div class="fw-semibold mb-1">{{ rating_field.label }}</div>
-                    {% if rating_field.help_text %}
-                    <div class="text-muted small mb-2">{{ rating_field.help_text }}</div>
-                    {% endif %}
-
                     {% if template.rating_scale == 'grade' %}
-                    <div class="grade-radio-group mb-2">
-                        {% for radio in rating_field %}
-                        <div class="form-check form-check-inline">
-                            {{ radio.tag }}
-                            <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                    <fieldset {% if rating_field.errors %}aria-describedby="{{ rating_field.name }}-error rating-scale-hint"{% else %}aria-describedby="rating-scale-hint"{% endif %}>
+                        <legend class="fw-semibold mb-1 fs-6">{{ rating_field.label }}</legend>
+                        {% if rating_field.help_text %}
+                        <div class="text-muted small mb-2">{{ rating_field.help_text }}</div>
+                        {% endif %}
+
+                        <div class="grade-radio-group mb-2" role="radiogroup">
+                            {% for radio in rating_field %}
+                            <div class="form-check form-check-inline">
+                                {{ radio.tag }}
+                                <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                    </div>
+                    </fieldset>
                     {% else %}
+                    <label for="{{ rating_field.id_for_label }}" class="fw-semibold mb-1 d-block">{{ rating_field.label }}</label>
+                    {% if rating_field.help_text %}
+                    <div class="text-muted small mb-2" id="{{ rating_field.id_for_label }}-help">{{ rating_field.help_text }}</div>
+                    {% endif %}
                     <div class="mb-2 d-flex align-items-center gap-2">
                         {{ rating_field }}
                         <span class="text-muted small">Punkte (0–15)</span>
@@ -111,14 +120,15 @@
                     {% endif %}
 
                     {% if rating_field.errors %}
-                    <span class="kern-error">
-                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ rating_field.errors|join:", " }}
+                    <span class="kern-error" id="{{ rating_field.name }}-error" role="alert">
+                        <i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>{{ rating_field.errors|join:", " }}
                     </span>
                     {% endif %}
 
                     <details class="mt-1">
                         <summary class="text-muted small" style="cursor:pointer;">Kommentar hinzufügen</summary>
                         <div class="mt-2">
+                            <label for="{{ comment_field.id_for_label }}" class="visually-hidden">Kommentar zu „{{ rating_field.label }}"</label>
                             {{ comment_field }}
                         </div>
                     </details>
@@ -131,22 +141,22 @@
         <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <label class="fw-semibold mb-1" for="{{ form.overall_comment.id_for_label }}">
-                    <i class="bi bi-chat-text me-1"></i> Gesamtkommentar / Anmerkungen
+                    <i class="bi bi-chat-text me-1" aria-hidden="true"></i> Gesamtkommentar / Anmerkungen
                 </label>
                 {{ form.overall_comment }}
-                <div class="text-muted small mt-1">Optional – allgemeine Beobachtungen zum Praxisabschnitt.</div>
+                <div class="text-muted small mt-1" id="overall-comment-hint">Optional – allgemeine Beobachtungen zum Praxisabschnitt.</div>
             </div>
         </div>
 
-        <div class="alert alert-warning small">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        <div class="alert alert-warning small" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
             <strong>Bitte prüfen Sie Ihre Angaben vor dem Absenden.</strong>
             Nach der Einreichung können keine Änderungen mehr vorgenommen werden.
         </div>
 
         <div class="d-grid">
             <button type="submit" class="btn btn-primary btn-lg">
-                <i class="bi bi-send-check"></i> Beurteilung einreichen
+                <i class="bi bi-send-check" aria-hidden="true"></i> Beurteilung einreichen
             </button>
         </div>
     </form>

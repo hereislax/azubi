@@ -13,7 +13,7 @@
 </nav>
 
 <div class="d-flex align-items-center mb-4 gap-2">
-    <h2 class="mb-0"><i class="bi bi-calendar-heart me-1"></i> Meine Urlaubsanträge</h2>
+    <h1 class="h2 mb-0"><i class="bi bi-calendar-heart me-1" aria-hidden="true"></i> Meine Urlaubsanträge</h1>
 </div>
 
 <div class="row g-4">
@@ -74,14 +74,15 @@
                 {% if vacation_requests %}
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0">
+                        <caption class="kern-sr-only">Meine Urlaubsanträge mit Zeitraum, Arbeitstagen, Standort, Status und Resturlaub.</caption>
                         <thead class="table-light">
                             <tr>
-                                <th>Zeitraum</th>
-                                <th class="text-center">AT</th>
-                                <th>Standort</th>
-                                <th>Status</th>
-                                <th class="text-muted small">Resturlaub</th>
-                                <th></th>
+                                <th scope="col">Zeitraum</th>
+                                <th scope="col" class="text-center"><abbr title="Arbeitstage">AT</abbr></th>
+                                <th scope="col">Standort</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="text-muted small">Resturlaub</th>
+                                <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                             </tr>
                         </thead>
                         <tbody>

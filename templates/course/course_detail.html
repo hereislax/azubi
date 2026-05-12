@@ -24,7 +24,7 @@
 
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
-            <h2 class="mb-0"><i class="bi bi-journal-bookmark me-1"></i> {{ course.title }}</h2>
+            <h1 class="h2 mb-0"><i class="bi bi-journal-bookmark me-1" aria-hidden="true"></i> {{ course.title }}</h1>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             <a href="{% url 'course:curriculum_overview' course.pk %}" class="btn btn-outline-primary btn-sm">
@@ -36,8 +36,9 @@
             <a href="{% url 'course:course_edit' course.pk %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-pencil me-1"></i> Bearbeiten
             </a>
-            <a href="{% url 'course:course_delete' course.pk %}" class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-trash me-1"></i>
+            <a href="{% url 'course:course_delete' course.pk %}" class="btn btn-outline-danger btn-sm"
+               aria-label="Kurs {{ course.title }} löschen">
+                <i class="bi bi-trash me-1" aria-hidden="true"></i>
             </a>
         </div>
     </div>
@@ -210,13 +211,14 @@
                 {% if students %}
                     <div class="table-responsive">
                     <table class="table table-hover mb-0">
+                        <caption class="kern-sr-only">Dem Kurs zugeordnete Nachwuchskräfte.</caption>
                         <thead class="table-light">
                         <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Beschäftigungsverhältnis</th>
-                            <th>E-Mail (dienstlich)</th>
-                            <th></th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Beschäftigungsverhältnis</th>
+                            <th scope="col">E-Mail (dienstlich)</th>
+                            <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -239,8 +241,9 @@
                                 <td>{{ s.email_id|default:"–" }}</td>
                                 <td class="text-end">
                                     <a href="{% url 'student:student_detail' s.pk %}"
-                                       class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-arrow-right me-1"></i>
+                                       class="btn btn-sm btn-outline-secondary"
+                                       aria-label="Details zu {{ s.first_name }} {{ s.last_name }} öffnen">
+                                        <i class="bi bi-arrow-right me-1" aria-hidden="true"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -264,10 +267,11 @@
         <div class="tab-pane fade" id="akte" role="tabpanel">
             <div class="d-flex flex-wrap gap-2 mb-3 align-items-center justify-content-between">
                 <div class="d-flex gap-2 align-items-center" style="flex: 1 1 auto; min-width: 0;">
+                    <label for="akteSearch" class="kern-sr-only">Im Dokumententext suchen</label>
                     <input type="search" id="akteSearch" class="kern-form-input__input"
                            placeholder="Im Dokumententext suchen …" autocomplete="off"
                            style="flex: 1 1 auto; min-width: 0;">
-                    <span class="text-muted small" id="akteSearchHint"></span>
+                    <span class="text-muted small" id="akteSearchHint" aria-live="polite"></span>
                 </div>
                 <button class="btn btn-sm btn-outline-primary" onclick="kernDialogOpen('uploadModal')">
                     <i class="bi bi-upload me-1"></i> Hochladen
@@ -277,14 +281,15 @@
             {% if paperless_docs %}
             <div class="table-responsive">
             <table class="table table-hover table-bordered align-middle mb-0" id="akteTable" style="width:100%">
+                <caption class="kern-sr-only">Kursakte: Dokumente aus Paperless-ngx.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th>Titel</th>
-                        <th>ASN</th>
-                        <th>Typ</th>
-                        <th>Datum</th>
-                        <th></th>
-                        <th>docid</th>
+                        <th scope="col">Titel</th>
+                        <th scope="col"><abbr title="Archiv-Seriennummer">ASN</abbr></th>
+                        <th scope="col">Typ</th>
+                        <th scope="col">Datum</th>
+                        <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
+                        <th scope="col">docid</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -311,13 +316,13 @@
                                     data-url="{% url 'services:document_update' doc.id %}"
                                     data-title="{{ doc.title|escapejs }}"
                                     data-created="{{ doc.created|slice:':10' }}"
-                                    title="Metadaten bearbeiten">
-                                <i class="bi bi-pencil me-1"></i>
+                                    aria-label="Metadaten von „{{ doc.title }}“ bearbeiten">
+                                <i class="bi bi-pencil me-1" aria-hidden="true"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-primary doc-preview-btn"
                                     data-doc-id="{{ doc.id }}"
                                     data-doc-title="{{ doc.title }}">
-                                <i class="bi bi-eye me-1"></i> Öffnen
+                                <i class="bi bi-eye me-1" aria-hidden="true"></i> Öffnen
                             </button>
                         </td>
                         <td>{{ doc.id }}</td>
@@ -346,8 +351,8 @@
                   class="d-flex gap-2 align-items-end mb-4">
                 {% csrf_token %}
                 <div>
-                    <label class="kern-label">Neue Kurs-Checkliste anlegen</label>
-                    <select name="template" class="kern-form-input__input" style="min-width:260px;" required>
+                    <label for="checklistTemplateCourse" class="kern-label">Neue Kurs-Checkliste anlegen</label>
+                    <select id="checklistTemplateCourse" name="template" class="kern-form-input__input" style="min-width:260px;" required aria-required="true">
                         <option value="">Vorlage wählen …</option>
                         {% for t in checklist_templates %}
                         <option value="{{ t.pk }}">{{ t.name }}</option>
@@ -355,7 +360,7 @@
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i> Anlegen
+                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Anlegen
                 </button>
             </form>
             {% else %}
@@ -379,10 +384,11 @@
                                 </span>
                             </div>
                             <form method="post" action="{% url 'course:course_checklist_delete' course.pk cl.pk %}"
-                                  onsubmit="return confirm('Checkliste „{{ cl.name }}" wirklich löschen?');">
+                                  onsubmit="return confirm('Checkliste „{{ cl.name|escapejs }}“ wirklich löschen?');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Löschen">
-                                    <i class="bi bi-trash3 me-1"></i>
+                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1"
+                                        aria-label="Checkliste „{{ cl.name }}“ löschen">
+                                    <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
                                 </button>
                             </form>
                         </div>
@@ -399,8 +405,9 @@
                                         {% csrf_token %}
                                         <button type="submit"
                                                 class="btn btn-sm p-0 border-0 {% if item.completed %}text-success{% else %}text-secondary{% endif %}"
-                                                title="{% if item.completed %}Als offen markieren{% else %}Als erledigt markieren{% endif %}">
-                                            <i class="bi {% if item.completed %}bi-check-circle-fill{% else %}bi-circle{% endif %} fs-5"></i>
+                                                aria-pressed="{% if item.completed %}true{% else %}false{% endif %}"
+                                                aria-label="{% if item.completed %}Punkt „{{ item.text }}“ als offen markieren{% else %}Punkt „{{ item.text }}“ als erledigt markieren{% endif %}">
+                                            <i class="bi {% if item.completed %}bi-check-circle-fill{% else %}bi-circle{% endif %} fs-5" aria-hidden="true"></i>
                                         </button>
                                     </form>
                                     <span class="{% if item.completed %}text-decoration-line-through text-muted{% endif %} small flex-grow-1">
@@ -447,8 +454,8 @@
                   class="d-flex gap-2 align-items-end mb-4">
                 {% csrf_token %}
                 <div>
-                    <label class="kern-label">Checkliste für alle NK anlegen</label>
-                    <select name="template" class="kern-form-input__input" style="min-width:260px;" required>
+                    <label for="checklistTemplateBulk" class="kern-label">Checkliste für alle NK anlegen</label>
+                    <select id="checklistTemplateBulk" name="template" class="kern-form-input__input" style="min-width:260px;" required aria-required="true">
                         <option value="">Vorlage wählen …</option>
                         {% for t in checklist_templates %}
                         <option value="{{ t.pk }}">{{ t.name }}</option>
@@ -456,7 +463,7 @@
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-people me-1"></i> Für alle {{ students|length }} NK anlegen
+                    <i class="bi bi-people me-1" aria-hidden="true"></i> Für alle {{ students|length }} NK anlegen
                 </button>
             </form>
             {% else %}
@@ -470,11 +477,12 @@
             {% if students_with_checklists %}
             <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle">
+                <caption class="kern-sr-only">Checklisten-Fortschritt pro Nachwuchskraft.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th style="width:220px;">Nachwuchskraft</th>
-                        <th>Checklisten &amp; Fortschritt</th>
-                        <th style="width:120px;"></th>
+                        <th scope="col" style="width:220px;">Nachwuchskraft</th>
+                        <th scope="col">Checklisten &amp; Fortschritt</th>
+                        <th scope="col" style="width:120px;"><span class="kern-sr-only">Aktionen</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -501,8 +509,9 @@
                         </td>
                         <td>
                             <a href="{% url 'student:student_detail' row.student.pk %}?tab=checklisten"
-                               class="btn btn-outline-secondary btn-sm py-0 px-2">
-                                <i class="bi bi-arrow-right me-1"></i>
+                               class="btn btn-outline-secondary btn-sm py-0 px-2"
+                               aria-label="Checklisten von {{ row.student.first_name }} {{ row.student.last_name }} öffnen">
+                                <i class="bi bi-arrow-right me-1" aria-hidden="true"></i>
                             </a>
                         </td>
                     </tr>

@@ -15,7 +15,7 @@
     </nav>
 
     <div class="d-flex align-items-center gap-3 mb-4">
-        <h2 class="mb-0"><i class="bi bi-table me-1"></i> Import-Vorschau</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-table me-1" aria-hidden="true"></i> Import-Vorschau</h1>
         <span class="badge bg-success fs-6">{{ valid_count }} gültig</span>
         {% if errors %}
         <span class="badge bg-danger fs-6">{{ errors|length }} fehlerhaft</span>
@@ -34,18 +34,19 @@
 
     <div class="table-responsive mb-4">
         <table class="table table-sm table-bordered align-middle" style="font-size: 0.85rem;">
+            <caption class="kern-sr-only">Vorschau der zu importierenden Organisationseinheiten mit Validierungsstatus.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Zeile</th>
-                    <th>Name</th>
-                    <th>Bezeichnung</th>
-                    <th>Art</th>
-                    <th>Übergeordnete Einheit</th>
-                    <th>Standorte</th>
-                    <th>Kompetenzen</th>
-                    <th>Kap.</th>
-                    <th>Aktiv</th>
-                    <th>Status</th>
+                    <th scope="col">Zeile</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Bezeichnung</th>
+                    <th scope="col">Art</th>
+                    <th scope="col">Übergeordnete Einheit</th>
+                    <th scope="col">Standorte</th>
+                    <th scope="col">Kompetenzen</th>
+                    <th scope="col"><abbr title="Kapazität">Kap.</abbr></th>
+                    <th scope="col">Aktiv</th>
+                    <th scope="col">Prüfergebnis</th>
                 </tr>
             </thead>
             <tbody>

@@ -10,7 +10,7 @@
     </ol>
 </nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0"><i class="bi bi-door-open me-1"></i> Meine Raumbuchungen</h2>
+    <h1 class="h2 mb-0"><i class="bi bi-door-open me-1" aria-hidden="true"></i> Meine Raumbuchungen</h1>
     <a href="{% url 'workspace:portal_workspace_list' %}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i> Neue Buchung
     </a>
@@ -20,7 +20,8 @@
     <div class="card-header bg-light"><i class="bi bi-calendar-event me-1"></i> Kommende Buchungen</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Datum</th><th>Arbeitsplatz</th><th>Standort</th><th>Zweck</th><th class="text-end">Aktion</th></tr></thead>
+            <caption class="kern-sr-only">Eigene kommende Raumbuchungen.</caption>
+            <thead><tr><th scope="col">Datum</th><th scope="col">Arbeitsplatz</th><th scope="col">Standort</th><th scope="col">Zweck</th><th scope="col" class="text-end">Aktion</th></tr></thead>
             <tbody>
                 {% for b in upcoming %}
                 <tr>
@@ -30,7 +31,7 @@
                     <td>{{ b.purpose|default:"—" }}</td>
                     <td class="text-end">
                         <a href="{% url 'workspace:portal_booking_cancel' b.public_id %}" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-x-circle"></i> Stornieren
+                            <i class="bi bi-x-circle" aria-hidden="true"></i> Stornieren
                         </a>
                     </td>
                 </tr>
@@ -47,7 +48,8 @@
     <div class="card-header bg-light"><i class="bi bi-clock-history me-1"></i> Vergangene Buchungen</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Datum</th><th>Arbeitsplatz</th><th>Standort</th><th>Status</th></tr></thead>
+            <caption class="kern-sr-only">Eigene vergangene Raumbuchungen.</caption>
+            <thead><tr><th scope="col">Datum</th><th scope="col">Arbeitsplatz</th><th scope="col">Standort</th><th scope="col">Status</th></tr></thead>
             <tbody>
                 {% for b in past %}
                 <tr>

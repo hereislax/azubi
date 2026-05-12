@@ -13,7 +13,7 @@
 </nav>
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="{{ workspace.workspace_type.icon|default:'bi-door-closed' }} me-1"></i>{{ workspace.name }}</h2>
+        <h1 class="h2 mb-0"><i class="{{ workspace.workspace_type.icon|default:'bi-door-closed' }} me-1" aria-hidden="true"></i>{{ workspace.name }}</h1>
         <p class="text-muted mb-0">
             {{ workspace.workspace_type.name }} · {{ workspace.location.name }} · Kapazität {{ workspace.capacity }}
         </p>
@@ -34,7 +34,8 @@
     <div class="card-header bg-light"><i class="bi bi-calendar3 me-1"></i> Verfügbarkeit</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
-            <thead><tr><th style="width:170px;">Datum</th><th>Status</th><th class="text-end" style="width:140px;">Aktion</th></tr></thead>
+            <caption class="kern-sr-only">Verfügbarkeit dieses Arbeitsplatzes für die nächsten Tage.</caption>
+            <thead><tr><th scope="col" style="width:170px;">Datum</th><th scope="col">Status</th><th scope="col" class="text-end" style="width:140px;">Aktion</th></tr></thead>
             <tbody>
                 {% for d in days %}
                 <tr {% if d.is_own %}class="table-info"{% elif d.is_closed %}class="table-warning"{% endif %}>
@@ -53,7 +54,7 @@
                     <td class="text-end">
                         {% if not d.is_own and not d.is_closed and d.remaining > 0 %}
                         <a href="{% url 'workspace:portal_booking_create_for_workspace' workspace.public_id %}?date={{ d.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-plus"></i> Buchen
+                            <i class="bi bi-plus" aria-hidden="true"></i> Buchen
                         </a>
                         {% endif %}
                     </td>

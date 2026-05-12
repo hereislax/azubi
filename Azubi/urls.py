@@ -24,6 +24,7 @@ from django.views.static import serve
 from django.shortcuts import redirect
 from .views import (
     index as index_view, impressum as impressum_view, datenschutz as datenschutz_view,
+    barrierefreiheit as barrierefreiheit_view,
     acknowledgments as acknowledgments_view, global_search as global_search_view,
     auswertungen as auswertungen_view, dashboard_config_save as dashboard_config_save_view,
     report_detail as report_detail_view,
@@ -77,6 +78,7 @@ urlpatterns = [
     path("auswertungen/<slug:slug>/export/<str:fmt>/", report_export_view, name="report_export"),
     path("impressum/", impressum_view, name="impressum"),
     path("datenschutz/", datenschutz_view, name="datenschutz"),
+    path("barrierefreiheit/", barrierefreiheit_view, name="barrierefreiheit"),
     path("acknowledgments/", acknowledgments_view, name="acknowledgments"),
     path("", include("services.urls")),
     path("student/", include("student.urls")),

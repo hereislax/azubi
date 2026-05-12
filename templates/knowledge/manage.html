@@ -10,7 +10,7 @@
     </ol>
 </nav>
 <div class="page-title">
-    <h2><i class="bi bi-journal-bookmark me-2"></i>Wissensdatenbank</h2>
+    <h1 class="h2"><i class="bi bi-journal-bookmark me-2" aria-hidden="true"></i>Wissensdatenbank</h1>
     <div class="d-flex gap-2">
         <button class="kern-btn kern-btn--tertiary" onclick="kernDialogOpen('dialog-add-category')">
             <span class="kern-icon kern-icon--add" aria-hidden="true"></span>
@@ -43,21 +43,22 @@
 {% for cat in categories %}
 <div class="card shadow-sm mb-3 {% if not cat.is_active %}opacity-50{% endif %}">
     <div class="card-header d-flex align-items-center gap-2 py-2">
-        <i class="bi {{ cat.icon }} text-primary me-1"></i>
-        <span class="fw-semibold">{{ cat.name }}</span>
+        <i class="bi {{ cat.icon }} text-primary me-1" aria-hidden="true"></i>
+        <h2 class="h6 mb-0 fw-semibold">{{ cat.name }}</h2>
         {% if not cat.is_active %}
         <span class="badge bg-secondary ms-1">Inaktiv</span>
         {% endif %}
         <div class="ms-auto d-flex gap-1">
             <button class="kern-btn kern-btn--tertiary kern-btn--sm"
                     onclick="openEditCategory({{ cat.pk }}, '{{ cat.name|escapejs }}', '{{ cat.icon|escapejs }}', {{ cat.order }}, {{ cat.is_active|yesno:'true,false' }})"
-                    title="Kategorie bearbeiten">
+                    aria-label="Kategorie „{{ cat.name }}“ bearbeiten">
                 <span class="kern-icon kern-icon--edit" aria-hidden="true"></span>
             </button>
             <form method="post" action="{% url 'knowledge:delete_category' cat.public_id %}"
-                  onsubmit="return confirm('Kategorie „{{ cat.name }}" wirklich löschen? (Nur möglich wenn keine Dokumente darin sind)')">
+                  onsubmit="return confirm('Kategorie „{{ cat.name|escapejs }}“ wirklich löschen? (Nur möglich wenn keine Dokumente darin sind)')">
                 {% csrf_token %}
-                <button type="submit" class="kern-btn kern-btn--tertiary kern-btn--sm kern-btn--danger" title="Kategorie löschen">
+                <button type="submit" class="kern-btn kern-btn--tertiary kern-btn--sm kern-btn--danger"
+                        aria-label="Kategorie „{{ cat.name }}“ löschen">
                     <span class="kern-icon kern-icon--delete" aria-hidden="true"></span>
                 </button>
             </form>
@@ -67,14 +68,15 @@
         {% if cat.documents.all %}
         <div class="table-responsive">
         <table class="table table-sm table-hover align-middle mb-0">
+            <caption class="kern-sr-only">Dokumente und Links in Kategorie „{{ cat.name }}".</caption>
             <thead>
                 <tr>
-                    <th style="width:2rem;"></th>
-                    <th>Titel</th>
-                    <th>Sichtbarkeit</th>
-                    <th>Zielgruppe</th>
-                    <th class="text-center">Aktiv</th>
-                    <th></th>
+                    <th scope="col" style="width:2rem;"><span class="kern-sr-only">Dateityp</span></th>
+                    <th scope="col">Titel</th>
+                    <th scope="col">Sichtbarkeit</th>
+                    <th scope="col">Zielgruppe</th>
+                    <th scope="col" class="text-center">Aktiv</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -82,17 +84,17 @@
                 <tr {% if not doc.is_active %}class="text-muted"{% endif %}>
                     <td class="text-center">
                         {% if doc.is_link %}
-                        <i class="bi bi-box-arrow-up-right text-info" title="Externer Link"></i>
+                        <i class="bi bi-box-arrow-up-right text-info" aria-label="Externer Link"></i>
                         {% elif doc.file_extension == 'pdf' %}
-                        <i class="bi bi-file-earmark-pdf text-danger" title="PDF"></i>
+                        <i class="bi bi-file-earmark-pdf text-danger" aria-label="PDF-Datei"></i>
                         {% elif doc.file_extension in 'docx,doc' %}
-                        <i class="bi bi-file-earmark-word text-primary" title="Word"></i>
+                        <i class="bi bi-file-earmark-word text-primary" aria-label="Word-Dokument"></i>
                         {% elif doc.file_extension in 'xlsx,csv' %}
-                        <i class="bi bi-file-earmark-spreadsheet text-success" title="Tabelle"></i>
+                        <i class="bi bi-file-earmark-spreadsheet text-success" aria-label="Tabelle"></i>
                         {% elif doc.file_extension in 'jpg,jpeg,png' %}
-                        <i class="bi bi-file-earmark-image text-secondary" title="Bild"></i>
+                        <i class="bi bi-file-earmark-image text-secondary" aria-label="Bild"></i>
                         {% else %}
-                        <i class="bi bi-file-earmark text-muted" title="Datei"></i>
+                        <i class="bi bi-file-earmark text-muted" aria-label="Datei"></i>
                         {% endif %}
                     </td>
                     <td>
@@ -126,8 +128,9 @@
                             {% csrf_token %}
                             <button type="submit"
                                     class="kern-btn kern-btn--tertiary kern-btn--sm"
-                                    title="{% if doc.is_active %}Deaktivieren{% else %}Aktivieren{% endif %}">
-                                <i class="bi {% if doc.is_active %}bi-check-circle-fill text-success{% else %}bi-pause-circle text-secondary{% endif %}"></i>
+                                    aria-pressed="{% if doc.is_active %}true{% else %}false{% endif %}"
+                                    aria-label="Dokument „{{ doc.title }}“ {% if doc.is_active %}deaktivieren{% else %}aktivieren{% endif %}">
+                                <i class="bi {% if doc.is_active %}bi-check-circle-fill text-success{% else %}bi-pause-circle text-secondary{% endif %}" aria-hidden="true"></i>
                             </button>
                         </form>
                     </td>
@@ -135,13 +138,14 @@
                         <div class="d-flex gap-1 justify-content-end">
                             <button class="kern-btn kern-btn--tertiary kern-btn--sm"
                                     onclick="openEditDocument({{ doc.pk }}, '{{ doc.title|escapejs }}', '{{ doc.description|escapejs }}', '{{ doc.content|escapejs }}', {{ doc.category_id }}, '{{ doc.external_url|escapejs }}', '{{ doc.filename|escapejs }}', '{{ doc.visibility }}', {{ doc.target_job_profile_id|default:'null' }}, {{ doc.target_course_id|default:'null' }}, {{ doc.target_career_id|default:'null' }}, {{ doc.order }}, {{ doc.is_active|yesno:'true,false' }})"
-                                    title="Bearbeiten">
+                                    aria-label="Dokument „{{ doc.title }}“ bearbeiten">
                                 <span class="kern-icon kern-icon--edit" aria-hidden="true"></span>
                             </button>
                             <form method="post" action="{% url 'knowledge:delete_document' doc.public_id %}"
-                                  onsubmit="return confirm('Dokument „{{ doc.title }}" wirklich löschen?')">
+                                  onsubmit="return confirm('Dokument „{{ doc.title|escapejs }}“ wirklich löschen?')">
                                 {% csrf_token %}
-                                <button type="submit" class="kern-btn kern-btn--tertiary kern-btn--sm kern-btn--danger" title="Löschen">
+                                <button type="submit" class="kern-btn kern-btn--tertiary kern-btn--sm kern-btn--danger"
+                                        aria-label="Dokument „{{ doc.title }}“ löschen">
                                     <span class="kern-icon kern-icon--delete" aria-hidden="true"></span>
                                 </button>
                             </form>
@@ -182,7 +186,7 @@
         </header>
         <section class="kern-dialog__body">
             <div class="kern-form-input">
-                <label class="kern-label" for="cat-add-name">Name <span class="text-danger">*</span></label>
+                <label class="kern-label" for="cat-add-name">Name <span class="text-danger" aria-label="erforderlich">*</span></label>
                 <input type="text" name="name" id="cat-add-name" class="kern-form-input__input" required maxlength="100" autofocus>
             </div>
             <div class="kern-form-input">
@@ -231,7 +235,7 @@
         </header>
         <section class="kern-dialog__body">
             <div class="kern-form-input">
-                <label class="kern-label" for="edit-cat-name">Name <span class="text-danger">*</span></label>
+                <label class="kern-label" for="edit-cat-name">Name <span class="text-danger" aria-label="erforderlich">*</span></label>
                 <input type="text" name="name" id="edit-cat-name" class="kern-form-input__input" required maxlength="100">
             </div>
             <div class="kern-form-input">
@@ -282,7 +286,7 @@
 
                 <div class="col-12">
                     <div class="kern-form-input">
-                        <label class="kern-label" for="doc-title">Titel <span class="text-danger">*</span></label>
+                        <label class="kern-label" for="doc-title">Titel <span class="text-danger" aria-label="erforderlich">*</span></label>
                         <input type="text" name="title" id="doc-title" class="kern-form-input__input" required maxlength="200">
                     </div>
                 </div>
@@ -296,7 +300,7 @@
 
                 <div class="col-md-6">
                     <div class="kern-form-input">
-                        <label class="kern-label" for="doc-category">Kategorie <span class="text-danger">*</span></label>
+                        <label class="kern-label" for="doc-category">Kategorie <span class="text-danger" aria-label="erforderlich">*</span></label>
                         <select name="category_id" id="doc-category" class="kern-form-input__input" required>
                             {% for cat in categories %}
                             <option value="{{ cat.pk }}">{{ cat.name }}</option>

@@ -36,7 +36,7 @@
     <div class="col-md-7">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-thermometer-high me-1"></i> Krankmeldung erfassen</h5>
+                <h1 class="h5 mb-0"><i class="bi bi-thermometer-high me-1" aria-hidden="true"></i> Krankmeldung erfassen</h1>
             </div>
             <div class="card-body">
                 {% if form.non_field_errors %}
@@ -54,7 +54,8 @@
                         {% if form.student.errors %}
                         <div class="text-danger small mb-1">{{ form.student.errors.as_text }}</div>
                         {% endif %}
-                        <select name="student" id="student_hidden" style="display:none;">
+                        <select name="student" id="student_hidden" style="display:none;"
+                                aria-hidden="true" tabindex="-1">
                             <option value=""></option>
                             {% for s in students %}
                             <option value="{{ s.pk }}" {% if form.student.value == s.pk %}selected{% endif %}>
@@ -64,11 +65,15 @@
                         </select>
                         <div class="ac-wrap position-relative">
                             <input type="text" id="student_search" class="kern-form-input__input"
-                                   placeholder="Name eingeben …" autocomplete="off">
-                            <div id="student_dropdown" class="ac-dropdown"></div>
+                                   placeholder="Name eingeben …" autocomplete="off"
+                                   required aria-required="true"
+                                   role="combobox" aria-autocomplete="list"
+                                   aria-controls="student_dropdown" aria-expanded="false"
+                                   aria-describedby="student_error">
+                            <div id="student_dropdown" class="ac-dropdown" role="listbox"></div>
                         </div>
-                        <div id="student_error" class="text-danger small mt-1" style="display:none;">
-                            <i class="bi bi-exclamation-circle me-1"></i> Bitte eine Nachwuchskraft auswählen.
+                        <div id="student_error" class="text-danger small mt-1" style="display:none;" role="alert">
+                            <i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i> Bitte eine Nachwuchskraft auswählen.
                         </div>
                     </div>
 
@@ -152,6 +157,14 @@
 
     let activeIdx = -1;
 
+    function closeDropdown() {
+        dropdown.style.display = 'none';
+        search.setAttribute('aria-expanded', 'false');
+    }
+    function openDropdown() {
+        dropdown.style.display = 'block';
+        search.setAttribute('aria-expanded', 'true');
+    }
     function render(query) {
         const q = query.trim().toLowerCase();
         const hits = q ? options.filter(o => o.text.toLowerCase().includes(q)) : options;
@@ -159,26 +172,28 @@
         activeIdx = -1;
         if (hits.length === 0) {
             dropdown.innerHTML = '<div style="padding:10px 12px;font-size:.85rem;color:#6c757d;font-style:italic;">Keine Treffer</div>';
-            dropdown.style.display = 'block';
+            openDropdown();
             return;
         }
         hits.slice(0, 50).forEach((opt) => {
             const item = document.createElement('div');
             item.className = 'ac-item';
+            item.setAttribute('role', 'option');
             item.dataset.value = opt.value;
             item.innerHTML = hilite(opt.text, query.trim());
             item.addEventListener('mousedown', e => {
                 e.preventDefault();
                 hidden.value = opt.value;
                 search.value = opt.text;
-                dropdown.style.display = 'none';
+                closeDropdown();
                 activeIdx = -1;
                 errMsg.style.display = 'none';
                 search.classList.remove('is-invalid');
+                search.setAttribute('aria-invalid', 'false');
             });
             dropdown.appendChild(item);
         });
-        dropdown.style.display = 'block';
+        openDropdown();
     }
 
     function setActive(idx) {
@@ -199,20 +214,21 @@
         }
     });
     search.addEventListener('focus', () => render(search.value));
-    search.addEventListener('blur',  () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
+    search.addEventListener('blur',  () => setTimeout(closeDropdown, 150));
     search.addEventListener('keydown', e => {
         const items = dropdown.querySelectorAll('.ac-item');
         if (!items.length) return;
         if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
         else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0) items[activeIdx].dispatchEvent(new MouseEvent('mousedown')); }
-        else if (e.key === 'Escape') { dropdown.style.display = 'none'; }
+        else if (e.key === 'Escape') { closeDropdown(); }
     });
 
     document.getElementById('sickLeaveForm').addEventListener('submit', e => {
         if (!hidden.value) {
             e.preventDefault();
             search.classList.add('is-invalid');
+            search.setAttribute('aria-invalid', 'true');
             errMsg.style.display = 'block';
             search.focus();
         }

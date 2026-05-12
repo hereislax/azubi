@@ -10,14 +10,16 @@
     </ol>
 </nav>
 
+<h1 class="kern-sr-only">Stationsbeurteilung – {{ assessment.assignment.student }}</h1>
+
 <div class="row g-3">
 
     {# ── Linke Spalte: Metadaten + Aktionen ─────────────────────────────── #}
     <div class="col-12 col-lg-4">
 
-        <div class="card shadow-sm mb-3">
+        <section class="card shadow-sm mb-3" aria-labelledby="meta-heading">
             <div class="card-header d-flex align-items-center justify-content-between">
-                <span class="fw-semibold"><i class="bi bi-clipboard-check me-1"></i> Stationsbeurteilung</span>
+                <h2 id="meta-heading" class="h6 mb-0 fw-semibold"><i class="bi bi-clipboard-check me-1" aria-hidden="true"></i> Stationsbeurteilung</h2>
                 <span class="badge bg-{{ assessment.status_badge }}">{{ assessment.get_status_display }}</span>
             </div>
             <div class="card-body p-0">
@@ -66,7 +68,7 @@
                     {% endif %}
                 </ul>
             </div>
-        </div>
+        </section>
 
         {# Aktionen #}
         {% if can_confirm and assessment.status == STATUS_SUBMITTED %}
@@ -141,14 +143,14 @@
             <form method="post" action="{% url 'assessment:change_assessor' assessment.public_id %}" class="card card-body p-2">
                 {% csrf_token %}
                 <div class="kern-form-input mb-2">
-                    <label class="kern-label">Name</label>
-                    <input type="text" name="assessor_name" class="kern-form-input__input"
-                           value="{{ assessment.assessor_name }}" required>
+                    <label for="new_assessor_name" class="kern-label">Name</label>
+                    <input type="text" id="new_assessor_name" name="assessor_name" class="kern-form-input__input"
+                           value="{{ assessment.assessor_name }}" required aria-required="true" autocomplete="name">
                 </div>
                 <div class="kern-form-input mb-2">
-                    <label class="kern-label">E-Mail</label>
-                    <input type="email" name="assessor_email" class="kern-form-input__input"
-                           value="{{ assessment.assessor_email }}" required>
+                    <label for="new_assessor_email" class="kern-label">E-Mail</label>
+                    <input type="email" id="new_assessor_email" name="assessor_email" class="kern-form-input__input"
+                           value="{{ assessment.assessor_email }}" required aria-required="true" autocomplete="email">
                 </div>
                 <button type="submit" class="btn btn-warning btn-sm">
                     Praxistutor wechseln &amp; Link senden
@@ -164,12 +166,12 @@
     <div class="col-12 col-lg-8">
 
         {# Praxistutoren-Beurteilung #}
-        <div class="card shadow-sm mb-3">
+        <section class="card shadow-sm mb-3" aria-labelledby="extern-heading">
             <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-person-check me-1"></i> Beurteilung durch Praxistutoren</span>
+                <h2 id="extern-heading" class="h6 mb-0"><i class="bi bi-person-check me-1" aria-hidden="true"></i> Beurteilung durch Praxistutoren</h2>
                 {% with avg=assessment.average_grade %}
                 {% if avg %}
-                <span class="badge bg-primary fs-6 px-3">Ø {{ avg }}</span>
+                <span class="badge bg-primary fs-6 px-3" aria-label="Durchschnitt {{ avg }}">Ø {{ avg }}</span>
                 {% endif %}
                 {% endwith %}
             </div>
@@ -177,11 +179,12 @@
                 {% if ratings %}
                 <div class="table-responsive">
                 <table class="table table-sm mb-0">
+                    <caption class="kern-sr-only">Bewertung durch Praxistutoren: Kriterium, Wert und Kommentar.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th>Kriterium</th>
-                            <th class="text-center" style="width:120px;">Bewertung</th>
-                            <th>Kommentar</th>
+                            <th scope="col">Kriterium</th>
+                            <th scope="col" class="text-center" style="width:120px;">Bewertung</th>
+                            <th scope="col">Kommentar</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -208,21 +211,21 @@
                 {% endif %}
                 {% else %}
                 <p class="text-muted small p-3 mb-0">
-                    <i class="bi bi-hourglass-split me-1"></i>
+                    <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>
                     Noch keine Bewertungen eingereicht.
                 </p>
                 {% endif %}
             </div>
-        </div>
+        </section>
 
         {# Selbstbeurteilung (Azubi) #}
-        <div class="card shadow-sm">
+        <section class="card shadow-sm" aria-labelledby="self-heading">
             <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-person-workspace me-1"></i> Selbstbeurteilung (Auszubildende)</span>
+                <h2 id="self-heading" class="h6 mb-0"><i class="bi bi-person-workspace me-1" aria-hidden="true"></i> Selbstbeurteilung (Auszubildende)</h2>
                 <div class="d-flex align-items-center gap-2">
                     {% if self_assessment %}
                     {% with avg=self_assessment.average_grade %}
-                    {% if avg %}<span class="badge bg-secondary fs-6 px-3">Ø {{ avg }}</span>{% endif %}
+                    {% if avg %}<span class="badge bg-secondary fs-6 px-3" aria-label="Durchschnitt {{ avg }}">Ø {{ avg }}</span>{% endif %}
                     {% endwith %}
                     <span class="badge bg-{{ self_assessment.status_badge }}">{{ self_assessment.get_status_display }}</span>
                     {% endif %}
@@ -232,11 +235,12 @@
                 {% if self_ratings %}
                 <div class="table-responsive">
                 <table class="table table-sm mb-0">
+                    <caption class="kern-sr-only">Selbstbeurteilung der Nachwuchskraft: Kriterium, Wert und Kommentar.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th>Kriterium</th>
-                            <th class="text-center" style="width:120px;">Bewertung</th>
-                            <th>Kommentar</th>
+                            <th scope="col">Kriterium</th>
+                            <th scope="col" class="text-center" style="width:120px;">Bewertung</th>
+                            <th scope="col">Kommentar</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -263,17 +267,17 @@
                 {% endif %}
                 {% elif self_assessment %}
                 <p class="text-muted small p-3 mb-0">
-                    <i class="bi bi-hourglass-split me-1"></i>
+                    <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>
                     Selbstbeurteilung vorhanden, aber noch keine Bewertungen eingetragen.
                 </p>
                 {% else %}
                 <p class="text-muted small p-3 mb-0">
-                    <i class="bi bi-dash-circle me-1"></i>
+                    <i class="bi bi-dash-circle me-1" aria-hidden="true"></i>
                     Keine Selbstbeurteilung eingereicht.
                 </p>
                 {% endif %}
             </div>
-        </div>
+        </section>
 
     </div>
 </div>

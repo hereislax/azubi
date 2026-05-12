@@ -10,24 +10,25 @@
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">
-        <i class="bi bi-pencil-square me-1"></i>
+    <h1 class="h4 mb-0">
+        <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>
         Offene Änderungsanträge
-    </h4>
+    </h1>
     <span class="badge bg-secondary">{{ change_requests|length }}</span>
 </div>
 
 {% if change_requests %}
     <div class="table-responsive">
         <table class="table table-hover align-middle">
+            <caption class="kern-sr-only">Offene Änderungsanträge der Koordination zur Prüfung.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Typ</th>
-                    <th>Nachwuchskraft</th>
-                    <th>Einheit</th>
-                    <th>Beantragt</th>
-                    <th>Antragsteller</th>
-                    <th class="text-end">Aktion</th>
+                    <th scope="col">Typ</th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Einheit</th>
+                    <th scope="col">Beantragt</th>
+                    <th scope="col">Antragsteller</th>
+                    <th scope="col" class="text-end">Aktion</th>
                 </tr>
             </thead>
             <tbody>
@@ -45,7 +46,7 @@
                     <td>{{ cr.requested_by.get_full_name|default:cr.requested_by.username|default:"–" }}</td>
                     <td class="text-end">
                         <a href="{% url 'instructor:change_request_review' cr.public_id %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye me-1"></i> Prüfen
+                            <i class="bi bi-eye me-1" aria-hidden="true"></i> Prüfen
                         </a>
                     </td>
                 </tr>

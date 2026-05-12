@@ -990,6 +990,12 @@ class SiteConfiguration(models.Model):
     # ── Seiteninhalte ─────────────────────────────────────────────────────────
     impressum_text = models.TextField(blank=True, verbose_name="Impressum-Text")
     datenschutz_text = models.TextField(blank=True, verbose_name="Datenschutz-Text")
+    barrierefreiheit_text = models.TextField(
+        blank=True, verbose_name="Erklärung zur Barrierefreiheit",
+        help_text="Pflichtangaben nach BITV 2.0 §12 / EU 2016/2102: Konformitätsstatus, "
+                  "nicht barrierefreie Inhalte, Feedback-Kontakt, Schlichtungsstelle. "
+                  "HTML erlaubt. Bleibt leer → Default-Vorlage wird gerendert."
+    )
 
     # ── Erscheinungsbild ──────────────────────────────────────────────────────
     brand_name = models.CharField(

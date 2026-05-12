@@ -13,7 +13,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-list-check me-1"></i> Ausbildungsplan</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-list-check me-1" aria-hidden="true"></i> Ausbildungsplan</h1>
         <div class="text-muted small mt-1">
             {{ course.title }} – {{ course.job_profile|default:"Kein Berufsbild" }}
         </div>
@@ -50,13 +50,14 @@
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-sm align-middle mb-0">
+                <caption class="kern-sr-only">Ausbildungsplan-Anforderungen mit Dauer und Art.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th style="width:2rem;">#</th>
-                        <th>Bezeichnung</th>
-                        <th>Ziel</th>
-                        <th class="text-center">Dauer</th>
-                        <th class="text-center">Art</th>
+                        <th scope="col" style="width:2rem;">#</th>
+                        <th scope="col">Bezeichnung</th>
+                        <th scope="col">Ziel</th>
+                        <th scope="col" class="text-center">Dauer</th>
+                        <th scope="col" class="text-center">Art</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,12 +100,13 @@
         {% if student_rows %}
         <div class="table-responsive">
             <table class="table table-sm table-hover align-middle mb-0">
+                <caption class="kern-sr-only">Fortschritt jeder Nachwuchskraft je Ausbildungsplan-Anforderung.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th>Nachwuchskraft</th>
-                        <th style="min-width:120px;">Fortschritt</th>
+                        <th scope="col">Nachwuchskraft</th>
+                        <th scope="col" style="min-width:120px;">Fortschritt</th>
                         {% for req in requirements %}
-                        <th class="text-center" style="min-width:2.5rem;" title="{{ req.name }}">
+                        <th scope="col" class="text-center" style="min-width:2.5rem;" title="{{ req.name }}">
                             <span class="d-inline-block text-truncate" style="max-width:4rem;font-size:.7rem;">{{ req.name }}</span>
                         </th>
                         {% endfor %}

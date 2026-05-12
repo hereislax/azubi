@@ -16,10 +16,10 @@
 
 <div class="card {% if action == 'approve' %}border-success{% else %}border-danger{% endif %}">
     <div class="card-header {% if action == 'approve' %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
-        <h5 class="mb-0">
-            <i class="bi {% if action == 'approve' %}bi-check-circle{% else %}bi-x-circle{% endif %}"></i>
+        <h1 class="h5 mb-0">
+            <i class="bi {% if action == 'approve' %}bi-check-circle{% else %}bi-x-circle{% endif %}" aria-hidden="true"></i>
             Praktikumseinsatz {% if action == 'approve' %}annehmen{% else %}ablehnen{% endif %}
-        </h5>
+        </h1>
     </div>
     <div class="card-body">
 

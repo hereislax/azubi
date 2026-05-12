@@ -12,7 +12,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-person-gear me-1"></i> {{ coordination.name }}</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-person-gear me-1" aria-hidden="true"></i> {{ coordination.name }}</h1>
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <a href="{% url 'instructor:chief_instructor_calendar' coordination.public_id %}" class="btn btn-outline-primary btn-sm">
@@ -70,12 +70,13 @@
     <div class="card-body p-0">
 <div class="table-responsive">
 <table class="table table-sm table-hover table-bordered align-middle mb-0">
+    <caption class="kern-sr-only">Mitglieder dieser Koordinationsgruppe.</caption>
     <thead class="table-light">
         <tr>
-            <th>Name</th>
-            <th>Dienstliche E-Mail</th>
-            <th>Benutzerkonto</th>
-            {% if not is_training_coordinator %}<th></th>{% endif %}
+            <th scope="col">Name</th>
+            <th scope="col">Dienstliche E-Mail</th>
+            <th scope="col">Benutzerkonto</th>
+            {% if not is_training_coordinator %}<th scope="col"><span class="kern-sr-only">Aktionen</span></th>{% endif %}
         </tr>
     </thead>
     <tbody>
@@ -166,16 +167,17 @@
     <div class="tab-pane fade show active" id="pending" role="tabpanel">
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle" id="table-pending" style="width:100%">
+            <caption class="kern-sr-only">Einsätze, die noch eine Entscheidung der Koordination benötigen.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Nachwuchskraft</th>
-                    <th>Kurs</th>
-                    <th>Organisationseinheit</th>
-                    <th>Von</th>
-                    <th>Bis</th>
-                    <th>Block</th>
-                    <th>Angelegt von</th>
-                    <th></th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Kurs</th>
+                    <th scope="col">Organisationseinheit</th>
+                    <th scope="col">Von</th>
+                    <th scope="col">Bis</th>
+                    <th scope="col">Block</th>
+                    <th scope="col">Angelegt von</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -211,16 +213,17 @@
         {% if current_assignments %}
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle" id="table-current" style="width:100%">
+            <caption class="kern-sr-only">Aktuelle Einsätze im Bereich dieser Koordination.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Nachwuchskraft</th>
-                    <th>Kurs</th>
-                    <th>Organisationseinheit</th>
-                    <th>Von</th>
-                    <th>Bis</th>
-                    <th>Block</th>
-                    <th>Bewertung</th>
-                    <th></th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Kurs</th>
+                    <th scope="col">Organisationseinheit</th>
+                    <th scope="col">Von</th>
+                    <th scope="col">Bis</th>
+                    <th scope="col">Block</th>
+                    <th scope="col">Bewertung</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -266,15 +269,16 @@
         {% if future_assignments %}
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle" id="table-future" style="width:100%">
+            <caption class="kern-sr-only">Geplante künftige Einsätze im Bereich dieser Koordination.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Nachwuchskraft</th>
-                    <th>Kurs</th>
-                    <th>Organisationseinheit</th>
-                    <th>Von</th>
-                    <th>Bis</th>
-                    <th>Block</th>
-                    <th></th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Kurs</th>
+                    <th scope="col">Organisationseinheit</th>
+                    <th scope="col">Von</th>
+                    <th scope="col">Bis</th>
+                    <th scope="col">Block</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -310,8 +314,9 @@
         {% if past_assignments %}
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle" id="table-past" style="width:100%">
+            <caption class="kern-sr-only">Vergangene Einsätze im Bereich dieser Koordination.</caption>
             <thead class="table-light">
-                <tr><th>Nachwuchskraft</th><th>Organisationseinheit</th><th>Von</th><th>Bis</th><th>Block</th><th>Bewertung</th><th></th></tr>
+                <tr><th scope="col">Nachwuchskraft</th><th scope="col">Organisationseinheit</th><th scope="col">Von</th><th scope="col">Bis</th><th scope="col">Block</th><th scope="col">Bewertung</th><th scope="col"><span class="kern-sr-only">Aktionen</span></th></tr>
             </thead>
             <tbody>
             {% for a in past_assignments %}

@@ -9,7 +9,7 @@
         <li class="breadcrumb-item active" aria-current="page">Abwesenheitseinstellungen</li>
     </ol>
 </nav>
-<h2 class="mb-3"><i class="bi bi-gear me-1"></i> Abwesenheitseinstellungen</h2>
+<h1 class="h2 mb-3"><i class="bi bi-gear me-1" aria-hidden="true"></i> Abwesenheitseinstellungen</h1>
 
 <div class="row g-4">
     {# ── E-Mail-Einstellungen ──────────────────────────────────────────────── #}
@@ -23,21 +23,23 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="save_settings">
                     <div class="kern-form-input">
-                        <label class="kern-label">{{ form.urlaubsstelle_email.label }}</label>
-                        <input type="email" name="urlaubsstelle_email"
+                        <label for="id_urlaubsstelle_email" class="kern-label">{{ form.urlaubsstelle_email.label }}</label>
+                        <input type="email" name="urlaubsstelle_email" id="id_urlaubsstelle_email"
                                class="kern-form-input__input"
                                value="{{ form.urlaubsstelle_email.value|default:'' }}"
-                               placeholder="urlaubsstelle@beispiel.de">
-                        <div class="form-text text-muted">{{ form.urlaubsstelle_email.help_text }}</div>
+                               placeholder="urlaubsstelle@beispiel.de"
+                               aria-describedby="id_urlaubsstelle_email-help" autocomplete="email">
+                        <div class="form-text text-muted" id="id_urlaubsstelle_email-help">{{ form.urlaubsstelle_email.help_text }}</div>
                     </div>
                     <div class="kern-form-input">
-                        <label class="kern-label">{{ form.holiday_state.label }}</label>
-                        <select name="holiday_state" class="kern-form-input__input">
+                        <label for="id_holiday_state" class="kern-label">{{ form.holiday_state.label }}</label>
+                        <select name="holiday_state" id="id_holiday_state" class="kern-form-input__input"
+                                aria-describedby="id_holiday_state-help">
                             {% for val, label in form.holiday_state.field.choices %}
                             <option value="{{ val }}" {% if val == form.holiday_state.value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <div class="form-text text-muted">{{ form.holiday_state.help_text }}</div>
+                        <div class="form-text text-muted" id="id_holiday_state-help">{{ form.holiday_state.help_text }}</div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm">
                         <i class="bi bi-save me-1"></i> Speichern
@@ -57,8 +59,13 @@
                 {% if templates %}
                 <div class="table-responsive">
                 <table class="table table-sm mb-3">
+                    <caption class="kern-sr-only">Verfügbare Word-Vorlagen für Urlaubsbestätigungen.</caption>
                     <thead class="table-light">
-                        <tr><th>Name</th><th>Aktiv</th><th></th></tr>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Aktiv</th>
+                            <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
+                        </tr>
                     </thead>
                     <tbody>
                         {% for tpl in templates %}
@@ -77,8 +84,9 @@
                                     <input type="hidden" name="action" value="delete_template">
                                     <input type="hidden" name="template_pk" value="{{ tpl.pk }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger"
-                                            onclick="return confirm('Vorlage löschen?')">
-                                        <i class="bi bi-trash me-1"></i>
+                                            onclick="return confirm('Vorlage löschen?')"
+                                            aria-label="Vorlage „{{ tpl.name }}“ löschen">
+                                        <i class="bi bi-trash me-1" aria-hidden="true"></i>
                                     </button>
                                 </form>
                             </td>
@@ -95,14 +103,15 @@
                 {% endif %}
 
                 <hr>
-                <h6>Neue Vorlage hochladen</h6>
+                <h2 class="h6">Neue Vorlage hochladen</h2>
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="upload_template">
                     <div class="row g-2">
                         <div class="col">
-                            <input type="text" name="template_name" class="kern-form-input__input"
-                                   placeholder="Name der Vorlage" required>
+                            <label for="absence_template_name" class="kern-sr-only">Name der Vorlage</label>
+                            <input type="text" name="template_name" id="absence_template_name" class="kern-form-input__input"
+                                   placeholder="Name der Vorlage" required aria-required="true">
                         </div>
                         <div class="col-auto">
                             <label class="kern-label visually-hidden" for="absence_template_file">Vorlagen-Datei (.docx)</label>

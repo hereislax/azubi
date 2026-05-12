@@ -10,7 +10,7 @@
     </ol>
 </nav>
 
-<h2 class="mb-3"><i class="bi bi-file-text me-1"></i> Impressum & Datenschutz</h2>
+<h1 class="h2 mb-3"><i class="bi bi-file-text me-1" aria-hidden="true"></i> Impressum & Datenschutz</h1>
 
 <form method="post">
     {% csrf_token %}
@@ -52,15 +52,40 @@
             </div>
         </div>
 
-        <div class="col-12 d-flex gap-2">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-universal-access me-1"></i> Erklärung zur Barrierefreiheit
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        Pflichtangaben nach BITV&nbsp;2.0&nbsp;§12 (Behindertengleichstellungsgesetz):
+                        Konformitätsstatus, nicht barrierefreie Inhalte, Feedback-Kontakt,
+                        Hinweis auf die Schlichtungsstelle nach §16&nbsp;BGG. HTML ist erlaubt.
+                        Bei leerem Feld wird eine Default-Vorlage angezeigt – diese muss vor
+                        Veröffentlichung instanzspezifisch ergänzt werden.
+                    </p>
+                    <div class="kern-form-input">
+                        <label for="id_barrierefreiheit_text" class="kern-label">Erklärungs-Text</label>
+                        <textarea id="id_barrierefreiheit_text" name="barrierefreiheit_text" class="kern-form-input__input font-monospace"
+                                  rows="18" placeholder="Erklärung zur Barrierefreiheit (HTML erlaubt) – leer lassen für Default-Vorlage">{{ config.barrierefreiheit_text }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2 flex-wrap">
             <button type="submit" class="btn btn-success">
-                <i class="bi bi-floppy me-1"></i> Speichern
+                <i class="bi bi-floppy me-1" aria-hidden="true"></i> Speichern
             </button>
-            <a href="{% url 'impressum' %}" target="_blank" class="btn btn-outline-secondary">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Impressum ansehen
+            <a href="{% url 'impressum' %}" target="_blank" rel="noopener" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i> Impressum ansehen
             </a>
-            <a href="{% url 'datenschutz' %}" target="_blank" class="btn btn-outline-secondary">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Datenschutz ansehen
+            <a href="{% url 'datenschutz' %}" target="_blank" rel="noopener" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i> Datenschutz ansehen
+            </a>
+            <a href="{% url 'barrierefreiheit' %}" target="_blank" rel="noopener" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i> Barrierefreiheit ansehen
             </a>
         </div>
 

@@ -17,7 +17,7 @@
     {# Kontextbox #}
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-info bg-opacity-75 text-white">
-            <h5 class="mb-0"><i class="bi bi-star me-1"></i> Anonyme Stationsbewertung</h5>
+            <h1 class="h5 mb-0"><i class="bi bi-star me-1" aria-hidden="true"></i> Anonyme Stationsbewertung</h1>
         </div>
         <div class="card-body">
             <dl class="row mb-0 small">
@@ -57,25 +57,27 @@
         {% for category, field in form.get_category_pairs %}
         <div class="card shadow-sm mb-3" style="border-left: 4px solid #0dcaf0;">
             <div class="card-body pb-2">
-                <div class="fw-semibold mb-1">{{ field.label }}</div>
-                {% if field.help_text %}
-                <div class="text-muted small mb-2">{{ field.help_text }}</div>
-                {% endif %}
+                <fieldset {% if field.errors %}aria-describedby="{{ field.name }}-error"{% endif %}>
+                    <legend class="fw-semibold mb-1 fs-6">{{ field.label }}</legend>
+                    {% if field.help_text %}
+                    <div class="text-muted small mb-2">{{ field.help_text }}</div>
+                    {% endif %}
 
-                <div class="mb-1">
-                    {% for radio in field %}
-                    <div class="form-check form-check-inline">
-                        {{ radio.tag }}
-                        <label class="form-check-label small" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                    <div class="mb-1" role="radiogroup">
+                        {% for radio in field %}
+                        <div class="form-check form-check-inline">
+                            {{ radio.tag }}
+                            <label class="form-check-label small" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
 
-                {% if field.errors %}
-                <span class="kern-error">
-                    <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ field.errors|join:", " }}
-                </span>
-                {% endif %}
+                    {% if field.errors %}
+                    <span class="kern-error" id="{{ field.name }}-error">
+                        <i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>{{ field.errors|join:", " }}
+                    </span>
+                    {% endif %}
+                </fieldset>
             </div>
         </div>
         {% endfor %}

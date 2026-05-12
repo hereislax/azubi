@@ -50,13 +50,23 @@ def _build_rating_fields(template, prefix='criterion'):
                 max_value=15,
                 required=True,
                 help_text=tc.criterion.help_text or '',
-                widget=forms.NumberInput(attrs={'class': 'kern-form-input__input', 'style': 'width:100px'}),
+                widget=forms.NumberInput(attrs={
+                    'class': 'kern-form-input__input',
+                    'style': 'width:100px',
+                    'aria-describedby': 'rating-scale-hint',
+                    'aria-required': 'true',
+                    'inputmode': 'numeric',
+                }),
             )
 
         fields[comment_name] = forms.CharField(
             label='Kommentar',
             required=False,
-            widget=forms.Textarea(attrs={'class': 'kern-form-input__input', 'rows': 2}),
+            widget=forms.Textarea(attrs={
+                'class': 'kern-form-input__input',
+                'rows': 2,
+                'aria-label': f'Kommentar zu „{tc.criterion.name}"',
+            }),
         )
     return fields
 

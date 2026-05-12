@@ -353,12 +353,15 @@
 
 {# ── Dashboard-Konfigurationsmodal ──────────────────────────────────────── #}
 {% if widget_config %}
-<dialog id="dashConfigModal" class="border rounded shadow-lg p-0" style="max-width:420px;width:100%;">
+<dialog id="dashConfigModal" class="border rounded shadow-lg p-0"
+        aria-labelledby="dashConfigModal_heading"
+        style="max-width:420px;width:100%;">
     <div class="card border-0">
         <div class="card-header d-flex align-items-center gap-2 py-2">
-            <i class="bi bi-gear text-muted me-1"></i>
-            <span class="fw-semibold small">Dashboard anpassen</span>
-            <button type="button" class="btn-close ms-auto" id="dashConfigClose" style="font-size:.6rem;"></button>
+            <i class="bi bi-gear text-muted me-1" aria-hidden="true"></i>
+            <span id="dashConfigModal_heading" class="fw-semibold small">Dashboard anpassen</span>
+            <button type="button" class="btn-close ms-auto" id="dashConfigClose"
+                    aria-label="Dialog schließen" style="font-size:.6rem;"></button>
         </div>
         <div class="card-body p-0">
             <p class="text-muted small px-3 pt-3 mb-2">Widgets ein-/ausblenden und per Drag & Drop sortieren.</p>

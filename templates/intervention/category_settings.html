@@ -12,7 +12,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h2 class="mb-1"><i class="bi bi-tags me-1"></i> Maßnahmen-Kategorien</h2>
+        <h1 class="h2 mb-1"><i class="bi bi-tags me-1" aria-hidden="true"></i> Maßnahmen-Kategorien</h1>
         <p class="text-muted small mb-0">Konfigurieren Sie die verfügbaren Kategorien für Maßnahmen und Interventionen.</p>
     </div>
     <button type="button" class="btn btn-primary btn-sm" onclick="kernDialogOpen('createModal')">
@@ -24,14 +24,15 @@
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
+            <caption class="kern-sr-only">Maßnahmen-Kategorien mit Eskalationsstufe, Farbe und Status.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Bezeichnung</th>
-                    <th>Eskalationsstufe</th>
-                    <th>Farbe</th>
-                    <th>Folgetermin</th>
-                    <th>Status</th>
-                    <th></th>
+                    <th scope="col">Bezeichnung</th>
+                    <th scope="col">Eskalationsstufe</th>
+                    <th scope="col">Farbe</th>
+                    <th scope="col">Folgetermin</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -60,15 +61,17 @@
                 </td>
                 <td class="text-end">
                     <button type="button" class="btn btn-sm btn-outline-secondary"
-                            onclick="openEditModal({{ cat.pk }}, '{{ cat.name|escapejs }}', {{ cat.escalation_level }}, '{{ cat.color }}', {{ cat.requires_followup|yesno:'true,false' }}, {{ cat.is_active|yesno:'true,false' }})">
-                        <i class="bi bi-pencil me-1"></i>
+                            onclick="openEditModal({{ cat.pk }}, '{{ cat.name|escapejs }}', {{ cat.escalation_level }}, '{{ cat.color }}', {{ cat.requires_followup|yesno:'true,false' }}, {{ cat.is_active|yesno:'true,false' }})"
+                            aria-label="Kategorie „{{ cat.name }}“ bearbeiten">
+                        <i class="bi bi-pencil me-1" aria-hidden="true"></i>
                     </button>
                     <form method="post" action="{% url 'intervention:category_delete' cat.public_id %}" class="d-inline"
-                          onsubmit="return confirm('Kategorie „{{ cat.name }}" wirklich löschen?')">
+                          onsubmit="return confirm('Kategorie „{{ cat.name|escapejs }}“ wirklich löschen?')">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                {% if cat.interventions.exists %}disabled title="Wird von Maßnahmen verwendet"{% endif %}>
-                            <i class="bi bi-trash3 me-1"></i>
+                                aria-label="Kategorie „{{ cat.name }}“ löschen"
+                                {% if cat.interventions.exists %}disabled aria-disabled="true" title="Wird von Maßnahmen verwendet"{% endif %}>
+                            <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
                         </button>
                     </form>
                 </td>

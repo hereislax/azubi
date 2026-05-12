@@ -13,7 +13,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-grid-3x3 me-1"></i> Klassen-Kompetenzmatrix</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-grid-3x3 me-1" aria-hidden="true"></i> Klassen-Kompetenzmatrix</h1>
         <p class="text-muted mb-0">Kurs {{ course.title }}{% if job_profile %} · {{ job_profile.description }}{% endif %}</p>
     </div>
     <div class="btn-group btn-group-sm" role="group">
@@ -35,12 +35,13 @@
 <div class="card mb-4">
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Kompetenzwerte je Nachwuchskraft im Kurs.</caption>
             <thead class="table-light">
                 <tr>
-                    <th style="min-width: 220px;">Nachwuchskraft</th>
-                    <th class="text-center" style="min-width: 90px;">Fortschritt</th>
+                    <th scope="col" style="min-width: 220px;">Nachwuchskraft</th>
+                    <th scope="col" class="text-center" style="min-width: 90px;">Fortschritt</th>
                     {% for c in competences %}
-                    <th class="text-center" style="font-size:0.78rem; min-width: 80px;" title="{{ c.name }}">
+                    <th scope="col" class="text-center" style="font-size:0.78rem; min-width: 80px;" title="{{ c.name }}">
                         {{ c.name }}
                     </th>
                     {% endfor %}

@@ -11,7 +11,7 @@
         <li class="breadcrumb-item active" aria-current="page">Kriterium {{ action }}</li>
     </ol>
 </nav>
-<h2 class="mb-3"><i class="bi bi-clipboard-check me-1"></i> Beurteilungskriterium {{ action }}</h2>
+<h1 class="h2 mb-3"><i class="bi bi-clipboard-check me-1" aria-hidden="true"></i> Beurteilungskriterium {{ action }}</h1>
 
 <form method="post" novalidate>
     {% csrf_token %}
@@ -38,11 +38,12 @@
             {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
             <div class="table-responsive">
                 <table class="table table-sm align-middle">
+                    <caption class="kern-sr-only">Zuordnung des Kriteriums zu Kompetenzen mit Gewicht.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th>Kompetenz</th>
-                            <th style="width: 120px;">Gewicht</th>
-                            <th style="width: 60px;">Entfernen</th>
+                            <th scope="col">Kompetenz</th>
+                            <th scope="col" style="width: 120px;">Gewicht</th>
+                            <th scope="col" style="width: 60px;">Entfernen</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -12,11 +12,11 @@
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
-        <i class="bi bi-clock-history me-1"></i>
+    <h1 class="h2 mb-0">
+        <i class="bi bi-clock-history me-1" aria-hidden="true"></i>
         Änderungsprotokoll
         <small class="text-muted fs-5">{{ student.first_name }} {{ student.last_name }}</small>
-    </h2>
+    </h1>
     <a href="{% url 'auditlog:list' %}?q={{ student.last_name }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Globales Protokoll
     </a>
@@ -30,7 +30,7 @@
         <div class="d-flex justify-content-between align-items-start gap-3">
             <div class="d-flex align-items-center gap-2 flex-shrink-0">
                 <span class="badge bg-{{ entry.action_color }}">
-                    <i class="bi {{ entry.action_icon }}"></i>
+                    <i class="bi {{ entry.action_icon }}" aria-hidden="true"></i>
                     {{ entry.get_action_display }}
                 </span>
                 <span class="text-muted small">{{ entry.model_verbose_name }}</span>
@@ -40,8 +40,10 @@
                 {% if entry.changes %}
                 <button type="button"
                         class="btn btn-sm btn-outline-secondary"
-                        onclick="kernDialogOpen('auditDiff-{{ entry.pk }}')">
-                    <i class="bi bi-list-ul me-1"></i>
+                        onclick="kernDialogOpen('auditDiff-{{ entry.pk }}')"
+                        aria-haspopup="dialog"
+                        aria-label="{{ entry.changes|length }} geändertes Feld{{ entry.changes|length|pluralize:"er" }} von {{ entry.object_repr }} ansehen">
+                    <i class="bi bi-list-ul me-1" aria-hidden="true"></i>
                     {{ entry.changes|length }} Feld{{ entry.changes|length|pluralize:"er" }} geändert
                 </button>
                 {% endif %}

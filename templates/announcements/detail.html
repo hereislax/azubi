@@ -10,7 +10,7 @@
     </ol>
 </nav>
 
-<h2 class="mb-3"><i class="bi bi-megaphone me-1"></i> {{ announcement.title }}</h2>
+<h1 class="h2 mb-3"><i class="bi bi-megaphone me-1" aria-hidden="true"></i> {{ announcement.title }}</h1>
 
 <div class="row g-4">
     <div class="col-12 col-lg-8">
@@ -111,11 +111,11 @@
                 {% for r in recipients %}
                 <li class="list-group-item px-3 py-1 d-flex align-items-center gap-2 small">
                     {% if r.acknowledged_at %}
-                    <i class="bi bi-check2-all text-success flex-shrink-0" title="Bestätigt {{ r.acknowledged_at|date:'d.m.Y H:i' }}"></i>
+                    <i class="bi bi-check2-all text-success flex-shrink-0" aria-label="Bestätigt am {{ r.acknowledged_at|date:'d.m.Y H:i' }}"></i>
                     {% elif r.read_at %}
-                    <i class="bi bi-check2 text-primary flex-shrink-0" title="Gelesen {{ r.read_at|date:'d.m.Y H:i' }}"></i>
+                    <i class="bi bi-check2 text-primary flex-shrink-0" aria-label="Gelesen am {{ r.read_at|date:'d.m.Y H:i' }}"></i>
                     {% else %}
-                    <i class="bi bi-envelope text-muted flex-shrink-0" title="Ungelesen"></i>
+                    <i class="bi bi-envelope text-muted flex-shrink-0" aria-label="Ungelesen"></i>
                     {% endif %}
                     <span class="flex-grow-1">{{ r.user.get_full_name|default:r.user.username }}</span>
                     {% if r.read_at %}

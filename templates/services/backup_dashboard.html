@@ -12,7 +12,7 @@
 
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
-        <h2 class="mb-1"><i class="bi bi-hdd-stack me-1"></i> Backup &amp; Wiederherstellung</h2>
+        <h1 class="h2 mb-1"><i class="bi bi-hdd-stack me-1" aria-hidden="true"></i> Backup &amp; Wiederherstellung</h1>
         <p class="text-muted mb-0">
             Status der lokalen Backups, Off-Site-Spiegelung und Schnellaktionen.
         </p>
@@ -43,7 +43,7 @@
                         {% endif %}
                         <span class="text-muted small ms-auto">{{ card.count }} Backup{{ card.count|pluralize:"s" }}</span>
                     </div>
-                    <h5 class="mb-1 text-dark">{{ card.label }}</h5>
+                    <h2 class="h5 mb-1 text-dark">{{ card.label }}</h2>
                     {% if card.latest %}
                     <div class="text-muted small">
                         <div><i class="bi bi-clock me-1"></i> {{ card.latest.mtime|date:"d.m.Y H:i" }}</div>
@@ -116,11 +116,12 @@
     </div>
     <div class="table-responsive">
         <table class="table table-sm table-hover mb-0">
+            <caption class="kern-sr-only">Letzte Backup-Ereignisse aus dem Log.</caption>
             <thead>
                 <tr>
-                    <th style="width: 12rem;">Zeitpunkt</th>
-                    <th style="width: 10rem;">Aktion</th>
-                    <th>Beschreibung</th>
+                    <th scope="col" style="width: 12rem;">Zeitpunkt</th>
+                    <th scope="col" style="width: 10rem;">Aktion</th>
+                    <th scope="col">Beschreibung</th>
                 </tr>
             </thead>
             <tbody>

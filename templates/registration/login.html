@@ -11,9 +11,9 @@
         </div>
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Anmelden
-                </h5>
+                <h1 class="h5 mb-0">
+                    <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i> Anmelden
+                </h1>
             </div>
             <div class="card-body p-4">
 
@@ -37,7 +37,7 @@
                     {% endif %}
                 </div>
                 {% elif form.errors %}
-                <div class="kern-alert kern-alert--danger mb-3" role="alert">
+                <div class="kern-alert kern-alert--danger mb-3" role="alert" id="login-error">
                     <div class="kern-alert__header">
                         <span class="kern-icon kern-icon--error" aria-hidden="true"></span>
                         <span class="kern-title">Benutzername oder Passwort ist falsch.</span>
@@ -48,19 +48,21 @@
                 <form method="post">
                     {% csrf_token %}
 
-                    <div class="kern-form-input">
+                    <div class="kern-form-input{% if form.errors %} kern-form-input--error{% endif %}">
                         <label class="kern-label" for="id_username">Benutzername</label>
                         <input class="kern-form-input__input" type="text"
                                name="username" id="id_username"
                                value="{{ form.username.value|default:'' }}"
-                               autofocus required autocomplete="username">
+                               autofocus required aria-required="true" autocomplete="username"
+                               {% if form.errors %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
                     </div>
 
-                    <div class="kern-form-input">
+                    <div class="kern-form-input{% if form.errors %} kern-form-input--error{% endif %}">
                         <label class="kern-label" for="id_password">Passwort</label>
                         <input class="kern-form-input__input" type="password"
                                name="password" id="id_password"
-                               required autocomplete="current-password">
+                               required aria-required="true" autocomplete="current-password"
+                               {% if form.errors %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
                     </div>
 
                     <input type="hidden" name="next" value="{{ next }}">

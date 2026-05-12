@@ -9,9 +9,9 @@
         <li class="breadcrumb-item active" aria-current="page">{{ profile.description }}</li>
     </ol>
 </nav>
-<h2 class="mb-3"><i class="bi bi-gear me-1"></i> {{ profile.description }}
+<h1 class="h2 mb-3"><i class="bi bi-gear me-1" aria-hidden="true"></i> {{ profile.description }}
     <small class="text-muted fs-6">{{ profile.job_profile }}</small>
-</h2>
+</h1>
 
 <ul class="nav nav-tabs mb-3" role="tablist">
     <li class="nav-item">
@@ -42,13 +42,14 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
+                    <caption class="kern-sr-only">Beurteilungskriterien und ihre Zuordnung zu Kompetenzen.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 50px;">#</th>
-                            <th>Kriterium</th>
-                            <th>Kategorie</th>
-                            <th>Mapping zu Kompetenzen</th>
-                            <th class="text-end">Aktion</th>
+                            <th scope="col" style="width: 50px;">#</th>
+                            <th scope="col">Kriterium</th>
+                            <th scope="col">Kategorie</th>
+                            <th scope="col">Mapping zu Kompetenzen</th>
+                            <th scope="col" class="text-end">Aktion</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,8 +71,8 @@
                                 {% endfor %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'course:criterion_edit' profile.pk c.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                                <a href="{% url 'course:criterion_delete' profile.pk c.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                <a href="{% url 'course:criterion_edit' profile.pk c.pk %}" class="btn btn-sm btn-outline-primary" aria-label="Kriterium „{{ c.name }}“ bearbeiten"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                <a href="{% url 'course:criterion_delete' profile.pk c.pk %}" class="btn btn-sm btn-outline-danger" aria-label="Kriterium „{{ c.name }}“ löschen"><i class="bi bi-trash" aria-hidden="true"></i></a>
                             </td>
                         </tr>
                         {% empty %}
@@ -97,11 +98,12 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
+                    <caption class="kern-sr-only">Kompetenz-Endziele für dieses Berufsbild.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th>Kompetenz</th>
-                            <th class="text-end">Endziel-Wert</th>
-                            <th class="text-end">Aktion</th>
+                            <th scope="col">Kompetenz</th>
+                            <th scope="col" class="text-end">Endziel-Wert</th>
+                            <th scope="col" class="text-end">Aktion</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -113,8 +115,8 @@
                                 <span class="text-muted">/ 100</span>
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'course:competence_target_edit' profile.pk t.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                                <a href="{% url 'course:competence_target_delete' profile.pk t.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                <a href="{% url 'course:competence_target_edit' profile.pk t.pk %}" class="btn btn-sm btn-outline-primary" aria-label="Endziel für „{{ t.competence.name }}“ bearbeiten"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                <a href="{% url 'course:competence_target_delete' profile.pk t.pk %}" class="btn btn-sm btn-outline-danger" aria-label="Endziel für „{{ t.competence.name }}“ entfernen"><i class="bi bi-trash" aria-hidden="true"></i></a>
                             </td>
                         </tr>
                         {% empty %}

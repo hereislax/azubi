@@ -6,7 +6,7 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
     <div>
-        <h2 class="mb-1"><i class="bi bi-inbox me-2"></i>Urlaubsanträge zur Bearbeitung</h2>
+        <h1 class="h2 mb-1"><i class="bi bi-inbox me-2" aria-hidden="true"></i>Urlaubsanträge zur Bearbeitung</h1>
         <p class="text-muted mb-0">
             Paket erstellt am {{ batch.sent_at|date:"d.m.Y H:i" }}
             &nbsp;·&nbsp; {{ requests|length }} Antrag{{ requests|length|pluralize:"e,en" }}
@@ -36,10 +36,11 @@
         <div class="card-body">
             <div class="kern-form-input">
                 <label class="kern-label" for="processed_by_name">
-                    Bearbeitet von (Ihr Name) <span class="text-danger">*</span>
+                    Bearbeitet von (Ihr Name) <span class="text-danger" aria-label="erforderlich">*</span>
                 </label>
                 <input type="text" id="processed_by_name" name="processed_by_name"
-                       class="kern-form-input__input" placeholder="Vor- und Nachname" required>
+                       class="kern-form-input__input" placeholder="Vor- und Nachname"
+                       required aria-required="true" autocomplete="name">
             </div>
         </div>
     </div>
@@ -47,12 +48,12 @@
     {% for vr in requests %}
     <div class="card shadow-sm mb-3">
         <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <div>
+            <h2 class="h6 mb-0 d-inline-flex align-items-center">
                 <strong>{{ vr.student.last_name }}, {{ vr.student.first_name }}</strong>
                 {% if vr.student.course %}
-                <span class="text-muted ms-2">– {{ vr.student.course }}</span>
+                <span class="fw-normal text-muted ms-2">– {{ vr.student.course }}</span>
                 {% endif %}
-            </div>
+            </h2>
             <span class="badge {% if vr.is_cancellation %}bg-dark{% else %}bg-info text-dark{% endif %}">
                 {% if vr.is_cancellation %}Stornierung{% else %}Urlaub{% endif %}
             </span>
@@ -66,36 +67,37 @@
                 <div class="col-md-3">
                     <div class="kern-form-input mb-0">
                         <label class="kern-label" for="working_days_{{ vr.pk }}">
-                            Arbeitstage <span class="text-danger">*</span>
+                            Arbeitstage <span class="text-danger" aria-label="erforderlich">*</span>
                         </label>
                         <input type="number" id="working_days_{{ vr.pk }}"
                                name="working_days_{{ vr.pk }}"
                                class="kern-form-input__input"
-                               min="0" required
+                               min="0" required aria-required="true"
+                               aria-describedby="working_days_hint_{{ vr.pk }}"
                                value="{{ vr.duration_working_days }}">
-                        <span class="kern-hint">Berechnet: {{ vr.duration_working_days }}</span>
+                        <span class="kern-hint" id="working_days_hint_{{ vr.pk }}">Berechnet: {{ vr.duration_working_days }}</span>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="kern-form-input mb-0">
                         <label class="kern-label" for="remaining_current_{{ vr.pk }}">
-                            Resturlaub aktuell <span class="text-danger">*</span>
+                            Resturlaub aktuell <span class="text-danger" aria-label="erforderlich">*</span>
                         </label>
                         <input type="number" id="remaining_current_{{ vr.pk }}"
                                name="remaining_current_{{ vr.pk }}"
                                class="kern-form-input__input"
-                               min="0" placeholder="z. B. 12" required>
+                               min="0" placeholder="z. B. 12" required aria-required="true">
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="kern-form-input mb-0">
                         <label class="kern-label" for="remaining_previous_{{ vr.pk }}">
-                            Resturlaub Vorjahr <span class="text-danger">*</span>
+                            Resturlaub Vorjahr <span class="text-danger" aria-label="erforderlich">*</span>
                         </label>
                         <input type="number" id="remaining_previous_{{ vr.pk }}"
                                name="remaining_previous_{{ vr.pk }}"
                                class="kern-form-input__input"
-                               min="0" placeholder="z. B. 3" required>
+                               min="0" placeholder="z. B. 3" required aria-required="true">
                     </div>
                 </div>
             </div>

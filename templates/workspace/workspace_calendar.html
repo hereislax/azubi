@@ -12,17 +12,17 @@
     </ol>
 </nav>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2><i class="bi bi-calendar3 me-1"></i> Belegungsplan</h2>
+    <h1 class="h2"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i> Belegungsplan</h1>
     <div class="d-flex align-items-center gap-2">
-        <a href="?year={{ prev_year }}&month={{ prev_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm" title="Vorheriger Monat">
-            <i class="bi bi-chevron-left"></i>
+        <a href="?year={{ prev_year }}&month={{ prev_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm" aria-label="Vorheriger Monat">
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
         </a>
-        <span class="fw-bold fs-5 px-2">{{ month_label }}</span>
-        <a href="?year={{ next_year }}&month={{ next_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm" title="Nächster Monat">
-            <i class="bi bi-chevron-right"></i>
+        <span class="fw-bold fs-5 px-2" aria-live="polite">{{ month_label }}</span>
+        <a href="?year={{ next_year }}&month={{ next_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm" aria-label="Nächster Monat">
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
         </a>
-        <a href="?year={{ today_year }}&month={{ today_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm ms-1" title="Aktueller Monat">
-            <i class="bi bi-calendar-day me-1"></i> Heute
+        <a href="?year={{ today_year }}&month={{ today_month }}{% for id in selected_loc_ids %}&locations={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm ms-1">
+            <i class="bi bi-calendar-day me-1" aria-hidden="true"></i> Heute
         </a>
         {% if can_view_full %}
         <a href="{% url 'workspace:workspace_list' %}" class="btn btn-outline-primary btn-sm ms-2">

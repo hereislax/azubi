@@ -10,7 +10,7 @@
 </nav>
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-journals me-1"></i> Kurse</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-journals me-1" aria-hidden="true"></i> Kurse</h1>
     </div>
     <a href="{% url 'course:course_create' %}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i> Kurs hinzufügen
@@ -18,13 +18,14 @@
 </div>
 
 <table id="courseTable" class="table table-hover table-bordered align-middle" style="width:100%">
+    <caption class="kern-sr-only">Liste aller Kurse mit Berufsbild, Laufzeit und Anzahl der Nachwuchskräfte.</caption>
     <thead class="table-light">
         <tr>
-            <th>Bezeichnung</th>
-            <th>Berufsbild</th>
-            <th>Beginn</th>
-            <th>Abschluss</th>
-            <th>Nachwuchskräfte</th>
+            <th scope="col">Bezeichnung</th>
+            <th scope="col">Berufsbild</th>
+            <th scope="col">Beginn</th>
+            <th scope="col">Abschluss</th>
+            <th scope="col">Nachwuchskräfte</th>
         </tr>
     </thead>
     <tbody>

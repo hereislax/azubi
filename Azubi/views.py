@@ -80,6 +80,14 @@ def datenschutz(request):
     return render(request, 'dataprotection.html', {'datenschutz_text': config.datenschutz_text})
 
 
+def barrierefreiheit(request):
+    from services.models import SiteConfiguration
+    config = SiteConfiguration.get()
+    return render(request, 'accessibility.html', {
+        'barrierefreiheit_text': config.barrierefreiheit_text,
+    })
+
+
 def acknowledgments(request):
     return render(request, 'acknowledgments.html')
 

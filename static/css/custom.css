@@ -390,7 +390,14 @@ div.dt-container .dt-length select:focus,
 .dataTables_filter input.form-control:focus,
 .dataTables_length select.form-select:focus {
     border-bottom-color: var(--kern-color-action-default, #1A3DA5) !important;
-    outline: none !important;
+}
+/* Tastatur-Fokus muss sichtbar bleiben (WCAG 2.4.7 / BITV) – nur Maus-Fokus
+   verzichtet auf den Ring. */
+div.dt-container .dt-search input:focus:not(:focus-visible),
+div.dt-container .dt-length select:focus:not(:focus-visible),
+.dataTables_filter input.form-control:focus:not(:focus-visible),
+.dataTables_length select.form-select:focus:not(:focus-visible) {
+    outline: none;
 }
 div.dt-container .dt-length select,
 .dataTables_length select.form-select {

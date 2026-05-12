@@ -12,7 +12,7 @@
 </nav>
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-shield-check me-1"></i> {{ student.first_name }} {{ student.last_name }}</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-shield-check me-1" aria-hidden="true"></i> {{ student.first_name }} {{ student.last_name }}</h1>
         <p class="text-muted mb-0">Pflichtschulungen-Übersicht und Teilnahme-Historie</p>
     </div>
     <div class="text-end">
@@ -33,14 +33,15 @@
     <div class="card-header bg-light"><i class="bi bi-shield-check me-1"></i> Aktueller Status (jüngste Teilnahme je Schulungs-Typ)</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Aktueller Schulungsstatus: jüngste Teilnahme je Schulungs-Typ.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Schulung</th>
-                    <th>Status</th>
-                    <th>Absolviert am</th>
-                    <th>Gültig bis</th>
-                    <th class="text-center">Resttage</th>
-                    {% if can_write %}<th class="text-end">Aktion</th>{% endif %}
+                    <th scope="col">Schulung</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Absolviert am</th>
+                    <th scope="col">Gültig bis</th>
+                    <th scope="col" class="text-center">Resttage</th>
+                    {% if can_write %}<th scope="col" class="text-end">Aktion</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -88,14 +89,15 @@
     <div class="card-header bg-light"><i class="bi bi-clock-history me-1"></i> Vollständige Historie</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Vollständige Schulungs-Historie dieser Nachwuchskraft.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Schulung</th>
-                    <th>Absolviert</th>
-                    <th>Gültig bis</th>
-                    <th>Zertifikat</th>
-                    <th>Erfasst von</th>
-                    {% if can_write %}<th class="text-end">Aktion</th>{% endif %}
+                    <th scope="col">Schulung</th>
+                    <th scope="col">Absolviert</th>
+                    <th scope="col">Gültig bis</th>
+                    <th scope="col">Zertifikat</th>
+                    <th scope="col">Erfasst von</th>
+                    {% if can_write %}<th scope="col" class="text-end">Aktion</th>{% endif %}
                 </tr>
             </thead>
             <tbody>

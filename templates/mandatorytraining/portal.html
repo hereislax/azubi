@@ -11,7 +11,7 @@
 </nav>
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-shield-check me-1"></i> Meine Pflichtschulungen</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-shield-check me-1" aria-hidden="true"></i> Meine Pflichtschulungen</h1>
         <p class="text-muted mb-0">Übersicht und Status deiner Pflichtschulungen.</p>
     </div>
     {% if status.compliance_pct is not None %}
@@ -32,8 +32,15 @@
     <div class="card-header bg-light"><i class="bi bi-shield-check me-1"></i> Status pro Schulung</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Pflichtschulungen-Status mit Gültigkeitsdaten und Resttagen.</caption>
             <thead class="table-light">
-                <tr><th>Schulung</th><th>Status</th><th>Absolviert</th><th>Gültig bis</th><th class="text-center">Resttage</th></tr>
+                <tr>
+                    <th scope="col">Schulung</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Absolviert</th>
+                    <th scope="col">Gültig bis</th>
+                    <th scope="col" class="text-center">Resttage</th>
+                </tr>
             </thead>
             <tbody>
                 {% for r in status.rows %}
@@ -66,8 +73,14 @@
     <div class="card-header bg-light"><i class="bi bi-clock-history me-1"></i> Meine Historie</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Historie der eigenen abgeschlossenen Schulungen.</caption>
             <thead class="table-light">
-                <tr><th>Schulung</th><th>Absolviert</th><th>Gültig bis</th><th>Zertifikat</th></tr>
+                <tr>
+                    <th scope="col">Schulung</th>
+                    <th scope="col">Absolviert</th>
+                    <th scope="col">Gültig bis</th>
+                    <th scope="col">Zertifikat</th>
+                </tr>
             </thead>
             <tbody>
                 {% for c in history %}

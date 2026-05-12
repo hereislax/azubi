@@ -10,11 +10,11 @@
 </nav>
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-thermometer-high me-1"></i> Krankmeldungen
+        <h1 class="h2 mb-0"><i class="bi bi-thermometer-high me-1" aria-hidden="true"></i> Krankmeldungen
             {% if open_count %}
             <span class="badge bg-danger ms-2 fs-6">{{ open_count }} offen</span>
             {% endif %}
-        </h2>
+        </h1>
     </div>
     <a href="{% url 'absence:sick_leave_create' %}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-lg me-1"></i> Krankmeldung erfassen
@@ -62,16 +62,17 @@
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle mb-0">
+            <caption class="kern-sr-only">Krankmeldungen der Nachwuchskräfte.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Nachwuchskraft</th>
-                    <th>Kurs</th>
-                    <th>Art</th>
-                    <th>Erster Krankheitstag</th>
-                    <th>Letzter Krankheitstag</th>
-                    <th>Arbeitstage</th>
-                    <th>Status</th>
-                    <th></th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Kurs</th>
+                    <th scope="col">Art</th>
+                    <th scope="col">Erster Krankheitstag</th>
+                    <th scope="col">Letzter Krankheitstag</th>
+                    <th scope="col">Arbeitstage</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -105,7 +106,7 @@
                     <td class="text-end">
                         {% if sl.is_open %}
                         <a href="{% url 'absence:sick_leave_close' sl.public_id %}" class="btn btn-sm btn-outline-success">
-                            <i class="bi bi-check2 me-1"></i> Gesundmelden
+                            <i class="bi bi-check2 me-1" aria-hidden="true"></i> Gesundmelden
                         </a>
                         {% endif %}
                     </td>

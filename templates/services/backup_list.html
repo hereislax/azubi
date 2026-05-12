@@ -13,7 +13,7 @@
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-        <h2 class="mb-1"><i class="bi bi-list-ul me-1"></i> Alle Backup-Dateien</h2>
+        <h1 class="h2 mb-1"><i class="bi bi-list-ul me-1" aria-hidden="true"></i> Alle Backup-Dateien</h1>
         <p class="text-muted mb-0">
             Lokales Verzeichnis: <code>{{ backup_dir }}</code> · Gesamt: <strong>{{ total_size_h }}</strong>
         </p>
@@ -43,12 +43,13 @@
     {% if section.entries %}
     <div class="table-responsive">
         <table class="table table-sm table-hover mb-0 align-middle">
+            <caption class="kern-sr-only">Backup-Dateien: {{ section.label }}.</caption>
             <thead>
                 <tr>
-                    <th style="width: 12rem;">Erstellt</th>
-                    <th style="width: 8rem;" class="text-end">Größe</th>
-                    <th>Dateiname</th>
-                    <th style="width: 6rem;" class="text-end">Aktion</th>
+                    <th scope="col" style="width: 12rem;">Erstellt</th>
+                    <th scope="col" style="width: 8rem;" class="text-end">Größe</th>
+                    <th scope="col">Dateiname</th>
+                    <th scope="col" style="width: 6rem;" class="text-end">Aktion</th>
                 </tr>
             </thead>
             <tbody>
@@ -80,13 +81,13 @@
 {% endfor %}
 
 {# ── Bestätigungs-Modal fürs Löschen ─────────────────────────────────────── #}
-<div class="modal fade" id="delModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="delModal" tabindex="-1" aria-labelledby="delModal-title" aria-hidden="true">
     <div class="modal-dialog">
         <form method="post" id="delForm">
             {% csrf_token %}
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-1"></i> Backup löschen</h5>
+                    <h2 class="modal-title h5" id="delModal-title"><i class="bi bi-exclamation-triangle text-danger me-1" aria-hidden="true"></i> Backup löschen</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
                 </div>
                 <div class="modal-body">

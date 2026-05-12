@@ -497,7 +497,8 @@ def settings_content(request):
     if request.method == 'POST':
         config.impressum_text = request.POST.get('impressum_text', '')
         config.datenschutz_text = request.POST.get('datenschutz_text', '')
-        config.save(update_fields=['impressum_text', 'datenschutz_text'])
+        config.barrierefreiheit_text = request.POST.get('barrierefreiheit_text', '')
+        config.save(update_fields=['impressum_text', 'datenschutz_text', 'barrierefreiheit_text'])
         messages.success(request, 'Seiteninhalte wurden gespeichert.')
         return redirect('services:settings_content')
     return render(request, 'services/settings_content.html', {'config': config})

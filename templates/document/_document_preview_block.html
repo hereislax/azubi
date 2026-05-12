@@ -4,7 +4,7 @@
     <header class="kern-dialog__header">
         <h2 class="kern-title kern-title--large" id="docPreviewTitle"
             style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%; font-size:1rem;">
-            <i class="bi bi-file-earmark-text text-muted me-1"></i>
+            <i class="bi bi-file-earmark-text text-muted me-1" aria-hidden="true"></i>
         </h2>
         <a id="docPreviewDownload" href="#" class="kern-btn kern-btn--tertiary me-1">
             <span class="kern-icon kern-icon--download" aria-hidden="true"></span>
@@ -36,7 +36,7 @@
         const btn = e.target.closest('.doc-preview-btn');
         if (!btn) return;
         const id = btn.dataset.docId;
-        title.innerHTML = '<i class="bi bi-file-earmark-text text-muted me-1"></i>' + btn.dataset.docTitle;
+        title.innerHTML = '<i class="bi bi-file-earmark-text text-muted me-1" aria-hidden="true"></i>' + btn.dataset.docTitle;
         dlBtn.href = downloadUrl(id);
         frame.src  = previewUrl(id);
         modal.showModal();
@@ -44,7 +44,7 @@
 
     modal.addEventListener('close', function () {
         frame.src = '';
-        title.innerHTML = '<i class="bi bi-file-earmark-text text-muted me-1"></i>';
+        title.innerHTML = '<i class="bi bi-file-earmark-text text-muted me-1" aria-hidden="true"></i>';
         dlBtn.href = '#';
     });
 })();

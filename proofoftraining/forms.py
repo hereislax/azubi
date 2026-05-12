@@ -27,11 +27,19 @@ class TrainingRecordCreateForm(forms.ModelForm):
 class TrainingDayForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        day = self.instance
+        day_label = ''
+        if day and getattr(day, 'date', None):
+            day_label = f"{day.weekday_name}, {day.date.strftime('%d.%m.%Y')}"
         self.fields['day_type'].widget.attrs['class'] = 'kern-form-input__input'
+        self.fields['day_type'].widget.attrs['aria-label'] = (
+            f"Tagtyp für {day_label}" if day_label else 'Tagtyp'
+        )
         self.fields['content'].widget = forms.Textarea(attrs={
             'rows': 3,
             'class': 'kern-form-input__input',
             'placeholder': 'Beschreibung der Tätigkeiten oder gelernten Inhalte …',
+            'aria-label': (f"Tätigkeiten am {day_label}" if day_label else 'Tätigkeiten'),
         })
         self.fields['content'].required = False
 

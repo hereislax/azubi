@@ -11,7 +11,7 @@
 </nav>
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="{{ workspace.workspace_type.icon|default:'bi-door-closed' }} me-1"></i>{{ workspace.name }}</h2>
+        <h1 class="h2 mb-0"><i class="{{ workspace.workspace_type.icon|default:'bi-door-closed' }} me-1" aria-hidden="true"></i>{{ workspace.name }}</h1>
         <p class="text-muted mb-0">
             {{ workspace.workspace_type.name }} · {{ workspace.location.name }}
             {% if workspace.unit %} · {{ workspace.unit.name }}{% endif %}
@@ -39,12 +39,13 @@
     <div class="card-header bg-light"><i class="bi bi-calendar3 me-1"></i> Belegung der nächsten Wochen</div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Belegung dieses Arbeitsplatzes der nächsten Wochen.</caption>
             <thead>
                 <tr>
-                    <th style="width:140px;">Datum</th>
-                    <th>Status</th>
-                    <th>Buchungen</th>
-                    <th class="text-end" style="width:120px;">Aktionen</th>
+                    <th scope="col" style="width:140px;">Datum</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Buchungen</th>
+                    <th scope="col" class="text-end" style="width:120px;">Aktionen</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,7 +65,8 @@
                         {% for b in d.bookings %}
                         <span class="badge bg-light text-dark border me-1">
                             {{ b.student.first_name }} {{ b.student.last_name }}
-                            <a href="{% url 'workspace:booking_cancel' b.public_id %}" class="text-danger ms-1" title="Stornieren"><i class="bi bi-x"></i></a>
+                            <a href="{% url 'workspace:booking_cancel' b.public_id %}" class="text-danger ms-1"
+                               aria-label="Buchung von {{ b.student.first_name }} {{ b.student.last_name }} am {{ d.date|date:'d.m.Y' }} stornieren"><i class="bi bi-x" aria-hidden="true"></i></a>
                         </span>
                         {% empty %}
                         <span class="text-muted">—</span>
@@ -72,8 +74,9 @@
                     </td>
                     <td class="text-end">
                         {% if not d.is_closed and d.remaining > 0 %}
-                        <a href="{% url 'workspace:booking_create_for_workspace' workspace.public_id %}?date={{ d.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-plus"></i>
+                        <a href="{% url 'workspace:booking_create_for_workspace' workspace.public_id %}?date={{ d.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary"
+                           aria-label="Am {{ d.date|date:'d.m.Y' }} buchen">
+                            <i class="bi bi-plus" aria-hidden="true"></i>
                         </a>
                         {% endif %}
                     </td>
@@ -91,8 +94,9 @@
         {% for c in closures %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
             <span>{{ c.start_date|date:"d.m.Y" }} – {{ c.end_date|date:"d.m.Y" }}{% if c.reason %} – <em>{{ c.reason }}</em>{% endif %}</span>
-            <a href="{% url 'workspace:closure_delete' c.public_id %}" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i>
+            <a href="{% url 'workspace:closure_delete' c.public_id %}" class="btn btn-sm btn-outline-danger"
+               aria-label="Sperrung vom {{ c.start_date|date:'d.m.Y' }} bis {{ c.end_date|date:'d.m.Y' }} entfernen">
+                <i class="bi bi-trash" aria-hidden="true"></i>
             </a>
         </li>
         {% endfor %}

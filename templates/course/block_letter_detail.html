@@ -13,7 +13,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-envelope me-1"></i> Zuweisungsschreiben</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-envelope me-1" aria-hidden="true"></i> Zuweisungsschreiben</h1>
         <p class="text-muted mb-0">Block: <strong>{{ schedule_block.name }}</strong> &mdash;
             {{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</p>
     </div>
@@ -69,13 +69,14 @@
     </div>
     <div class="table-responsive">
     <table class="table table-hover mb-0">
+        <caption class="kern-sr-only">Generierte Zuweisungsschreiben pro Praxistutor.</caption>
         <thead class="table-light">
             <tr>
-                <th>Name</th>
-                <th>E-Mail</th>
-                <th>Dokument</th>
-                <th>E-Mail gesendet</th>
-                {% if can_regenerate and letter.status != 'pending_approval' %}<th></th>{% endif %}
+                <th scope="col">Name</th>
+                <th scope="col">E-Mail</th>
+                <th scope="col">Dokument</th>
+                <th scope="col">E-Mail gesendet</th>
+                {% if can_regenerate and letter.status != 'pending_approval' %}<th scope="col"><span class="kern-sr-only">Aktionen</span></th>{% endif %}
             </tr>
         </thead>
         <tbody>

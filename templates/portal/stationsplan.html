@@ -10,7 +10,7 @@
     </ol>
 </nav>
 
-<h2 class="mb-4"><i class="bi bi-map me-1"></i> Mein Stationsplan</h2>
+<h1 class="h2 mb-4"><i class="bi bi-map me-1" aria-hidden="true"></i> Mein Stationsplan</h1>
 
 {% if not current and not upcoming and not past %}
 <div class="text-center py-5 text-muted">
@@ -21,7 +21,7 @@
 
 {# ── Aktueller Einsatz ──────────────────────────────────────────────────────── #}
 {% if current %}
-<h5 class="text-primary mb-2"><i class="bi bi-geo-alt-fill me-1"></i> Aktuell</h5>
+<h2 class="h5 text-primary mb-2"><i class="bi bi-geo-alt-fill me-1" aria-hidden="true"></i> Aktuell</h2>
 <div class="row g-3 mb-4">
     {% for a in current %}
     {% include "portal/_assignment_card.html" with assignment=a highlight=True %}
@@ -31,7 +31,7 @@
 
 {# ── Zukünftige Einsätze ────────────────────────────────────────────────────── #}
 {% if upcoming %}
-<h5 class="text-secondary mb-2"><i class="bi bi-calendar-arrow-up me-1"></i> Geplant</h5>
+<h2 class="h5 text-secondary mb-2"><i class="bi bi-calendar-arrow-up me-1" aria-hidden="true"></i> Geplant</h2>
 <div class="row g-3 mb-4">
     {% for a in upcoming %}
     {% include "portal/_assignment_card.html" with assignment=a highlight=False %}
@@ -41,7 +41,7 @@
 
 {# ── Vergangene Einsätze ─────────────────────────────────────────────────────── #}
 {% if past %}
-<h5 class="text-muted mb-2"><i class="bi bi-clock-history me-1"></i> Vergangen</h5>
+<h2 class="h5 text-muted mb-2"><i class="bi bi-clock-history me-1" aria-hidden="true"></i> Vergangen</h2>
 <div class="row g-3 mb-4">
     {% for a in past reversed %}
     {% include "portal/_assignment_card.html" with assignment=a highlight=False past=True %}

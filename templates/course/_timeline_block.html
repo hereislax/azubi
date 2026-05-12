@@ -37,8 +37,9 @@
                 {% if is_training_director or is_training_office %}
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm py-0 px-2 dropdown-toggle"
-                                data-bs-toggle="dropdown" aria-expanded="false" title="Dokumente erstellen">
-                            <i class="bi bi-file-earmark-text me-1"></i>
+                                data-bs-toggle="dropdown" aria-expanded="false"
+                                aria-label="Dokumente erstellen für Block „{{ schedule_block.name }}“">
+                            <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             {% if schedule_block.is_internship %}
@@ -67,12 +68,14 @@
                 {% endif %}
 
                 <a href="{% url 'course:schedule_block_edit' course.pk schedule_block.public_id %}"
-                   class="btn btn-outline-secondary btn-sm py-0 px-1" title="Bearbeiten">
-                    <i class="bi bi-pencil me-1"></i>
+                   class="btn btn-outline-secondary btn-sm py-0 px-1"
+                   aria-label="Block „{{ schedule_block.name }}“ bearbeiten">
+                    <i class="bi bi-pencil me-1" aria-hidden="true"></i>
                 </a>
                 <a href="{% url 'course:schedule_block_delete' course.pk schedule_block.public_id %}"
-                   class="btn btn-outline-danger btn-sm py-0 px-1" title="Löschen">
-                    <i class="bi bi-trash me-1"></i>
+                   class="btn btn-outline-danger btn-sm py-0 px-1"
+                   aria-label="Block „{{ schedule_block.name }}“ löschen">
+                    <i class="bi bi-trash me-1" aria-hidden="true"></i>
                 </a>
             </div>
         </div>

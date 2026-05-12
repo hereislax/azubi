@@ -11,7 +11,7 @@
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0"><i class="bi bi-tags me-1"></i> Kategorien</h2>
+    <h1 class="h2 mb-0"><i class="bi bi-tags me-1" aria-hidden="true"></i> Kategorien</h1>
     <a href="{% url 'inventory:category_create' %}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i> Neue Kategorie
     </a>
@@ -21,12 +21,13 @@
 <div class="card shadow-sm">
 <div class="table-responsive">
     <table class="table table-hover table-bordered align-middle mb-0">
+        <caption class="kern-sr-only">Inventar-Kategorien mit Anzahl der zugeordneten Gegenstände.</caption>
         <thead class="table-light">
             <tr>
-                <th>Bezeichnung</th>
-                <th>Gegenstände</th>
-                <th>Quittungsvorlage</th>
-                <th></th>
+                <th scope="col">Bezeichnung</th>
+                <th scope="col">Gegenstände</th>
+                <th scope="col">Quittungsvorlage</th>
+                <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
             </tr>
         </thead>
         <tbody>
@@ -48,15 +49,17 @@
                     {% endif %}
                 </td>
                 <td class="text-end">
-                    <a href="{% url 'inventory:category_edit' cat.public_id %}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-pencil me-1"></i>
+                    <a href="{% url 'inventory:category_edit' cat.public_id %}" class="btn btn-sm btn-outline-secondary"
+                       aria-label="Kategorie „{{ cat.name }}“ bearbeiten">
+                        <i class="bi bi-pencil me-1" aria-hidden="true"></i>
                     </a>
                     <form method="post" action="{% url 'inventory:category_delete' cat.public_id %}"
                           class="d-inline"
-                          onsubmit="return confirm('Kategorie „{{ cat.name }}" wirklich löschen?')">
+                          onsubmit="return confirm('Kategorie „{{ cat.name|escapejs }}“ wirklich löschen?')">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-trash3 me-1"></i>
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                aria-label="Kategorie „{{ cat.name }}“ löschen">
+                            <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
                         </button>
                     </form>
                 </td>

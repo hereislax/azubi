@@ -7,6 +7,8 @@
 <div class="row justify-content-center">
     <div class="col-lg-9">
 
+        <h1 class="kern-sr-only">Bearbeitung des Urlaubsantragspakets abgeschlossen</h1>
+
         {% if already_processed %}
         <div class="kern-alert kern-alert--warning mb-4" role="alert">
             <div class="kern-alert__header">
@@ -40,14 +42,15 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
+                        <caption class="kern-sr-only">Übersicht der bearbeiteten Urlaubsanträge in diesem Paket.</caption>
                         <thead class="table-light">
                             <tr>
-                                <th>Nachwuchskraft</th>
-                                <th>Art</th>
-                                <th>Zeitraum</th>
-                                <th class="text-center">AT</th>
-                                <th class="text-center">Resturlaub aktuell</th>
-                                <th class="text-center">Resturlaub Vorjahr</th>
+                                <th scope="col">Nachwuchskraft</th>
+                                <th scope="col">Art</th>
+                                <th scope="col">Zeitraum</th>
+                                <th scope="col" class="text-center"><abbr title="Arbeitstage">AT</abbr></th>
+                                <th scope="col" class="text-center">Resturlaub aktuell</th>
+                                <th scope="col" class="text-center">Resturlaub Vorjahr</th>
                             </tr>
                         </thead>
                         <tbody>

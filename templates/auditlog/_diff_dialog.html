@@ -3,7 +3,7 @@
         aria-labelledby="auditDiff-{{ entry.pk }}-heading">
     <header class="kern-dialog__header">
         <h2 class="kern-title kern-title--large" id="auditDiff-{{ entry.pk }}-heading">
-            <i class="bi {{ entry.action_icon }} me-1"></i>
+            <i class="bi {{ entry.action_icon }} me-1" aria-hidden="true"></i>
             {{ entry.get_action_display }}: {{ entry.model_verbose_name }}
         </h2>
         <button type="button" class="kern-btn kern-btn--tertiary"
@@ -31,17 +31,18 @@
         {% if entry.changes %}
         <div class="table-responsive">
             <table class="table table-sm align-top mb-0 audit-diff-table">
+                <caption class="kern-sr-only">Geänderte Felder mit altem und neuem Wert.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 25%">Feld</th>
-                        <th style="width: 37.5%">Vorher</th>
-                        <th style="width: 37.5%">Nachher</th>
+                        <th scope="col" style="width: 25%">Feld</th>
+                        <th scope="col" style="width: 37.5%">Vorher</th>
+                        <th scope="col" style="width: 37.5%">Nachher</th>
                     </tr>
                 </thead>
                 <tbody>
                 {% for field, diff in entry.changes.items %}
                     <tr>
-                        <td class="fw-semibold">{{ field }}</td>
+                        <th scope="row" class="fw-semibold">{{ field }}</th>
                         <td>
                             {% if diff.old %}
                                 <span class="audit-diff-old">{{ diff.old|linebreaksbr }}</span>

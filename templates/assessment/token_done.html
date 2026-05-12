@@ -22,21 +22,21 @@
     <div class="card shadow-sm text-center p-4">
         {% if already_confirmed %}
         <div class="mb-3">
-            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;" aria-hidden="true"></i>
         </div>
-        <h4 class="mb-2">Beurteilung bereits bestätigt</h4>
+        <h1 class="h4 mb-2">Beurteilung bereits bestätigt</h1>
         <p class="text-muted">Diese Beurteilung wurde bereits durch die Ausbildungsabteilung bestätigt. Es sind keine weiteren Eingaben erforderlich.</p>
         {% elif already_submitted %}
         <div class="mb-3">
-            <i class="bi bi-hourglass-split text-warning" style="font-size: 3rem;"></i>
+            <i class="bi bi-hourglass-split text-warning" style="font-size: 3rem;" aria-hidden="true"></i>
         </div>
-        <h4 class="mb-2">Beurteilung bereits eingereicht</h4>
+        <h1 class="h4 mb-2">Beurteilung bereits eingereicht</h1>
         <p class="text-muted">Ihre Beurteilung wurde bereits erfolgreich übermittelt und wird derzeit von der Ausbildungsabteilung geprüft. Vielen Dank.</p>
         {% else %}
         <div class="mb-3">
-            <i class="bi bi-check2-circle text-success" style="font-size: 3rem;"></i>
+            <i class="bi bi-check2-circle text-success" style="font-size: 3rem;" aria-hidden="true"></i>
         </div>
-        <h4 class="mb-2">Vielen Dank für Ihre Beurteilung!</h4>
+        <h1 class="h4 mb-2">Vielen Dank für Ihre Beurteilung!</h1>
         <p class="text-muted">
             Die Beurteilung für <strong>{{ assessment.assignment.student.first_name }} {{ assessment.assignment.student.last_name }}</strong>
             wurde erfolgreich übermittelt. Die Ausbildungsabteilung wird die Eingabe prüfen und bestätigen.

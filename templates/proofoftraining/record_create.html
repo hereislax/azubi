@@ -14,7 +14,7 @@
     <div class="col-md-6">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-journal-plus me-1"></i> Neuer Ausbildungsnachweis</h5>
+                <h1 class="h5 mb-0"><i class="bi bi-journal-plus me-1" aria-hidden="true"></i> Neuer Ausbildungsnachweis</h1>
             </div>
             <div class="card-body">
                 <p class="text-muted small mb-3">Wählen Sie den Montag der Woche, für die Sie den Nachweis erstellen möchten.</p>
@@ -22,13 +22,17 @@
                     {% csrf_token %}
                     {% for field in form %}
                     <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
-                        <label class="kern-label">{{ field.label }}</label>
+                        <label for="{{ field.id_for_label }}" class="kern-label">
+                            {{ field.label }}{% if field.field.required %} <span class="text-danger" aria-label="erforderlich">*</span>{% endif %}
+                        </label>
                         {{ field }}
                         {% if field.help_text %}
-                        <span class="kern-hint">{{ field.help_text }}</span>
+                        <span class="kern-hint" id="{{ field.id_for_label }}-help">{{ field.help_text }}</span>
                         {% endif %}
                         {% for error in field.errors %}
-                        <span class="kern-error"><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</span>
+                        <span class="kern-error" id="{{ field.id_for_label }}-error">
+                            <i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i> {{ error }}
+                        </span>
                         {% endfor %}
                     </div>
                     {% endfor %}

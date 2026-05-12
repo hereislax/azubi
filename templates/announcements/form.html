@@ -15,10 +15,10 @@
     </ol>
 </nav>
 
-<h2 class="mb-3">
-    <i class="bi bi-megaphone me-1"></i>
+<h1 class="h2 mb-3">
+    <i class="bi bi-megaphone me-1" aria-hidden="true"></i>
     {% if announcement %}Ankündigung bearbeiten{% else %}Neue Ankündigung{% endif %}
-</h2>
+</h1>
 
 <form method="post" enctype="multipart/form-data" id="announcement-form">
     {% csrf_token %}
@@ -30,14 +30,15 @@
             <div class="card shadow-sm mb-3">
                 <div class="card-body">
                     <div class="kern-form-input mb-3">
-                        <label for="title-input" class="kern-label fw-semibold">Titel <span class="text-danger">*</span></label>
+                        <label for="title-input" class="kern-label fw-semibold">Titel <span class="text-danger" aria-label="erforderlich">*</span></label>
                         <input type="text" id="title-input" name="title" class="kern-form-input__input"
-                               value="{{ announcement.title|default:'' }}" required maxlength="200"
+                               value="{{ announcement.title|default:'' }}" required aria-required="true" maxlength="200"
                                placeholder="Betreff / Titel der Ankündigung">
                     </div>
                     <div class="kern-form-input mb-3">
-                        <label class="kern-label fw-semibold" for="body-textarea">Inhalt <span class="text-danger">*</span></label>
+                        <label class="kern-label fw-semibold" for="body-textarea">Inhalt <span class="text-danger" aria-label="erforderlich">*</span></label>
                         <textarea name="body" id="body-textarea" class="kern-form-input__input" rows="14"
+                                  required aria-required="true"
                                   placeholder="Inhalt der Ankündigung…">{{ announcement.body|default:'' }}</textarea>
                     </div>
                 </div>
@@ -62,7 +63,8 @@
                                            name="delete_attachment" value="{{ att.pk }}"
                                            id="del-att-{{ att.pk }}">
                                     <label class="kern-label text-danger" for="del-att-{{ att.pk }}">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                        <span class="kern-sr-only">Anhang „{{ att.filename }}“ löschen</span>
                                     </label>
                                 </div>
                             </div>
@@ -233,11 +235,11 @@
 </form>
 
 {# ── Bestätigungs-Dialog ─────────────────────────────────────────────────── #}
-<dialog id="publishModal" class="kern-dialog">
+<dialog id="publishModal" class="kern-dialog" aria-labelledby="publishModalLabel">
     <div class="kern-dialog__header">
-        <h5 id="publishModalLabel">
-            <i class="bi bi-send me-2"></i>Ankündigung veröffentlichen
-        </h5>
+        <h2 id="publishModalLabel" class="h5 mb-0">
+            <i class="bi bi-send me-2" aria-hidden="true"></i>Ankündigung veröffentlichen
+        </h2>
         <button type="button" class="btn-close" onclick="kernDialogClose(this)" aria-label="Schließen"></button>
     </div>
     <div class="kern-dialog__body">

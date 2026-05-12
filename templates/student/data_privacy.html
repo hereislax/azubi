@@ -14,7 +14,7 @@
         </ol>
     </nav>
 
-    <h2 class="mb-4"><i class="bi bi-shield-lock me-1"></i> Datenschutz / Anonymisierung</h2>
+    <h1 class="h2 mb-4"><i class="bi bi-shield-lock me-1" aria-hidden="true"></i> Datenschutz / Anonymisierung</h1>
 
     {% if due %}
     <form method="post" action="{% url 'student:anonymize_all' %}"
@@ -38,12 +38,13 @@
             {% if due %}
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
+                    <caption class="kern-sr-only">Zur Anonymisierung fällige Nachwuchskräfte.</caption>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Status geändert am</th>
-                            <th></th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Status geändert am</th>
+                            <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -99,11 +100,12 @@
             {% if approaching %}
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
+                    <caption class="kern-sr-only">Nachwuchskräfte, deren Anonymisierung in den nächsten Wochen ansteht.</caption>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Status geändert am</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Status geändert am</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -149,10 +151,11 @@
             {% if anonymized %}
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
+                    <caption class="kern-sr-only">Bereits anonymisierte Nachwuchskräfte.</caption>
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Anonymisiert am</th>
+                            <th scope="col">ID</th>
+                            <th scope="col">Anonymisiert am</th>
                         </tr>
                     </thead>
                     <tbody>

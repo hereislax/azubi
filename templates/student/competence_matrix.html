@@ -14,7 +14,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-radar me-1"></i> Kompetenzmatrix</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-radar me-1" aria-hidden="true"></i> Kompetenzmatrix</h1>
         <p class="text-muted mb-0">{{ student.first_name }} {{ student.last_name }}{% if student.course %} · Kurs {{ student.course.title }}{% endif %}</p>
     </div>
     <div class="text-end">
@@ -64,13 +64,14 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
+                    <caption class="kern-sr-only">Kompetenzwerte je Kompetenz: Fremdbeurteilung, Selbstbeurteilung, Sollwert und Stationsabdeckung.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th>Kompetenz</th>
-                            <th class="text-end" title="Fremdbeurteilung (gleitender Mittelwert)">Fremd</th>
-                            <th class="text-end" title="Selbstbeurteilung (gleitender Mittelwert)">Selbst</th>
-                            <th class="text-end" title="Soll zum heutigen Zeitpunkt (linear interpoliert)">Soll</th>
-                            <th class="text-end" title="Stations-Abdeckung aus dem Curriculum">Stationen</th>
+                            <th scope="col">Kompetenz</th>
+                            <th scope="col" class="text-end" title="Fremdbeurteilung (gleitender Mittelwert)">Fremd</th>
+                            <th scope="col" class="text-end" title="Selbstbeurteilung (gleitender Mittelwert)">Selbst</th>
+                            <th scope="col" class="text-end" title="Soll zum heutigen Zeitpunkt (linear interpoliert)">Soll</th>
+                            <th scope="col" class="text-end" title="Stations-Abdeckung aus dem Curriculum">Stationen</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -112,11 +113,12 @@
     </div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0 heatmap-table">
+            <caption class="kern-sr-only">Heatmap der Kompetenzentwicklung über die Ausbildungszeit.</caption>
             <thead class="table-light">
                 <tr>
-                    <th style="min-width: 200px;">Kompetenz</th>
+                    <th scope="col" style="min-width: 200px;">Kompetenz</th>
                     {% for m in matrix.month_columns %}
-                    <th class="text-center" style="font-size:0.72rem;">{{ m|date:"M y" }}</th>
+                    <th scope="col" class="text-center" style="font-size:0.72rem;">{{ m|date:"M y" }}</th>
                     {% endfor %}
                 </tr>
             </thead>

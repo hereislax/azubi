@@ -11,16 +11,16 @@
 </nav>
 
 <div class="d-flex align-items-center gap-3 mb-4">
-    <h2 class="mb-0"><i class="bi bi-calendar3 me-1"></i> Übersichtskalender</h2>
+    <h1 class="h2 mb-0"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i> Übersichtskalender</h1>
 </div>
 
 {# ── Filter ──────────────────────────────────────────────────────────────────── #}
 <div class="card shadow-sm mb-4">
     <div class="card-body py-2">
         <form method="get" class="d-flex flex-wrap align-items-center gap-2">
-            <label class="kern-label mb-0 text-muted small">Kurs</label>
+            <label for="filter-course" class="kern-label mb-0 text-muted small">Kurs</label>
             <div class="kern-form-input__select-wrapper" style="max-width:260px;">
-                <select name="course" class="kern-form-input__select">
+                <select id="filter-course" name="course" class="kern-form-input__select">
                     <option value="">– Kurs wählen –</option>
                     {% for c in courses %}
                     <option value="{{ c.pk }}" {% if c == selected_course %}selected{% endif %}>

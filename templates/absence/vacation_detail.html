@@ -14,9 +14,9 @@
     <div class="col-md-8">
         <div class="card shadow-sm mb-3">
             <div class="card-header bg-light fw-semibold">
-                <i class="bi bi-calendar me-1"></i>
+                <h1 class="h5 mb-0 d-inline-flex align-items-center"><i class="bi bi-calendar me-1" aria-hidden="true"></i>
                 {% if vr.is_cancellation %}Stornierungsantrag{% else %}Urlaubsantrag{% endif %}
-                <span class="badge bg-{{ vr.status_badge }} ms-2">{{ vr.get_status_display }}</span>
+                <span class="badge bg-{{ vr.status_badge }} ms-2">{{ vr.get_status_display }}</span></h1>
             </div>
             <div class="card-body">
                 <dl class="row">
@@ -121,11 +121,12 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                 <table class="table table-sm mb-0">
+                    <caption class="kern-sr-only">Stornierungsanträge zu diesem Urlaubsantrag.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th>Eingereicht</th>
-                            <th>Status</th>
-                            <th></th>
+                            <th scope="col">Eingereicht</th>
+                            <th scope="col">Status</th>
+                            <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -134,8 +135,9 @@
                             <td>{{ cr.created_at|date:"d.m.Y H:i" }}</td>
                             <td><span class="badge bg-{{ cr.status_badge }}">{{ cr.get_status_display }}</span></td>
                             <td>
-                                <a href="{% url 'absence:vacation_detail' cr.public_id %}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-eye me-1"></i>
+                                <a href="{% url 'absence:vacation_detail' cr.public_id %}" class="btn btn-sm btn-outline-secondary"
+                                   aria-label="Stornierungsantrag vom {{ cr.created_at|date:'d.m.Y' }} ansehen">
+                                    <i class="bi bi-eye me-1" aria-hidden="true"></i>
                                 </a>
                             </td>
                         </tr>

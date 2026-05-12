@@ -11,14 +11,14 @@
         </div>
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-shield-check me-1"></i> Zwei-Faktor-Authentifizierung
-                </h5>
+                <h1 class="h5 mb-0">
+                    <i class="bi bi-shield-check me-1" aria-hidden="true"></i> Zwei-Faktor-Authentifizierung
+                </h1>
             </div>
             <div class="card-body p-4">
 
                 {% if error %}
-                <div class="kern-alert kern-alert--danger mb-3" role="alert">
+                <div class="kern-alert kern-alert--danger mb-3" role="alert" id="otp-error">
                     <div class="kern-alert__header">
                         <span class="kern-icon kern-icon--error" aria-hidden="true"></span>
                         <span class="kern-title">{{ error }}</span>
@@ -26,7 +26,7 @@
                 </div>
                 {% endif %}
 
-                <p class="text-muted small">
+                <p class="text-muted small" id="otp-hint">
                     Bitte geben Sie den 6-stelligen Code aus Ihrer
                     Authenticator-App ein. Falls Sie keinen Zugriff darauf haben,
                     können Sie stattdessen einen Recovery-Code verwenden.
@@ -34,12 +34,14 @@
 
                 <form method="post">
                     {% csrf_token %}
-                    <div class="kern-form-input">
+                    <div class="kern-form-input{% if error %} kern-form-input--error{% endif %}">
                         <label class="kern-label" for="id_token">Code</label>
                         <input class="kern-form-input__input" type="text"
                                name="token" id="id_token"
-                               autofocus required autocomplete="one-time-code"
-                               inputmode="numeric" pattern="[A-Za-z0-9 ]*">
+                               autofocus required aria-required="true" autocomplete="one-time-code"
+                               inputmode="numeric" pattern="[A-Za-z0-9 ]*"
+                               aria-describedby="otp-hint{% if error %} otp-error{% endif %}"
+                               {% if error %}aria-invalid="true"{% endif %}>
                     </div>
 
                     <button type="submit" class="kern-btn kern-btn--primary kern-btn--block mt-2">

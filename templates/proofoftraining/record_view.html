@@ -12,10 +12,10 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0">
-            <i class="bi bi-journal-text me-1"></i>
+        <h1 class="h2 mb-0">
+            <i class="bi bi-journal-text me-1" aria-hidden="true"></i>
             KW {{ record.calendar_week }}/{{ record.week_start.year }}
-        </h2>
+        </h1>
         <span class="text-muted small">{{ record.week_start|date:"d.m.Y" }} – {{ record.week_end|date:"d.m.Y" }}</span>
         <span class="badge bg-{{ record.status_color }} ms-2">{{ record.get_status_display }}</span>
     </div>
@@ -34,9 +34,9 @@
 {% endif %}
 
 {% for day in record.days.all %}
-<div class="card mb-3">
+<section class="card mb-3" aria-labelledby="day-view-{{ day.pk }}">
     <div class="card-header py-2 d-flex justify-content-between align-items-center">
-        <strong>{{ day.weekday_name }}, {{ day.date|date:"d.m.Y" }}</strong>
+        <h2 class="h6 mb-0" id="day-view-{{ day.pk }}">{{ day.weekday_name }}, {{ day.date|date:"d.m.Y" }}</h2>
         <span class="badge bg-light text-dark border">{{ day.get_day_type_display }}</span>
     </div>
     <div class="card-body py-2">
@@ -46,7 +46,7 @@
         <span class="text-muted fst-italic small">Keine Beschreibung eingetragen.</span>
         {% endif %}
     </div>
-</div>
+</section>
 {% endfor %}
 
 <div class="d-flex gap-2 mt-1">

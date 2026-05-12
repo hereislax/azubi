@@ -9,7 +9,7 @@
     </ol>
 </nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-shield-check me-1"></i> Pflichtschulungen — Übersicht</h2>
+    <h1 class="h2"><i class="bi bi-shield-check me-1" aria-hidden="true"></i> Pflichtschulungen — Übersicht</h1>
     <div class="d-flex gap-2">
         <a href="{% url 'mandatorytraining:type_list' %}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-list me-1"></i> Schulungs-Typen
@@ -25,12 +25,13 @@
 <div class="card">
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Matrix der Pflichtschulungen je Nachwuchskraft und Schulungstyp.</caption>
             <thead class="table-light">
                 <tr>
-                    <th style="min-width: 220px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">Nachwuchskraft</th>
+                    <th scope="col" style="min-width: 220px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">Nachwuchskraft</th>
                     {% for t in types %}
-                    <th class="text-center" style="font-size: 0.78rem;">
-                        <div title="{{ t.description }}"><i class="{{ t.icon|default:'bi-shield-check' }}"></i></div>
+                    <th scope="col" class="text-center" style="font-size: 0.78rem;">
+                        <div title="{{ t.description }}"><i class="{{ t.icon|default:'bi-shield-check' }}" aria-hidden="true"></i></div>
                         <div>{{ t.name|truncatechars:18 }}</div>
                     </th>
                     {% endfor %}
@@ -48,13 +49,14 @@
                     {% for cell in row.cells %}
                     <td class="text-center">
                         {% if cell.na %}
-                            <span class="text-muted small">—</span>
+                            <span class="text-muted small" aria-label="Gilt nicht für diese Person">—</span>
                         {% else %}
-                            <span class="badge bg-{{ cell.badge }}" title="{{ cell.label }}{% if cell.date %} · gültig bis {{ cell.date|date:'d.m.Y' }}{% elif cell.status == 'completed' %} · lebenslang{% endif %}">
-                                {% if cell.status == 'completed' %}<i class="bi bi-check"></i>
-                                {% elif cell.status == 'soon_expiring' %}<i class="bi bi-clock"></i>
-                                {% elif cell.status == 'expired' %}<i class="bi bi-x"></i>
-                                {% else %}<i class="bi bi-dash"></i>{% endif %}
+                            <span class="badge bg-{{ cell.badge }}"
+                                  aria-label="{{ cell.label }}{% if cell.date %}, gültig bis {{ cell.date|date:'d.m.Y' }}{% elif cell.status == 'completed' %}, lebenslang{% endif %}">
+                                {% if cell.status == 'completed' %}<i class="bi bi-check" aria-hidden="true"></i>
+                                {% elif cell.status == 'soon_expiring' %}<i class="bi bi-clock" aria-hidden="true"></i>
+                                {% elif cell.status == 'expired' %}<i class="bi bi-x" aria-hidden="true"></i>
+                                {% else %}<i class="bi bi-dash" aria-hidden="true"></i>{% endif %}
                             </span>
                         {% endif %}
                     </td>

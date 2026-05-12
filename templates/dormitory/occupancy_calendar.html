@@ -10,14 +10,16 @@
     </ol>
 </nav>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2><i class="bi bi-calendar3 me-1"></i> Belegungsplan</h2>
+    <h1 class="h2"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i> Belegungsplan</h1>
     <div class="d-flex align-items-center gap-2">
-        <a href="?year={{ prev_year }}{% for id in selected_dorm_ids %}&dorms={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-chevron-left me-1"></i>
+        <a href="?year={{ prev_year }}{% for id in selected_dorm_ids %}&dorms={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm"
+           aria-label="Vorheriges Jahr">
+            <i class="bi bi-chevron-left me-1" aria-hidden="true"></i>
         </a>
         <span class="fw-bold fs-5 px-1">{{ year }}</span>
-        <a href="?year={{ next_year }}{% for id in selected_dorm_ids %}&dorms={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-chevron-right me-1"></i>
+        <a href="?year={{ next_year }}{% for id in selected_dorm_ids %}&dorms={{ id }}{% endfor %}" class="btn btn-outline-secondary btn-sm"
+           aria-label="Nächstes Jahr">
+            <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>
         </a>
         <a href="{% url 'dormitory:dormitory_list' %}" class="btn btn-outline-primary btn-sm ms-2">
             <i class="bi bi-building me-1"></i> Wohnheimübersicht

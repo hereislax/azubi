@@ -14,7 +14,7 @@
     <div class="col-md-7">
         <div class="card shadow-sm">
             <div class="card-header bg-success text-white">
-                <i class="bi bi-check2-circle me-1"></i> Gesundmeldung erfassen
+                <h1 class="h5 mb-0"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i> Gesundmeldung erfassen</h1>
             </div>
             <div class="card-body">
                 <p>
@@ -24,26 +24,31 @@
                 </p>
 
                 {% if form.non_field_errors %}
-                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
                 {% endif %}
 
                 <form method="post">
                     {% csrf_token %}
                     {% for field in form %}
                     <div class="kern-form-input {% if field.errors %}kern-form-input--error{% endif %}">
-                        <label class="kern-label">
-                            {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+                        <label for="{{ field.id_for_label }}" class="kern-label">
+                            {{ field.label }}{% if field.field.required %} <span class="text-danger" aria-label="erforderlich">*</span>{% endif %}
                         </label>
                         {% if field.errors %}
-                        <div class="text-danger small mb-1">{{ field.errors.as_text }}</div>
+                        <div class="text-danger small mb-1" id="{{ field.id_for_label }}-error">{{ field.errors.as_text }}</div>
                         {% endif %}
                         {% if field.field.widget.input_type == 'textarea' %}
-                        <textarea name="{{ field.html_name }}" class="kern-form-input__input" rows="3">{{ field.value|default:'' }}</textarea>
+                        <textarea name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="kern-form-input__input" rows="3"
+                                  {% if field.field.required %}required aria-required="true"{% endif %}
+                                  {% if field.errors %}aria-invalid="true" aria-describedby="{{ field.id_for_label }}-error"{% endif %}>{{ field.value|default:'' }}</textarea>
                         {% else %}
                         <input type="{{ field.field.widget.input_type }}"
                                name="{{ field.html_name }}"
+                               id="{{ field.id_for_label }}"
                                class="kern-form-input__input"
-                               value="{{ field.value|default:'' }}">
+                               value="{{ field.value|default:'' }}"
+                               {% if field.field.required %}required aria-required="true"{% endif %}
+                               {% if field.errors %}aria-invalid="true" aria-describedby="{{ field.id_for_label }}-error"{% endif %}>
                         {% endif %}
                     </div>
                     {% endfor %}

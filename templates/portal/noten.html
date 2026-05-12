@@ -10,18 +10,19 @@
     </ol>
 </nav>
 
-<h2 class="mb-4"><i class="bi bi-mortarboard me-1"></i> Meine Noten</h2>
+<h1 class="h2 mb-4"><i class="bi bi-mortarboard me-1" aria-hidden="true"></i> Meine Noten</h1>
 
 {% if grades %}
 <div class="card shadow-sm">
 <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
+            <caption class="kern-sr-only">Meine Noten mit Prüfung, Wert, Datum und Anmerkungen.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Prüfung / Leistungsnachweis</th>
-                    <th style="width:120px">Note</th>
-                    <th style="width:120px">Datum</th>
-                    <th>Anmerkungen</th>
+                    <th scope="col">Prüfung / Leistungsnachweis</th>
+                    <th scope="col" style="width:120px">Note</th>
+                    <th scope="col" style="width:120px">Datum</th>
+                    <th scope="col">Anmerkungen</th>
                 </tr>
             </thead>
             <tbody>

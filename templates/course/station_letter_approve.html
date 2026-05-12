@@ -14,16 +14,17 @@
     <div class="col-md-7">
         <div class="card shadow-sm border-warning">
             <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-send-check me-1"></i> Stationsschreiben freigeben</h5>
+                <h1 class="h5 mb-0"><i class="bi bi-send-check me-1" aria-hidden="true"></i> Stationsschreiben freigeben</h1>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                 <table class="table table-sm mb-4">
-                    <tr><th>Block</th><td>{{ schedule_block.name }}</td></tr>
-                    <tr><th>Zeitraum</th><td>{{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</td></tr>
-                    <tr><th>Erstellt von</th><td>{{ letter.generated_by.get_full_name|default:letter.generated_by.username|default:"–" }}</td></tr>
-                    <tr><th>Erstellt am</th><td>{{ letter.generated_at|date:"d.m.Y H:i" }}</td></tr>
-                    <tr><th>Einsätze</th><td>{{ assignments|length }}</td></tr>
+                    <caption class="kern-sr-only">Eckdaten der freizugebenden Stationsschreiben.</caption>
+                    <tr><th scope="row">Block</th><td>{{ schedule_block.name }}</td></tr>
+                    <tr><th scope="row">Zeitraum</th><td>{{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</td></tr>
+                    <tr><th scope="row">Erstellt von</th><td>{{ letter.generated_by.get_full_name|default:letter.generated_by.username|default:"–" }}</td></tr>
+                    <tr><th scope="row">Erstellt am</th><td>{{ letter.generated_at|date:"d.m.Y H:i" }}</td></tr>
+                    <tr><th scope="row">Einsätze</th><td>{{ assignments|length }}</td></tr>
                 </table>
                 </div>
 

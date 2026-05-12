@@ -10,7 +10,7 @@
     </ol>
 </nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-tags me-1"></i> Kompetenzen</h2>
+    <h1 class="h2"><i class="bi bi-tags me-1" aria-hidden="true"></i> Kompetenzen</h1>
     <a href="{% url 'organisation:competence_create' %}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i> Kompetenz anlegen
     </a>
@@ -23,13 +23,14 @@
 <div class="card">
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Kompetenzen mit Beschreibung und Verwendung in Organisationseinheiten und Kriterien.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Bezeichnung</th>
-                    <th>Beschreibung</th>
-                    <th class="text-center" title="Anzahl Organisationseinheiten">OEs</th>
-                    <th class="text-center" title="Anzahl Beurteilungskriterien (Kompetenzmatrix)">Kriterien</th>
-                    <th class="text-end">Aktionen</th>
+                    <th scope="col">Bezeichnung</th>
+                    <th scope="col">Beschreibung</th>
+                    <th scope="col" class="text-center" title="Anzahl Organisationseinheiten"><abbr title="Organisationseinheiten">OEs</abbr></th>
+                    <th scope="col" class="text-center" title="Anzahl Beurteilungskriterien (Kompetenzmatrix)">Kriterien</th>
+                    <th scope="col" class="text-end">Aktionen</th>
                 </tr>
             </thead>
             <tbody>

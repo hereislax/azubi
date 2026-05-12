@@ -8,12 +8,12 @@
     </ol>
 </nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">
-        <i class="bi bi-book me-1"></i> Lern- und Studientage
+    <h1 class="h2 mb-0">
+        <i class="bi bi-book me-1" aria-hidden="true"></i> Lern- und Studientage
         {% if pending_count %}
         <span class="badge bg-warning text-dark ms-2 fs-6">{{ pending_count }} ausstehend</span>
         {% endif %}
-    </h2>
+    </h1>
     <a href="{% url 'studyday:policy_settings' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-gear me-1"></i> Regelungen
     </a>
@@ -47,8 +47,9 @@
                     <i class="bi bi-search me-1"></i> Filtern
                 </button>
                 {% if status_filter or student_filter %}
-                <a href="{% url 'studyday:request_list' %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x"></i>
+                <a href="{% url 'studyday:request_list' %}" class="btn btn-sm btn-outline-secondary"
+                   aria-label="Filter zurücksetzen">
+                    <i class="bi bi-x" aria-hidden="true"></i>
                 </a>
                 {% endif %}
             </div>
@@ -61,15 +62,16 @@
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle mb-0">
+            <caption class="kern-sr-only">Lerntag-Anträge der Nachwuchskräfte mit Status und Aktion.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Nachwuchskraft</th>
-                    <th>Kurs / Berufsbild</th>
-                    <th>Datum</th>
-                    <th>Begründung</th>
-                    <th>Status</th>
-                    <th>Beantragt am</th>
-                    <th></th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Kurs / Berufsbild</th>
+                    <th scope="col">Datum</th>
+                    <th scope="col">Begründung</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Beantragt am</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -108,11 +110,11 @@
                 <td class="text-end">
                     {% if req.status == 'pending' %}
                     <a href="{% url 'studyday:request_decide' req.public_id %}" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-check2-square me-1"></i> Entscheiden
+                        <i class="bi bi-check2-square me-1" aria-hidden="true"></i> Entscheiden
                     </a>
                     {% elif req.status == 'approved' %}
                     <a href="{% url 'studyday:request_cancel' req.public_id %}" class="btn btn-sm btn-outline-danger">
-                        <i class="bi bi-x-circle me-1"></i> Stornieren
+                        <i class="bi bi-x-circle me-1" aria-hidden="true"></i> Stornieren
                     </a>
                     {% endif %}
                 </td>

@@ -10,7 +10,7 @@
     </ol>
 </nav>
 
-<h2 class="mb-3"><i class="bi bi-megaphone me-1"></i> {{ announcement.title }}</h2>
+<h1 class="h2 mb-3"><i class="bi bi-megaphone me-1" aria-hidden="true"></i> {{ announcement.title }}</h1>
 
 <div class="card shadow-sm mb-3">
     <div class="card-header py-2 d-flex align-items-center gap-2">
@@ -42,21 +42,21 @@
 </div>
 
 {% if announcement.requires_acknowledgement and not recipient.acknowledged_at %}
-<div class="alert alert-warning d-flex align-items-center gap-3">
-    <i class="bi bi-clipboard-check fs-4 flex-shrink-0 me-1"></i>
+<div class="alert alert-warning d-flex align-items-center gap-3" role="alert">
+    <i class="bi bi-clipboard-check fs-4 flex-shrink-0 me-1" aria-hidden="true"></i>
     <div>
         <strong>Bitte bestätigen</strong> – Diese Ankündigung erfordert deine aktive Bestätigung.
     </div>
     <form method="post" action="{% url 'portal:acknowledge' announcement.public_id %}" class="ms-auto">
         {% csrf_token %}
         <button type="submit" class="btn btn-success btn-sm">
-            <i class="bi bi-check2-all me-1"></i> Zur Kenntnis genommen
+            <i class="bi bi-check2-all me-1" aria-hidden="true"></i> Zur Kenntnis genommen
         </button>
     </form>
 </div>
 {% elif announcement.requires_acknowledgement and recipient.acknowledged_at %}
 <div class="alert alert-success d-flex align-items-center gap-2">
-    <i class="bi bi-check2-all me-1"></i>
+    <i class="bi bi-check2-all me-1" aria-hidden="true"></i>
     Bestätigt am {{ recipient.acknowledged_at|date:"d.m.Y H:i" }}.
 </div>
 {% endif %}

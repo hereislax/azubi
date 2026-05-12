@@ -11,7 +11,7 @@
 </nav>
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-person-gear me-1"></i> Ausbildungskoordinationen</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-person-gear me-1" aria-hidden="true"></i> Ausbildungskoordinationen</h1>
     </div>
     <a href="{% url 'instructor:chief_instructor_create' %}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i> Hinzufügen
@@ -20,13 +20,14 @@
 
 <div class="table-responsive">
 <table id="chiefTable" class="table table-hover table-bordered align-middle" style="width:100%">
+    <caption class="kern-sr-only">Ausbildungskoordinationen mit Funktionspostfach, Organisationseinheiten und Mitgliedern.</caption>
     <thead class="table-light">
         <tr>
-            <th>Bezeichnung</th>
-            <th>Funktionspostfach</th>
-            <th>Organisationseinheiten</th>
-            <th>Personen</th>
-            <th></th>
+            <th scope="col">Bezeichnung</th>
+            <th scope="col">Funktionspostfach</th>
+            <th scope="col">Organisationseinheiten</th>
+            <th scope="col">Personen</th>
+            <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
         </tr>
     </thead>
     <tbody>
@@ -63,11 +64,13 @@
                 {% endwith %}
             </td>
             <td class="text-end">
-                <a href="{% url 'instructor:chief_instructor_edit' k.public_id %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-pencil me-1"></i>
+                <a href="{% url 'instructor:chief_instructor_edit' k.public_id %}" class="btn btn-sm btn-outline-secondary"
+                   aria-label="Koordination „{{ k.name }}“ bearbeiten">
+                    <i class="bi bi-pencil me-1" aria-hidden="true"></i>
                 </a>
-                <a href="{% url 'instructor:chief_instructor_delete' k.public_id %}" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash me-1"></i>
+                <a href="{% url 'instructor:chief_instructor_delete' k.public_id %}" class="btn btn-sm btn-outline-danger"
+                   aria-label="Koordination „{{ k.name }}“ löschen">
+                    <i class="bi bi-trash me-1" aria-hidden="true"></i>
                 </a>
             </td>
         </tr>

@@ -25,10 +25,10 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0">
-            <i class="bi bi-person-circle me-1"></i>
+        <h1 class="h2 mb-0">
+            <i class="bi bi-person-circle me-1" aria-hidden="true"></i>
             {{ student.first_name }} {{ student.last_name }}
-        </h2>
+        </h1>
         {% if student.status %}
             <span class="badge bg-{{ student.status.color }} mt-1">{{ student.status }}</span>
         {% else %}
@@ -345,13 +345,14 @@
     <div class="tab-pane fade" id="wohnheim" role="tabpanel">
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle mb-0" id="wohnheimTable" style="width:100%">
+            <caption class="kern-sr-only">Wohnheim-Belegungen dieser Nachwuchskraft.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Wohnheim</th>
-                    <th>Zimmer</th>
-                    <th>Einzug</th>
-                    <th>Auszug</th>
-                    <th></th>
+                    <th scope="col">Wohnheim</th>
+                    <th scope="col">Zimmer</th>
+                    <th scope="col">Einzug</th>
+                    <th scope="col">Auszug</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -362,8 +363,9 @@
                     <td>{{ a.start_date|date:"d.m.Y" }}</td>
                     <td>{{ a.end_date|date:"d.m.Y"|default:"offen" }}</td>
                     <td class="text-end">
-                        <a href="{% url 'dormitory:room_detail' a.room.public_id %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-arrow-right me-1"></i>
+                        <a href="{% url 'dormitory:room_detail' a.room.public_id %}" class="btn btn-sm btn-outline-secondary"
+                           aria-label="Zimmer {{ a.room.number }} im Wohnheim {{ a.room.dormitory.name }} öffnen">
+                            <i class="bi bi-arrow-right me-1" aria-hidden="true"></i>
                         </a>
                     </td>
                 </tr>
@@ -379,14 +381,15 @@
     <div class="tab-pane fade" id="praktika" role="tabpanel">
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle mb-0" id="praktikaTable" style="width:100%">
+            <caption class="kern-sr-only">Praxiseinsätze dieser Nachwuchskraft.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Organisationseinheit</th>
-                    <th>Standort</th>
-                    <th>Von</th>
-                    <th>Bis</th>
-                    <th>Block</th>
-                    <th>Bewertung</th>
+                    <th scope="col">Organisationseinheit</th>
+                    <th scope="col">Standort</th>
+                    <th scope="col">Von</th>
+                    <th scope="col">Bis</th>
+                    <th scope="col">Block</th>
+                    <th scope="col">Bewertung</th>
                 </tr>
             </thead>
             <tbody>
@@ -407,7 +410,7 @@
                         {% if avg %}<span class="badge bg-light text-dark border ms-1">Ø {{ avg }}</span>{% endif %}
                         {% endwith %}
                         {% if not restricted_view %}
-                        <a href="{% url 'assessment:detail' assessment.public_id %}" class="btn btn-sm btn-outline-secondary ms-1" title="Beurteilung ansehen"><i class="bi bi-eye me-1"></i></a>
+                        <a href="{% url 'assessment:detail' assessment.public_id %}" class="btn btn-sm btn-outline-secondary ms-1" aria-label="Beurteilung ansehen"><i class="bi bi-eye me-1" aria-hidden="true"></i></a>
                         {% endif %}
                     {% else %}
                         <span class="text-muted small">–</span>
@@ -441,14 +444,15 @@
         {% if grades %}
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle" id="notenTable" style="width:100%">
+            <caption class="kern-sr-only">Noten dieser Nachwuchskraft.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Notenart</th>
-                    <th>Note</th>
-                    <th>Datum</th>
-                    <th>Anmerkungen</th>
-                    <th>Anhang</th>
-                    <th></th>
+                    <th scope="col">Notenart</th>
+                    <th scope="col">Note</th>
+                    <th scope="col">Datum</th>
+                    <th scope="col">Anmerkungen</th>
+                    <th scope="col">Anhang</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -538,13 +542,14 @@
         {% if paperless_docs %}
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle" id="akteTable" style="width:100%">
+            <caption class="kern-sr-only">Dokumente in der Personalakte (Paperless-ngx).</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Titel</th>
-                    <th>ASN</th>
-                    <th>Ausfertigungsdatum</th>
-                    <th></th>
-                    <th>docid</th>
+                    <th scope="col">Titel</th>
+                    <th scope="col">ASN</th>
+                    <th scope="col">Ausfertigungsdatum</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
+                    <th scope="col">docid</th>
                 </tr>
             </thead>
             <tbody>
@@ -609,13 +614,14 @@
         </div>
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle mb-0">
+            <caption class="kern-sr-only">Ausbildungsnachweise dieser Nachwuchskraft.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Woche</th>
-                    <th>Zeitraum</th>
-                    <th>Status</th>
-                    <th>Eingereicht am</th>
-                    <th></th>
+                    <th scope="col">Woche</th>
+                    <th scope="col">Zeitraum</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Eingereicht am</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -682,15 +688,16 @@
         {% if vacation_requests %}
         <div class="table-responsive mb-4">
             <table class="table table-sm table-hover table-bordered align-middle">
+                <caption class="kern-sr-only">Urlaubsanträge dieser Nachwuchskraft.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th>Art</th>
-                        <th>Von</th>
-                        <th>Bis</th>
-                        <th class="text-center">AT</th>
-                        <th>Status</th>
-                        <th>Resturlaub akt. / Vorjahr</th>
-                        <th></th>
+                        <th scope="col">Art</th>
+                        <th scope="col">Von</th>
+                        <th scope="col">Bis</th>
+                        <th scope="col" class="text-center" title="Arbeitstage"><abbr title="Arbeitstage">AT</abbr></th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Resturlaub akt. / Vorjahr</th>
+                        <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -751,14 +758,15 @@
         {% if sick_leaves %}
         <div class="table-responsive mb-4">
             <table class="table table-sm table-hover table-bordered align-middle">
+                <caption class="kern-sr-only">Krankmeldungen dieser Nachwuchskraft.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th>Art</th>
-                        <th>Erster Krankheitstag</th>
-                        <th>Letzter Krankheitstag</th>
-                        <th class="text-center">AT</th>
-                        <th>Status</th>
-                        <th></th>
+                        <th scope="col">Art</th>
+                        <th scope="col">Erster Krankheitstag</th>
+                        <th scope="col">Letzter Krankheitstag</th>
+                        <th scope="col" class="text-center"><abbr title="Arbeitstage">AT</abbr></th>
+                        <th scope="col">Status</th>
+                        <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -845,14 +853,15 @@
         {% if study_day_requests %}
         <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle mb-0">
+            <caption class="kern-sr-only">Lerntag-Anträge dieser Nachwuchskraft.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Datum</th>
-                    <th>Status</th>
-                    <th>Begründung</th>
-                    <th>Entschieden von</th>
-                    <th>Beantragt am</th>
-                    <th></th>
+                    <th scope="col">Datum</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Begründung</th>
+                    <th scope="col">Entschieden von</th>
+                    <th scope="col">Beantragt am</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>

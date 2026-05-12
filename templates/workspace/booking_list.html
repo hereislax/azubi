@@ -9,12 +9,13 @@
         <li class="breadcrumb-item active" aria-current="page">Alle Buchungen</li>
     </ol>
 </nav>
-<h2 class="mb-3"><i class="bi bi-list-ul me-1"></i> Alle Buchungen</h2>
+<h1 class="h2 mb-3"><i class="bi bi-list-ul me-1" aria-hidden="true"></i> Alle Buchungen</h1>
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-md-3">
+        <label for="filter-status" class="kern-sr-only">Status filtern</label>
         <div class="kern-form-input__select-wrapper">
-            <select name="status" class="kern-form-input__select" onchange="this.form.submit()">
+            <select id="filter-status" name="status" class="kern-form-input__select" onchange="this.form.submit()">
                 <option value="confirmed" {% if status == 'confirmed' %}selected{% endif %}>Bestätigt</option>
                 <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Storniert</option>
                 <option value="all" {% if status == 'all' %}selected{% endif %}>Alle</option>
@@ -22,8 +23,9 @@
         </div>
     </div>
     <div class="col-md-3">
+        <label for="filter-location" class="kern-sr-only">Standort filtern</label>
         <div class="kern-form-input__select-wrapper">
-            <select name="location" class="kern-form-input__select" onchange="this.form.submit()">
+            <select id="filter-location" name="location" class="kern-form-input__select" onchange="this.form.submit()">
                 <option value="">Alle Standorte</option>
                 {% for loc in locations %}
                 <option value="{{ loc.pk }}" {% if filter_location == loc.pk %}selected{% endif %}>{{ loc.name }}</option>
@@ -36,15 +38,16 @@
 <div class="card">
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
+            <caption class="kern-sr-only">Alle Raumbuchungen mit Status und Stornierungs-Aktion.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Datum</th>
-                    <th>Arbeitsplatz</th>
-                    <th>Standort</th>
-                    <th>Nachwuchskraft</th>
-                    <th>Zweck</th>
-                    <th>Status</th>
-                    <th class="text-end">Aktionen</th>
+                    <th scope="col">Datum</th>
+                    <th scope="col">Arbeitsplatz</th>
+                    <th scope="col">Standort</th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Zweck</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="text-end">Aktionen</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,8 +67,9 @@
                     </td>
                     <td class="text-end">
                         {% if b.status == 'confirmed' %}
-                        <a href="{% url 'workspace:booking_cancel' b.public_id %}" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-x-circle"></i>
+                        <a href="{% url 'workspace:booking_cancel' b.public_id %}" class="btn btn-sm btn-outline-danger"
+                           aria-label="Buchung am {{ b.date|date:'d.m.Y' }} für {{ b.workspace.name }} stornieren">
+                            <i class="bi bi-x-circle" aria-hidden="true"></i>
                         </a>
                         {% endif %}
                     </td>

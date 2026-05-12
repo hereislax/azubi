@@ -14,14 +14,15 @@
     <div class="col-md-7">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-map me-1"></i> Praktikumspläne erstellen</h5>
+                <h1 class="h5 mb-0"><i class="bi bi-map me-1" aria-hidden="true"></i> Praktikumspläne erstellen</h1>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                 <table class="table table-sm mb-4">
-                    <tr><th>Block</th><td>{{ schedule_block.name }}</td></tr>
-                    <tr><th>Zeitraum</th><td>{{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</td></tr>
-                    {% if schedule_block.location %}<tr><th>Standort</th><td>{{ schedule_block.location }}</td></tr>{% endif %}
+                    <caption class="kern-sr-only">Eckdaten der zu erstellenden Praktikumspläne.</caption>
+                    <tr><th scope="row">Block</th><td>{{ schedule_block.name }}</td></tr>
+                    <tr><th scope="row">Zeitraum</th><td>{{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }}</td></tr>
+                    {% if schedule_block.location %}<tr><th scope="row">Standort</th><td>{{ schedule_block.location }}</td></tr>{% endif %}
                 </table>
                 </div>
 

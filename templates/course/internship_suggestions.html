@@ -14,7 +14,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0"><i class="bi bi-lightbulb me-1"></i> Einsatzvorschläge</h2>
+        <h1 class="h2 mb-0"><i class="bi bi-lightbulb me-1" aria-hidden="true"></i> Einsatzvorschläge</h1>
         <div class="text-muted small mt-1">
             {{ schedule_block.name }} ({{ schedule_block.start_date|date:"d.m.Y" }} – {{ schedule_block.end_date|date:"d.m.Y" }})
         </div>
@@ -55,7 +55,7 @@
 {# ── Vorschläge ──────────────────────────────────────────────────────────── #}
 {% if selected_student %}
 <div class="d-flex align-items-center gap-2 mb-3">
-    <h5 class="mb-0">Vorschläge für {{ selected_student.first_name }} {{ selected_student.last_name }}</h5>
+    <h2 class="h5 mb-0">Vorschläge für {{ selected_student.first_name }} {{ selected_student.last_name }}</h2>
     {% if selected_student.internship_preference.notes %}
     <span class="badge bg-light text-muted border" title="{{ selected_student.internship_preference.notes }}">
         <i class="bi bi-chat-left-text me-1"></i> NK-Wunsch vorhanden
@@ -68,13 +68,14 @@
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-sm table-hover align-middle mb-0">
+                <caption class="kern-sr-only">Empfohlene Organisationseinheiten mit Begründung und Score.</caption>
                 <thead class="table-light">
                     <tr>
-                        <th style="width:2rem;"></th>
-                        <th>Organisationseinheit</th>
-                        <th>Gründe</th>
-                        <th class="text-center" style="width:4rem;">Score</th>
-                        <th style="width:8rem;"></th>
+                        <th scope="col" style="width:2rem;"><span class="kern-sr-only">Rang</span></th>
+                        <th scope="col">Organisationseinheit</th>
+                        <th scope="col">Gründe</th>
+                        <th scope="col" class="text-center" style="width:4rem;">Score</th>
+                        <th scope="col" style="width:8rem;"><span class="kern-sr-only">Aktionen</span></th>
                     </tr>
                 </thead>
                 <tbody>

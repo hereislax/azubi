@@ -10,6 +10,8 @@
     </ol>
 </nav>
 
+<h1 class="kern-sr-only">Stationsbeurteilung – {{ assignment.unit }}</h1>
+
 <div class="row g-3">
 
     {# ── Linke Spalte: Metadaten ─────────────────────────────────────────── #}
@@ -73,11 +75,12 @@
                 {% if ratings %}
                 <div class="table-responsive">
                 <table class="table table-sm mb-0">
+                    <caption class="kern-sr-only">Beurteilung durch Praxistutor: Kriterium, Bewertung und Kommentar.</caption>
                     <thead class="table-light">
                         <tr>
-                            <th>Kriterium</th>
-                            <th class="text-center" style="width:120px;">Bewertung</th>
-                            <th>Kommentar</th>
+                            <th scope="col">Kriterium</th>
+                            <th scope="col" class="text-center" style="width:120px;">Bewertung</th>
+                            <th scope="col">Kommentar</th>
                         </tr>
                     </thead>
                     <tbody>

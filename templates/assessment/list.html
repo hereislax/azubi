@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0"><i class="bi bi-clipboard-check me-1"></i> Stationsbeurteilungen</h2>
+    <h1 class="h2 mb-0"><i class="bi bi-clipboard-check me-1" aria-hidden="true"></i> Stationsbeurteilungen</h1>
 </div>
 
 {# Statusfilter #}
@@ -15,15 +15,15 @@
     </a>
     <a href="{% url 'assessment:list' %}?status=pending"
        class="btn btn-sm {% if status_filter == 'pending' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
-        <i class="bi bi-hourglass-split"></i> Ausstehend
+        <i class="bi bi-hourglass-split" aria-hidden="true"></i> Ausstehend
     </a>
     <a href="{% url 'assessment:list' %}?status=submitted"
        class="btn btn-sm {% if status_filter == 'submitted' %}btn-warning{% else %}btn-outline-secondary{% endif %}">
-        <i class="bi bi-inbox"></i> Eingereicht
+        <i class="bi bi-inbox" aria-hidden="true"></i> Eingereicht
     </a>
     <a href="{% url 'assessment:list' %}?status=confirmed"
        class="btn btn-sm {% if status_filter == 'confirmed' %}btn-success{% else %}btn-outline-secondary{% endif %}">
-        <i class="bi bi-check-circle"></i> Bestätigt
+        <i class="bi bi-check-circle" aria-hidden="true"></i> Bestätigt
     </a>
 </div>
 
@@ -31,16 +31,17 @@
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle mb-0">
+            <caption class="kern-sr-only">Stationsbeurteilungen mit Nachwuchskraft, Einsatzort, Praxistutor, Status und Durchschnittsnote.</caption>
             <thead class="table-light">
                 <tr>
-                    <th>Nachwuchskraft</th>
-                    <th>Organisationseinheit</th>
-                    <th>Zeitraum</th>
-                    <th>Praxistutor</th>
-                    <th>Status</th>
-                    <th class="text-center">Ø</th>
-                    <th>Eingereicht</th>
-                    <th></th>
+                    <th scope="col">Nachwuchskraft</th>
+                    <th scope="col">Organisationseinheit</th>
+                    <th scope="col">Zeitraum</th>
+                    <th scope="col">Praxistutor</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="text-center" title="Durchschnitt">Ø</th>
+                    <th scope="col">Eingereicht</th>
+                    <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -68,8 +69,9 @@
                         {% if a.submitted_at %}{{ a.submitted_at|date:"d.m.Y" }}{% else %}–{% endif %}
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'assessment:detail' a.public_id %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-eye me-1"></i>
+                        <a href="{% url 'assessment:detail' a.public_id %}" class="btn btn-sm btn-outline-secondary"
+                           aria-label="Beurteilung von {{ a.assignment.student.first_name }} {{ a.assignment.student.last_name }} ansehen">
+                            <i class="bi bi-eye me-1" aria-hidden="true"></i>
                         </a>
                     </td>
                 </tr>

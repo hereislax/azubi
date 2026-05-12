@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-    <h2 class="mb-0"><i class="bi bi-star me-1"></i> Anonyme Stationsbewertungen</h2>
+    <h1 class="h2 mb-0"><i class="bi bi-star me-1" aria-hidden="true"></i> Anonyme Stationsbewertungen</h1>
     <a href="{% url 'assessment:list' %}" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Zu den Beurteilungen
     </a>
@@ -16,9 +16,9 @@
         <div class="row g-2 align-items-end">
             <div class="col-12 col-sm-5">
                 <div class="kern-form-input">
-                    <label class="kern-label">Organisationseinheit</label>
+                    <label for="filter-unit" class="kern-label">Organisationseinheit</label>
                     <div class="kern-form-input__select-wrapper">
-                        <select name="unit" class="kern-form-input__select">
+                        <select id="filter-unit" name="unit" class="kern-form-input__select">
                             <option value="">Alle Einheiten</option>
                             {% for u in all_units %}
                             <option value="{{ u.pk }}" {% if unit_filter == u.pk|stringformat:"s" %}selected{% endif %}>
@@ -31,9 +31,9 @@
             </div>
             <div class="col-12 col-sm-5">
                 <div class="kern-form-input">
-                    <label class="kern-label">Praxisblock</label>
+                    <label for="filter-block" class="kern-label">Praxisblock</label>
                     <div class="kern-form-input__select-wrapper">
-                        <select name="block" class="kern-form-input__select">
+                        <select id="filter-block" name="block" class="kern-form-input__select">
                             <option value="">Alle Blöcke</option>
                             {% for b in all_blocks %}
                             <option value="{{ b.pk }}" {% if block_filter == b.pk|stringformat:"s" %}selected{% endif %}>
@@ -46,11 +46,12 @@
             </div>
             <div class="col-12 col-sm-2 d-flex gap-1">
                 <button type="submit" class="btn btn-sm btn-primary w-100">
-                    <i class="bi bi-funnel me-1"></i> Filtern
+                    <i class="bi bi-funnel me-1" aria-hidden="true"></i> Filtern
                 </button>
                 {% if unit_filter or block_filter %}
-                <a href="{% url 'assessment:station_feedback_overview' %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x-lg"></i>
+                <a href="{% url 'assessment:station_feedback_overview' %}" class="btn btn-sm btn-outline-secondary"
+                   aria-label="Filter zurücksetzen">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
                 </a>
                 {% endif %}
             </div>
@@ -87,12 +88,13 @@
     </div>
     <div class="table-responsive">
         <table class="table table-bordered table-hover align-middle mb-0 small">
+            <caption class="kern-sr-only">Durchschnittsnoten anonymer Stationsbewertungen je Einheit und Kategorie.</caption>
             <thead class="table-light">
                 <tr>
-                    <th style="min-width:180px;">Organisationseinheit</th>
-                    <th class="text-center text-nowrap">Anz.</th>
+                    <th scope="col" style="min-width:180px;">Organisationseinheit</th>
+                    <th scope="col" class="text-center text-nowrap"><abbr title="Anzahl Bewertungen">Anz.</abbr></th>
                     {% for cat in categories %}
-                    <th class="text-center" style="min-width:110px;" title="{{ cat.help_text }}">
+                    <th scope="col" class="text-center" style="min-width:110px;" title="{{ cat.help_text }}">
                         {{ cat.label }}
                     </th>
                     {% endfor %}
@@ -138,7 +140,7 @@
 
 {# ── Trend-Analyse ───────────────────────────────────────────────────────── #}
 {% if trend_rows %}
-<h3 class="mt-5 mb-3"><i class="bi bi-graph-up me-1"></i> Entwicklung über Praxisblöcke</h3>
+<h2 class="h3 mt-5 mb-3"><i class="bi bi-graph-up me-1" aria-hidden="true"></i> Entwicklung über Praxisblöcke</h2>
 
 <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
     <small class="text-muted fw-semibold">Trend:</small>
@@ -150,17 +152,18 @@
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-bordered table-hover align-middle mb-0 small">
+            <caption class="kern-sr-only">Entwicklung der Stationsbewertungen über Praxisblöcke mit Trend und Verlauf.</caption>
             <thead class="table-light">
                 <tr>
-                    <th style="min-width:180px;">Organisationseinheit</th>
+                    <th scope="col" style="min-width:180px;">Organisationseinheit</th>
                     {% for b in trend_blocks %}
-                    <th class="text-center text-nowrap" style="min-width:80px;">
+                    <th scope="col" class="text-center text-nowrap" style="min-width:80px;">
                         <div style="font-size:.7rem;" class="text-muted">{{ b.name|truncatewords:3 }}</div>
                         <div style="font-size:.65rem;">{{ b.start_date|date:"m/Y" }}</div>
                     </th>
                     {% endfor %}
-                    <th class="text-center" style="min-width:60px;">Trend</th>
-                    <th style="min-width:100px;">Verlauf</th>
+                    <th scope="col" class="text-center" style="min-width:60px;">Trend</th>
+                    <th scope="col" style="min-width:100px;">Verlauf</th>
                 </tr>
             </thead>
             <tbody>
@@ -184,13 +187,13 @@
                     {% endfor %}
                     <td class="text-center">
                         {% if row.trend == 'better' %}
-                        <i class="bi bi-arrow-down-circle-fill text-success fs-5" title="Verbessert"></i>
+                        <i class="bi bi-arrow-down-circle-fill text-success fs-5" aria-label="Verbessert"></i>
                         {% elif row.trend == 'worse' %}
-                        <i class="bi bi-arrow-up-circle-fill text-danger fs-5" title="Verschlechtert"></i>
+                        <i class="bi bi-arrow-up-circle-fill text-danger fs-5" aria-label="Verschlechtert"></i>
                         {% elif row.trend == 'stable' %}
-                        <i class="bi bi-dash-circle-fill text-muted fs-5" title="Stabil"></i>
+                        <i class="bi bi-dash-circle-fill text-muted fs-5" aria-label="Stabil"></i>
                         {% else %}
-                        <span class="text-muted">–</span>
+                        <span class="text-muted" aria-label="Keine Daten">–</span>
                         {% endif %}
                     </td>
                     <td>

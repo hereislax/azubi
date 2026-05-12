@@ -10,39 +10,39 @@
     </ol>
 </nav>
 
-<h2 class="mb-1"><i class="bi {{ doc.category.icon }} me-1"></i> {{ doc.title }}</h2>
+<h1 class="h2 mb-1"><i class="bi {{ doc.category.icon }} me-1" aria-hidden="true"></i> {{ doc.title }}</h1>
 {% if doc.description %}<p class="text-muted mb-3">{{ doc.description }}</p>{% endif %}
 
 {% if doc.content %}
-<div class="card shadow-sm mb-3">
+<section class="card shadow-sm mb-3" aria-labelledby="kb-content-heading">
     <div class="card-header py-2 d-flex align-items-center gap-2">
-        <i class="bi bi-file-text text-primary me-1"></i>
-        <span class="fw-semibold">Inhalt</span>
+        <i class="bi bi-file-text text-primary me-1" aria-hidden="true"></i>
+        <h2 id="kb-content-heading" class="h6 mb-0 fw-semibold">Inhalt</h2>
     </div>
     <div class="card-body" style="white-space:pre-wrap;">{{ doc.content }}</div>
-</div>
+</section>
 {% endif %}
 
 {% if doc.has_attachment %}
-<div class="card shadow-sm mb-3">
+<section class="card shadow-sm mb-3" aria-labelledby="kb-attachments-heading">
     <div class="card-header py-2 d-flex align-items-center gap-2">
-        <i class="bi bi-paperclip text-primary me-1"></i>
-        <span class="fw-semibold">Anhänge</span>
+        <i class="bi bi-paperclip text-primary me-1" aria-hidden="true"></i>
+        <h2 id="kb-attachments-heading" class="h6 mb-0 fw-semibold">Anhänge</h2>
     </div>
     <div class="card-body d-flex flex-wrap gap-2">
         {% if doc.file %}
         <a href="{{ doc.file.url }}" class="btn btn-outline-primary btn-sm" download>
-            <i class="bi bi-download me-1"></i>{{ doc.filename }}
+            <i class="bi bi-download me-1" aria-hidden="true"></i>{{ doc.filename }}
         </a>
         {% endif %}
         {% if doc.external_url %}
         <a href="{{ doc.external_url }}" class="btn btn-outline-info btn-sm"
            target="_blank" rel="noopener noreferrer">
-            <i class="bi bi-box-arrow-up-right me-1"></i>Externen Link öffnen
+            <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Externen Link öffnen
         </a>
         {% endif %}
     </div>
-</div>
+</section>
 {% endif %}
 
 <a href="{% url 'portal:kb_list' %}" class="btn btn-outline-secondary btn-sm">

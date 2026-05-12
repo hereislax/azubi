@@ -128,17 +128,45 @@
             }
         }
 
-        /* Backdrop (nur mobil) */
-        #sidebarBackdrop {
+        /* Backdrop (nur mobil) — als <button> für Tastatur-Bedienbarkeit */
+        .azubi-sidebar-backdrop {
             display: none;
             position: fixed;
             inset: var(--topbar-h) 0 0 0;
             background: rgba(0, 0, 0, .4);
             z-index: 1044;
+            border: 0;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
         }
 
-        #sidebarBackdrop.show {
+        .azubi-sidebar-backdrop.show {
             display: block;
+        }
+
+        /* Skip-Link (BITV 2.0 / WCAG 2.4.1) – visuell versteckt bis Fokus */
+        .azubi-skip-link {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+            padding: .75rem 1.25rem;
+            background: var(--bs-primary, #0d6efd);
+            color: #fff;
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom-right-radius: .35rem;
+            transform: translateY(-110%);
+            transition: transform .15s ease;
+        }
+
+        .azubi-skip-link:focus,
+        .azubi-skip-link:focus-visible {
+            transform: translateY(0);
+            outline: 3px solid #fff;
+            outline-offset: -2px;
+            color: #fff;
         }
 
         /* ── Sidebar-Nav-Stile ──────────────────────────────────────────────── */
@@ -294,8 +322,12 @@
 </head>
 <body {% if user.is_authenticated %}class="has-sidebar"{% endif %}>
 
-{# ── Sidebar-Backdrop (mobil) ───────────────────────────────────────────────── #}
-<div id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+{# ── Skip-Link (BITV §3 / WCAG 2.4.1) – wird sichtbar bei Tastatur-Fokus ────── #}
+<a href="#main-content" class="azubi-skip-link">Zum Hauptinhalt springen</a>
+
+{# ── Sidebar-Backdrop (mobil) ─ als Button für Tastatur-Zugänglichkeit ──────── #}
+<button type="button" id="sidebarBackdrop" class="azubi-sidebar-backdrop"
+        aria-label="Navigation schließen"></button>
 
 {# ── KERN-Kopfzeile ─────────────────────────────────────────────────────────── #}
 <div class="kern-kopfzeile">
@@ -320,9 +352,10 @@
         {# Sidebar-Toggle #}
         {% if user.is_authenticated %}
             <button class="btn btn-link text-white p-1 border-0 flex-shrink-0"
-                    id="sidebarToggleBtn" onclick="toggleSidebar()"
-                    title="Navigation ein-/ausblenden" aria-label="Navigation ein-/ausblenden">
-                <i class="bi bi-list" style="font-size:1.5rem;line-height:1;display:block;"></i>
+                    id="sidebarToggleBtn" type="button" onclick="toggleSidebar()"
+                    aria-label="Navigation ein- oder ausblenden"
+                    aria-controls="appSidebar" aria-expanded="true">
+                <i class="bi bi-list" aria-hidden="true" style="font-size:1.5rem;line-height:1;display:block;"></i>
             </button>
         {% endif %}
 
@@ -358,7 +391,8 @@
             {% if user.is_authenticated and not student_profile %}
                 <li class="nav-item d-flex align-items-center">
                     <form method="get" action="{% url 'global_search' %}" class="d-flex align-items-center"
-                          id="navSearchForm">
+                          id="navSearchForm" role="search">
+                        <label for="navSearchInput" class="kern-sr-only">Globale Suche</label>
                         <input type="search" name="q" id="navSearchInput"
                                class="kern-form-input__input border-0 nav-search-input"
                                placeholder="Suchen …"
@@ -366,8 +400,9 @@
                                autocomplete="off"
                                style="background:rgba(255,255,255,.15); color:#fff; width:0; padding-top:0; padding-bottom:0; padding-left:0; padding-right:0; transition:width .2s ease, padding .2s ease; overflow:hidden;">
                         <button type="button" class="btn nav-link px-2 py-1" id="navSearchBtn"
-                                onclick="toggleNavSearch()" title="Suche">
-                            <i class="bi bi-search"></i>
+                                onclick="toggleNavSearch()" aria-label="Suche öffnen oder schließen"
+                                aria-controls="navSearchInput" aria-expanded="false">
+                            <i class="bi bi-search" aria-hidden="true"></i>
                         </button>
                     </form>
                 </li>
@@ -378,10 +413,12 @@
                 {% with total_count=pending_tasks_count|add:unread_notifications %}
                     <li class="nav-item dropdown">
                         <a class="nav-link px-2 py-1 position-relative" href="#" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false" title="Benachrichtigungen & Aufgaben">
-                            <i class="bi bi-bell-fill fs-5"></i>
+                           data-bs-toggle="dropdown" aria-expanded="false"
+                           aria-label="Benachrichtigungen und offene Aufgaben{% if total_count %} ({{ total_count }} neu){% endif %}">
+                            <i class="bi bi-bell-fill fs-5" aria-hidden="true"></i>
                             {% if total_count %}
                                 <span class="position-absolute badge rounded-pill bg-danger"
+                                      aria-hidden="true"
                                       style="font-size:.6rem;top:2px;right:0;min-width:1.2em;line-height:1.4;">
                         {{ total_count }}
                     </span>
@@ -494,8 +531,9 @@
             {% if user.is_authenticated %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle px-2 py-1 d-flex align-items-center gap-1"
-                       href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle fs-5"></i>
+                       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                       aria-label="Nutzermenü ({{ user.get_full_name|default:user.username }})">
+                        <i class="bi bi-person-circle fs-5" aria-hidden="true"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
@@ -543,8 +581,8 @@
 </nav>
 
 {% if user.is_authenticated %}
-    <aside id="appSidebar" class="app-sidebar">
-        <nav class="app-sidebar__nav">
+    <aside id="appSidebar" class="app-sidebar" aria-label="Hauptnavigation">
+        <nav class="app-sidebar__nav" aria-label="Module">
 
             {% if is_training_director or is_training_office %}
                 {# ── Vollständige Navigation (Leitung / Referat / Staff) ─────────────── #}
@@ -842,7 +880,7 @@
 {% endif %}
 
 {# ── Hauptinhalt ─────────────────────────────────────────────────────────────── #}
-<div class="main-content">
+<main id="main-content" class="main-content" tabindex="-1">
     <div class="container overflow-auto">
         {% if messages %}
             <div class="azubi-flash-messages mt-3">
@@ -870,19 +908,21 @@
         {% block content %}
         {% endblock %}
     </div>
-</div>
+</main>
 
 <footer class="border-top py-2 text-center text-muted small">
     <div class="container">
         &copy; {% now "Y" %} Azubi
-        {% if app_version %}&middot; v{{ app_version }}{% endif %}
-        &middot;
-        made with ❤️ in cologne /\/\
-        &middot;
+        {% if app_version %}<span aria-hidden="true"> &middot; </span>v{{ app_version }}{% endif %}
+        <span aria-hidden="true"> &middot; </span>
+        made with <span aria-label="Liebe">❤️</span> in cologne <span aria-hidden="true">/\/\</span>
+        <span aria-hidden="true"> &middot; </span>
         <a href="{% url 'impressum' %}" class="text-muted text-decoration-none">Impressum</a>
-        &middot;
+        <span aria-hidden="true"> &middot; </span>
         <a href="{% url 'datenschutz' %}" class="text-muted text-decoration-none">Datenschutz</a>
-        &middot;
+        <span aria-hidden="true"> &middot; </span>
+        <a href="{% url 'barrierefreiheit' %}" class="text-muted text-decoration-none">Barrierefreiheit</a>
+        <span aria-hidden="true"> &middot; </span>
         <a href="{% url 'acknowledgments' %}" class="text-muted text-decoration-none">Verwendete Bibliotheken</a>
     </div>
 </footer>
@@ -896,15 +936,37 @@
     }
 
     function kernDialogOpen(id) {
-        document.getElementById(id).showModal();
+        var dlg = document.getElementById(id);
+        if (!dlg) return;
+        // Fallback für Browser ohne <dialog>-Support: als sichtbarer Block rendern.
+        if (typeof dlg.showModal === 'function') {
+            dlg.showModal();
+        } else {
+            dlg.setAttribute('open', '');
+            dlg.style.display = 'block';
+        }
+        // Fokus auf erstes interaktives Element setzen (WCAG 2.4.3)
+        var focusable = dlg.querySelector('input, select, textarea, button, [href], [tabindex]:not([tabindex="-1"])');
+        if (focusable) focusable.focus();
     }
 
     function kernDialogClose(el) {
-        el.closest('dialog').close();
+        var dlg = el.closest('dialog');
+        if (!dlg) return;
+        if (typeof dlg.close === 'function') {
+            dlg.close();
+        } else {
+            dlg.removeAttribute('open');
+            dlg.style.display = 'none';
+        }
     }
 
+    // Click auf Backdrop (außerhalb des Dialoginhalts) schließt den Dialog
     document.addEventListener('click', function (e) {
-        if (e.target.tagName === 'DIALOG') e.target.close();
+        if (e.target.tagName === 'DIALOG') {
+            if (typeof e.target.close === 'function') e.target.close();
+            else { e.target.removeAttribute('open'); e.target.style.display = 'none'; }
+        }
     });
 
     /* ── Sidebar ─────────────────────────────────────────────────────────────── */
@@ -924,16 +986,47 @@
             document.documentElement.removeAttribute('data-sidebar');
         });
 
+        var toggleBtn = document.getElementById('sidebarToggleBtn');
+
+        function setToggleExpandedState() {
+            if (!toggleBtn) return;
+            var mobile = window.innerWidth < 992;
+            var expanded = mobile
+                ? sidebar.classList.contains('sidebar-mobile-show')
+                : !body.classList.contains('sidebar-closed');
+            toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        }
+
         window.toggleSidebar = function () {
             const mobile = window.innerWidth < 992;
             if (mobile) {
                 var open = sidebar.classList.toggle('sidebar-mobile-show');
                 backdrop.classList.toggle('show', open);
+                // Fokus in Sidebar setzen wenn geöffnet, sonst zurück zum Toggle
+                if (open) {
+                    var firstLink = sidebar.querySelector('a, button');
+                    if (firstLink) firstLink.focus();
+                } else if (toggleBtn) {
+                    toggleBtn.focus();
+                }
             } else {
                 var closed = body.classList.toggle('sidebar-closed');
                 localStorage.setItem(STORAGE_KEY, closed ? '1' : '0');
             }
+            setToggleExpandedState();
         };
+
+        // Backdrop-Click + Tastatur (Enter/Space funktioniert nativ auf <button>)
+        if (backdrop) {
+            backdrop.addEventListener('click', window.toggleSidebar);
+        }
+
+        // ESC schließt die mobile Sidebar
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && sidebar.classList.contains('sidebar-mobile-show')) {
+                window.toggleSidebar();
+            }
+        });
 
         // Overlay aufräumen wenn Fenster vergrößert wird
         window.addEventListener('resize', function () {
@@ -941,7 +1034,10 @@
                 sidebar.classList.remove('sidebar-mobile-show');
                 backdrop.classList.remove('show');
             }
+            setToggleExpandedState();
         });
+
+        setToggleExpandedState();
 
         // ── Collapse-Gruppen: Zustand aus localStorage wiederherstellen ──────────
         var GROUP_PREFIX = 'azubi_snav_';
@@ -985,14 +1081,17 @@
     /* ── Navbar-Suche ────────────────────────────────────────────────────────── */
     function toggleNavSearch() {
         var input = document.getElementById('navSearchInput');
+        var btn = document.getElementById('navSearchBtn');
         var isOpen = input.style.width && input.style.width !== '0px' && input.style.width !== '0';
         if (isOpen) {
             input.style.width = '0';
             input.style.padding = '0';
+            if (btn) btn.setAttribute('aria-expanded', 'false');
         } else {
             input.style.width = 'min(180px, 50vw)';
             input.style.padding = '.25rem .5rem';
             input.focus();
+            if (btn) btn.setAttribute('aria-expanded', 'true');
         }
     }
 

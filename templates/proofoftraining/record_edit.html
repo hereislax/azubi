@@ -12,18 +12,18 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
-        <h2 class="mb-0">
-            <i class="bi bi-journal-text me-1"></i>
+        <h1 class="h2 mb-0">
+            <i class="bi bi-journal-text me-1" aria-hidden="true"></i>
             KW {{ record.calendar_week }}/{{ record.week_start.year }}
-        </h2>
+        </h1>
         <span class="text-muted small">{{ record.week_start|date:"d.m.Y" }} – {{ record.week_end|date:"d.m.Y" }}</span>
         <span class="badge bg-{{ record.status_color }} ms-2">{{ record.get_status_display }}</span>
     </div>
 </div>
 
 {% if record.status == 'rejected' and record.rejection_reason %}
-<div class="alert alert-warning d-flex gap-2">
-    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1 me-1"></i>
+<div class="alert alert-warning d-flex gap-2" role="alert">
+    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1 me-1" aria-hidden="true"></i>
     <div>
         <strong>Allgemeiner Korrekturhinweis:</strong><br>
         {{ record.rejection_reason|linebreaksbr }}
@@ -37,24 +37,24 @@
 
     {% for form in formset %}
     {% with day=form.instance %}
-    <div class="card mb-3">
+    <section class="card mb-3" aria-labelledby="day-heading-{{ day.pk }}">
         <div class="card-header py-2 d-flex justify-content-between align-items-center">
-            <strong>{{ day.weekday_name }}, {{ day.date|date:"d.m.Y" }}</strong>
+            <h2 class="h6 mb-0" id="day-heading-{{ day.pk }}">{{ day.weekday_name }}, {{ day.date|date:"d.m.Y" }}</h2>
             <div style="width:240px;">
                 {{ form.day_type }}
             </div>
         </div>
         <div class="card-body py-2">
             {% if day.correction_note %}
-            <div class="alert alert-warning py-2 px-3 mb-2 small">
-                <i class="bi bi-pencil-fill me-1"></i><strong>Korrekturhinweis:</strong>
+            <div class="alert alert-warning py-2 px-3 mb-2 small" role="alert">
+                <i class="bi bi-pencil-fill me-1" aria-hidden="true"></i><strong>Korrekturhinweis:</strong>
                 {{ day.correction_note|linebreaksbr }}
             </div>
             {% endif %}
             {{ form.content }}
             {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
         </div>
-    </div>
+    </section>
     {% endwith %}
     {% endfor %}
 
