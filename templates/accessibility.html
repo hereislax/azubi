@@ -12,16 +12,23 @@
         {% else %}
             {# ── Default-Vorlage nach BITV 2.0 §12 b ──────────────────────────── #}
             <p class="text-muted">
-                <em>Hinweis für Administrator:innen:</em> Diese Vorlage ist generisch
-                und muss vor Veröffentlichung instanzspezifisch ergänzt werden
-                (Behördenname, Kontaktdaten, Bewertungsdatum). Bearbeitung unter
+                <em>Hinweis für Administrator:innen:</em> Diese Vorlage spiegelt
+                den technischen Konformitätsstand der Anwendung wider, muss aber
+                vor Veröffentlichung um die <strong>instanzspezifischen
+                Pflichtangaben</strong> ergänzt werden (Behördenname,
+                Feedback-Kontakt, Bewertungsdatum). Bearbeitung unter
                 <em>Einstellungen › Impressum &amp; Datenschutz</em>.
             </p>
 
             <h2>Geltungsbereich</h2>
             <p>
                 Diese Erklärung gilt für die unter der Adresse dieser Anwendung
-                erreichbare Webanwendung des Azubi-Portals.
+                erreichbare Webanwendung des Azubi-Portals einschließlich aller
+                Module (Nachwuchskräfte-Verwaltung, Kurs- und Einsatzplanung,
+                Ausbildungsnachweise, Abwesenheitsmanagement, Lerntagsanträge,
+                Wohnheimverwaltung, Inventar, Beurteilungen, Pflichtschulungen,
+                Maßnahmen, Bekanntmachungen, Wissensdatenbank, Raumbuchung,
+                Änderungsprotokoll und Verwaltung).
             </p>
 
             <h2>Stand der Vereinbarkeit mit den Anforderungen</h2>
@@ -32,52 +39,104 @@
                 Behindertengleichstellungsgesetzes (BGG) erlassen wurde.
             </p>
             <p>
-                Diese Anwendung ist mit den genannten Anforderungen wegen der
-                folgenden Nichtvereinbarkeiten <strong>teilweise vereinbar</strong>.
+                Diese Anwendung ist mit den genannten Anforderungen
+                <strong>weitgehend vereinbar</strong>. Die unten genannten
+                Ausnahmen betreffen entweder externe Komponenten oder werden
+                fortlaufend behoben.
             </p>
+
+            <h3>Umgesetzte Anforderungen</h3>
+            <p>Die Anwendung erfüllt insbesondere die folgenden BITV-/WCAG-Kriterien:</p>
+            <ul>
+                <li>
+                    <strong>Wahrnehmbar</strong> – semantische Auszeichnung
+                    von Überschriften (WCAG&nbsp;1.3.1 / 2.4.6), eindeutige
+                    Tabellen-Header mit <code>scope</code>-Attribut und
+                    <code>caption</code>-Elementen, beschreibende
+                    <code>alt</code>-Texte bzw. <code>aria-label</code> für
+                    funktionale Symbole.
+                </li>
+                <li>
+                    <strong>Bedienbar</strong> – durchgängige Tastaturbedienung
+                    (WCAG&nbsp;2.1.1), sichtbarer Fokus-Indikator
+                    (WCAG&nbsp;2.4.7), Sprungmarke zum Hauptinhalt
+                    (WCAG&nbsp;2.4.1), keine Tastaturfallen.
+                </li>
+                <li>
+                    <strong>Verständlich</strong> – Formularfelder mit
+                    zugeordneten Labels und <code>aria-required</code>,
+                    Validierungsfehler programmatisch via
+                    <code>aria-invalid</code> und <code>aria-describedby</code>
+                    mit dem Eingabefeld verknüpft (WCAG&nbsp;3.3.1 / 3.3.3),
+                    eindeutige Sprache der Seite (WCAG&nbsp;3.1.1).
+                </li>
+                <li>
+                    <strong>Robust</strong> – Dialoge mit
+                    <code>aria-labelledby</code>, Autocomplete-Felder als
+                    WAI-ARIA <code>combobox</code>, Radio-Gruppen mit
+                    <code>&lt;fieldset&gt;</code>/<code>&lt;legend&gt;</code>
+                    bzw. <code>role="radiogroup"</code>.
+                </li>
+            </ul>
 
             <h2>Nicht barrierefreie Inhalte</h2>
             <p>Die nachstehend aufgeführten Inhalte sind aus folgenden Gründen nicht barrierefrei:</p>
             <ul>
                 <li>
-                    <strong>Tabellenstrukturen</strong> (BITV&nbsp;2.0&nbsp;/&nbsp;WCAG&nbsp;1.3.1):
-                    Einige Listenansichten verwenden noch keine vollständige
-                    Tabellen-Semantik (Spalten-Header mit <code>scope</code>,
-                    Tabellen-Beschriftung).
+                    <strong>Automatisch generierte PDF-Dokumente</strong>
+                    (WCAG&nbsp;1.1.1 / 1.3.1): Bescheinigungen, Quittungen
+                    und Beurteilungs-PDFs werden über die externe Software
+                    <span lang="en">Paperless-ngx</span> abgelegt, die das
+                    Format PDF/UA aktuell nicht unterstützt. Eine Nachrüstung
+                    wäre nach §&nbsp;12c&nbsp;BGG mit unverhältnismäßiger
+                    Belastung verbunden. <strong>Alternative Formate stellen
+                    wir auf Anfrage bereit</strong> – siehe Kontaktdaten unten.
                 </li>
                 <li>
-                    <strong>Überschriften-Hierarchie</strong> (WCAG&nbsp;1.3.1 / 2.4.6):
-                    Auf einzelnen Modulseiten beginnt der Inhalt mit einer
-                    Überschrift der Ebene 2 statt mit einer eindeutigen
-                    Seitenüberschrift der Ebene 1.
+                    <strong>DataTables-Filter</strong> (WCAG&nbsp;2.4.7 /
+                    4.1.2): Die clientseitige Filter-Bibliothek
+                    <span lang="en">DataTables</span> hat in einzelnen
+                    Bedienelementen (Spaltenfilter, Sortier-Pfeile) noch
+                    eingeschränkte Screen-Reader-Unterstützung. Die
+                    Such-Eingabe selbst ist bedienbar.
                 </li>
                 <li>
-                    <strong>Formularfehler</strong> (WCAG&nbsp;3.3.1):
-                    Validierungsfehler werden visuell hervorgehoben, sind aber
-                    nicht durchgängig per <code>aria-describedby</code> mit dem
-                    auslösenden Eingabefeld verknüpft.
+                    <strong>Komplexe Kalender-Ansichten</strong>
+                    (WCAG&nbsp;2.1.1): Drag-and-Drop-Aktionen in
+                    Belegungsplänen (Wohnheim, Arbeitsplätze, Kurs-Kalender)
+                    sind primär für Maus-/Touch-Bedienung optimiert.
+                    Alternative Bedien-Wege (Formularfelder, Detail-Buttons)
+                    sind aber für alle Aktionen verfügbar.
                 </li>
                 <li>
-                    <strong>PDF-Dokumente</strong> (WCAG&nbsp;1.1.1 / 1.3.1):
-                    Automatisch generierte Dokumente (Bescheinigungen, Quittungen)
-                    sind nicht als barrierefreie PDFs (PDF/UA) ausgezeichnet. Die
-                    Dokumentenablage erfolgt über die externe Software Paperless-ngx,
-                    die PDF/UA aktuell nicht unterstützt. Eine Nachrüstung wäre
-                    nach §12c BGG mit unverhältnismäßiger Belastung verbunden;
-                    alternative Formate stellen wir auf Anfrage bereit.
-                </li>
-                <li>
-                    <strong>Eingebettete Drittsoftware</strong>:
-                    Komponenten wie Datentabellen-Filter und einzelne Kalenderansichten
-                    sind in Tastatur-Bedienbarkeit und Screen-Reader-Ausgabe
-                    eingeschränkt.
+                    <strong>Farbkontraste</strong> (WCAG&nbsp;1.4.3):
+                    Einzelne Badge-Farben und sekundäre Hinweistexte wurden
+                    noch nicht systematisch gegen den AA-Schwellwert von
+                    4,5:1 geprüft. Die kritischen Bedienelemente und
+                    Pflichtfeld-Markierungen erfüllen den Kontrast.
                 </li>
             </ul>
 
+            <h3>Was nicht zum Geltungsbereich gehört</h3>
+            <p>
+                Eingebettete Dokumente Dritter (z.&nbsp;B. Word-Vorlagen zur
+                Bescheinigungs-Generierung), die durch Administrator:innen
+                hochgeladen werden, liegen außerhalb des direkten Einflusses
+                der Anwendung. Für die Barrierefreiheit dieser Dokumente sind
+                die hochladenden Stellen verantwortlich.
+            </p>
+
             <h2>Erstellung dieser Erklärung</h2>
             <p>
-                Diese Erklärung wurde auf Basis einer Selbstbewertung erstellt.
-                Die Bewertung erfolgte zuletzt am <strong>[Datum eintragen]</strong>.
+                Diese Erklärung wurde auf Basis einer Selbstbewertung des
+                technischen Anwendungs-Stacks (Templates, Formulare,
+                interaktive Komponenten) erstellt.
+            </p>
+            <p>
+                Die Bewertung erfolgte zuletzt am
+                <strong>[Datum eintragen]</strong>. Die Erklärung wird
+                spätestens jährlich sowie nach wesentlichen Änderungen
+                überprüft.
             </p>
 
             <h2>Feedback und Kontaktangaben</h2>
