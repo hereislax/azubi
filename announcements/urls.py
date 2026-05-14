@@ -8,8 +8,10 @@ app_name = 'announcements'
 urlpatterns = [
     path('',                      views.announcement_list,    name='list'),
     path('neu/',                  views.announcement_create,  name='create'),
+    path('freigaben/',            views.announcement_pending_approvals, name='pending_approvals'),
     path('<uuid:public_id>/',             views.announcement_detail,  name='detail'),
     path('<uuid:public_id>/bearbeiten/',  views.announcement_edit,    name='edit'),
     path('<uuid:public_id>/veroeffentlichen/', views.announcement_publish, name='publish'),
+    path('<uuid:public_id>/freigeben/',   views.announcement_approve, name='approve'),
     path('<uuid:public_id>/loeschen/',    views.announcement_delete,  name='delete'),
 ]

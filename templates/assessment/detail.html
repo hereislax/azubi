@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load workflow_tags %}
 
 {% block title %}Beurteilung – {{ assessment.assignment.student }}{% endblock %}
 
@@ -11,6 +12,8 @@
 </nav>
 
 <h1 class="kern-sr-only">Stationsbeurteilung – {{ assessment.assignment.student }}</h1>
+
+{% workflow_history target=assessment %}
 
 <div class="row g-3">
 
@@ -71,6 +74,15 @@
         </section>
 
         {# Aktionen #}
+        {% if can_acknowledge %}
+        <form method="post" action="{% url 'assessment:acknowledge' assessment.public_id %}" class="mb-2">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-primary w-100">
+                <i class="bi bi-check2-circle me-1"></i> Zur Kenntnis nehmen
+            </button>
+        </form>
+        {% endif %}
+
         {% if can_confirm and assessment.status == STATUS_SUBMITTED %}
         <form method="post" action="{% url 'assessment:confirm' assessment.public_id %}">
             {% csrf_token %}

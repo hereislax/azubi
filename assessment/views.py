@@ -108,6 +108,8 @@ def assessment_token_form(request, token):
         if form.is_valid():
             form.save()
             _audit_token_submit(assessment, request)
+            mirror_token_submit_to_workflow(assessment,
+                                             actor_name=assessment.assessor_name)
             _notify_staff_assessment_submitted(assessment, request)
             assessment.token = uuid.uuid4()
             assessment.save(update_fields=['token'])
@@ -175,8 +177,21 @@ def assessment_detail(request, public_id):
     if self_assessment:
         self_ratings = self_assessment.ratings.select_related('criterion').order_by('criterion__order')
 
-    from services.roles import is_training_director, is_training_office
+    from services.roles import is_training_director, is_training_office, is_training_coordinator
     can_confirm = is_training_director(request.user) or is_training_office(request.user)
+
+    # Kann der aktuell eingeloggte Nutzer die Info-Stufe abzeichnen?
+    can_acknowledge = False
+    try:
+        from workflow.engine import get_instance_for
+        from workflow.models import APPROVER_INFO
+        instance = get_instance_for(assessment)
+        if (instance and instance.is_active and instance.current_step
+                and instance.current_step.approver_type == APPROVER_INFO
+                and is_training_coordinator(request.user)):
+            can_acknowledge = True
+    except Exception:  # noqa: BLE001
+        pass
 
     return render(request, 'assessment/detail.html', {
         'assessment': assessment,
@@ -184,9 +199,27 @@ def assessment_detail(request, public_id):
         'self_assessment': self_assessment,
         'self_ratings': self_ratings,
         'can_confirm': can_confirm,
+        'can_acknowledge': can_acknowledge,
         'STATUS_SUBMITTED': STATUS_SUBMITTED,
         'STATUS_CONFIRMED': STATUS_CONFIRMED,
     })
+
+
+@login_required
+@require_POST
+def assessment_acknowledge(request, public_id):
+    """Kenntnisnahme durch die Ausbildungskoordination (Workflow-Info-Step)."""
+    from services.roles import is_training_coordinator
+    if not is_training_coordinator(request.user):
+        raise PermissionDenied
+
+    assessment = get_object_or_404(Assessment, public_id=public_id)
+    _require_assessment_access(request, assessment)
+
+    comment = request.POST.get('comment', '').strip()
+    mirror_coord_ack_to_workflow(assessment, actor=request.user, comment=comment)
+    messages.success(request, 'Kenntnisnahme vermerkt.')
+    return redirect('assessment:detail', public_id=public_id)
 
 
 @login_required
@@ -204,6 +237,7 @@ def assessment_confirm(request, public_id):
     assessment.confirmed_by = request.user
     assessment.confirmed_at = timezone.now()
     assessment.save(update_fields=['status', 'confirmed_by', 'confirmed_at'])
+    mirror_office_confirm_to_workflow(assessment, actor=request.user)
 
     messages.success(request, 'Beurteilung erfolgreich bestätigt.')
     return redirect('assessment:detail', public_id=public_id)
@@ -255,6 +289,9 @@ def assessment_send_for_assignment(request, assignment_pk):
     if not created and assessment.status == 'confirmed':
         messages.warning(request, 'Diese Beurteilung wurde bereits bestätigt – kein erneuter Versand möglich.')
         return _redirect_to_assignment(request, assignment)
+
+    if created:
+        start_assessment_workflow(assessment, initiator=request.user)
 
     _send_assessment_token_mail(assessment, request)
     assessment.token_sent_at = timezone.now()
@@ -681,3 +718,93 @@ def _notify_staff_assessment_submitted(assessment, request=None):
             icon='bi-clipboard-check',
             category='assessment',
         )
+
+
+# ── Workflow-Integration ──────────────────────────────────────────────────────
+
+def start_assessment_workflow(assessment, initiator=None):
+    """Startet den ``assessment_confirm``-Workflow für eine neue Beurteilung."""
+    try:
+        from workflow.engine import start_workflow, get_instance_for, WorkflowError
+        if get_instance_for(assessment) is not None:
+            return None
+        return start_workflow('assessment_confirm', target=assessment,
+                               initiator=initiator)
+    except WorkflowError as exc:
+        logger.warning('Assessment-Workflow konnte nicht gestartet werden: %s', exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Assessment-Workflow-Start: %s', exc)
+    return None
+
+
+def mirror_token_submit_to_workflow(assessment, actor_name=''):
+    """Spiegelt die Praxistutor-Einreichung (Stufe 1, ohne Login)."""
+    try:
+        from workflow.engine import (
+            get_instance_for, perform_action, start_workflow, WorkflowError,
+        )
+        instance = get_instance_for(assessment)
+        if instance is None:
+            instance = start_workflow('assessment_confirm', target=assessment)
+        if instance and instance.is_active and instance.current_step:
+            perform_action(instance, actor=None,
+                           actor_name=actor_name or assessment.assessor_name or 'Praxistutor',
+                           action='approve',
+                           comment='Beurteilung über Token-Link eingereicht.')
+    except WorkflowError as exc:
+        logger.warning('Assessment-Workflow-Mirror (Token-Submit) fehlgeschlagen: %s', exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Assessment-Workflow-Mirror (Submit): %s', exc)
+
+
+def mirror_coord_ack_to_workflow(assessment, actor, comment=''):
+    """Spiegelt die Kenntnisnahme durch die Koordination (Stufe 2, Info-Step)."""
+    try:
+        from workflow.engine import (
+            get_instance_for, perform_action, WorkflowError,
+        )
+        instance = get_instance_for(assessment)
+        if instance and instance.is_active and instance.current_step:
+            perform_action(instance, actor=actor, action='acknowledge',
+                           comment=comment or 'Zur Kenntnis genommen.')
+    except WorkflowError as exc:
+        logger.warning('Assessment-Workflow-Mirror (Coord-Ack) fehlgeschlagen: %s', exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Assessment-Workflow-Mirror (Ack): %s', exc)
+
+
+def mirror_office_confirm_to_workflow(assessment, actor):
+    """Spiegelt die Referat-Bestätigung (Stufe 3).
+
+    Falls der Workflow noch in der Info-Stufe (Koordination) hängt, wird diese
+    implizit als „zur Kenntnis genommen durch Bestätigung des Referats"
+    abgezeichnet, bevor die Referat-Stufe genehmigt wird.
+    """
+    try:
+        from workflow.engine import (
+            get_instance_for, perform_action, start_workflow, WorkflowError,
+        )
+        from workflow.models import APPROVER_INFO
+        instance = get_instance_for(assessment)
+        if instance is None:
+            initiator = assessment.confirmed_by or None
+            instance = start_workflow('assessment_confirm', target=assessment,
+                                       initiator=initiator)
+            # Stufe 1 (Praxistutor) muss bereits abgeschlossen sein, sonst
+            # können wir hier nicht ohne weiteres vor-springen.
+            return
+
+        # Falls noch in Info-Stufe: implizit acknowledge mit Referat-Bezug
+        if (instance.current_step
+                and instance.current_step.approver_type == APPROVER_INFO):
+            perform_action(instance, actor=actor, action='acknowledge',
+                           comment='Implizit durch Bestätigung des Ausbildungsreferats.')
+            instance.refresh_from_db()
+
+        if instance.is_active and instance.current_step:
+            perform_action(instance, actor=actor, action='approve',
+                           comment='Beurteilung bestätigt.')
+    except WorkflowError as exc:
+        logger.warning('Assessment-Workflow-Mirror (Office-Confirm) fehlgeschlagen: %s', exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Assessment-Workflow-Mirror (Confirm): %s', exc)

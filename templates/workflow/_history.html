@@ -1,0 +1,101 @@
+{# Wiederverwendbarer Workflow-Verlauf. Nutzung: {% workflow_history target=obj %} #}
+{% if instance %}
+<section class="card shadow-sm mb-3" aria-labelledby="wf-history-{{ instance.pk }}-heading">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-diagram-3 text-muted" aria-hidden="true"></i>
+        <h2 class="h6 mb-0" id="wf-history-{{ instance.pk }}-heading">
+            Workflow-Verlauf
+        </h2>
+        <span class="ms-auto">
+            {% if instance.status == 'in_progress' %}
+                <span class="badge bg-warning text-dark">Läuft{% if instance.current_step %} · {{ instance.current_step.name }}{% endif %}</span>
+            {% elif instance.status == 'approved' %}
+                <span class="badge bg-success">Genehmigt</span>
+            {% elif instance.status == 'rejected' %}
+                <span class="badge bg-danger">Abgelehnt</span>
+            {% elif instance.status == 'cancelled' %}
+                <span class="badge bg-secondary">Storniert</span>
+            {% endif %}
+        </span>
+    </div>
+
+    {% if instance.is_active and instance.current_step %}
+    <div class="card-body py-2 border-bottom">
+        <div class="row small">
+            <dt class="col-sm-4 text-muted">Aktuelle Stufe</dt>
+            <dd class="col-sm-8 mb-1">{{ instance.current_step.name }} (Stufe {{ instance.current_step.order }})</dd>
+
+            <dt class="col-sm-4 text-muted">Zuständig</dt>
+            <dd class="col-sm-8 mb-1">{{ current_step_approver_label }}</dd>
+
+            {% if deadline %}
+            <dt class="col-sm-4 text-muted">Frist</dt>
+            <dd class="col-sm-8 mb-0">
+                {{ deadline|date:"d.m.Y H:i" }} Uhr
+                {% if deadline|date:"U" < now|date:"U" %}
+                <span class="badge bg-danger ms-1" aria-label="Frist überschritten">überfällig</span>
+                {% endif %}
+            </dd>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if transitions %}
+    <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+            <caption class="kern-sr-only">Chronologischer Verlauf aller Workflow-Aktionen.</caption>
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 150px;">Zeitpunkt</th>
+                    <th scope="col" style="width: 180px;">Aktion</th>
+                    <th scope="col">Stufe</th>
+                    <th scope="col">Aktor:in</th>
+                    <th scope="col">Kommentar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transitions %}
+                <tr>
+                    <td class="text-muted small text-nowrap">{{ t.timestamp|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        {% if t.action == 'submit' or t.action == 'resubmit' %}
+                            <span class="badge bg-primary">{{ t.get_action_display }}</span>
+                        {% elif t.action == 'approve' or t.action == 'auto_approve' %}
+                            <span class="badge bg-success">{{ t.get_action_display }}</span>
+                        {% elif t.action == 'reject' or t.action == 'auto_reject' %}
+                            <span class="badge bg-danger">{{ t.get_action_display }}</span>
+                        {% elif t.action == 'cancel' %}
+                            <span class="badge bg-secondary">{{ t.get_action_display }}</span>
+                        {% elif t.action == 'escalate' %}
+                            <span class="badge bg-warning text-dark">{{ t.get_action_display }}</span>
+                        {% elif t.action == 'remind' %}
+                            <span class="badge bg-light text-dark border">{{ t.get_action_display }}</span>
+                        {% elif t.action == 'acknowledge' %}
+                            <span class="badge bg-info text-dark">{{ t.get_action_display }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border">{{ t.get_action_display }}</span>
+                        {% endif %}
+                        {% if t.revision > 1 %}
+                        <span class="text-muted small">Rev. {{ t.revision }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ t.step.name|default:"–" }}</td>
+                    <td class="small">
+                        {% if t.actor %}
+                            {{ t.actor.get_full_name|default:t.actor.username }}
+                        {% elif t.actor_name %}
+                            {{ t.actor_name }}
+                        {% else %}
+                            <span class="text-muted">System</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ t.comment|default:"–"|linebreaksbr }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+{% endif %}

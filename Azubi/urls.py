@@ -100,6 +100,7 @@ urlpatterns = [
     path("wissensdatenbank/", include("knowledge.urls", namespace="knowledge")),
     path("raumbuchung/", include("workspace.urls")),
     path("pflichtschulungen/", include("mandatorytraining.urls")),
+    path("workflows/", include("workflow.urls")),
     path("accounts/logout/", logout_view, name="logout"),
     # Eigene Login-View VOR django.contrib.auth.urls einbinden, damit unsere
     # Variante mit SSO-Buttons + Smart-Redirect statt der Default-View greift.

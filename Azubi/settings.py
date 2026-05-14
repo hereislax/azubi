@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'workspace.apps.WorkspaceConfig',
     'mandatorytraining.apps.MandatorytrainingConfig',
+    'workflow.apps.WorkflowConfig',
     'axes',
     'django_otp',
     'django_otp.plugins.otp_totp',     # TOTP (Authenticator-App)

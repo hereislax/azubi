@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load workflow_tags %}
+
+{% block title %}Ankündigungen – Offene Freigaben{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'announcements:list' %}">Ankündigungen</a></li>
+        <li class="breadcrumb-item active">Offene Freigaben</li>
+    </ol>
+</nav>
+
+<h1 class="h2 mb-4"><i class="bi bi-check2-square me-1" aria-hidden="true"></i> Offene Freigaben</h1>
+
+{% if rows %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Titel</th>
+                    <th scope="col">Verfasser:in</th>
+                    <th scope="col">Eingereicht</th>
+                    <th scope="col">Frist</th>
+                    <th scope="col" class="text-end">Aktion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>
+                        <a href="{% url 'announcements:detail' public_id=row.announcement.public_id %}">
+                            {{ row.announcement.title }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if row.instance.initiator %}
+                            {{ row.instance.initiator.get_full_name|default:row.instance.initiator.username }}
+                        {% else %}
+                            –
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ row.instance.started_at|date:"d.m.Y H:i" }}</td>
+                    <td class="small">
+                        {% if row.instance.current_step.deadline_days %}
+                            {{ row.instance.current_step.deadline_days }} Tag(e)
+                        {% else %}
+                            –
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'announcements:approve' public_id=row.announcement.public_id %}"
+                           class="btn btn-sm btn-primary">
+                            <i class="bi bi-check2-square me-1"></i> Prüfen
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success" role="alert">
+    <i class="bi bi-check-circle me-1" aria-hidden="true"></i>
+    Keine offenen Freigabe-Anträge.
+</div>
+{% endif %}
+
+{% endblock %}

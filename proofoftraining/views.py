@@ -120,6 +120,7 @@ def record_edit(request, public_id):
                 record.submitted_at = timezone.now()
                 record.rejection_reason = ''
                 record.save()
+                submit_record_to_workflow(record, initiator=request.user)
                 messages.success(request, 'Ausbildungsnachweis eingereicht.')
                 return redirect('proofoftraining:record_list')
             messages.success(request, 'Ausbildungsnachweis gespeichert.')
@@ -158,6 +159,7 @@ def record_submit(request, public_id):
     record.submitted_at = timezone.now()
     record.rejection_reason = ''
     record.save()
+    submit_record_to_workflow(record, initiator=request.user)
     messages.success(request, 'Ausbildungsnachweis eingereicht.')
     try:
         from django.urls import reverse
@@ -212,6 +214,7 @@ def admin_record_approve(request, student_pk, public_id):
     record.rejection_reason = ''
     record.save()
     record.days.all().update(correction_note='')
+    mirror_record_to_workflow(record, actor=request.user, action='approve')
     _notify_student(request, record, approved=True)
     messages.success(request, 'Ausbildungsnachweis angenommen.')
     return redirect('proofoftraining:admin_record_detail', student_pk=student_pk, public_id=public_id)
@@ -244,6 +247,8 @@ def admin_record_reject(request, student_pk, public_id):
         if day.correction_note != note:
             day.correction_note = note
             day.save(update_fields=['correction_note'])
+    mirror_record_to_workflow(record, actor=request.user, action='reject',
+                               comment=form.cleaned_data['rejection_reason'])
     _notify_student(request, record, approved=False)
     messages.success(request, 'Korrekturbedarf gemeldet.')
     return redirect('proofoftraining:admin_record_detail', student_pk=student_pk, public_id=public_id)
@@ -393,3 +398,54 @@ def _notify_student(request, record, approved: bool):
                 )
         except Exception:
             pass
+
+
+# ── Workflow-Integration ──────────────────────────────────────────────────────
+
+def submit_record_to_workflow(record, initiator):
+    """Startet oder reicht den ``training_record``-Workflow für einen Nachweis ein.
+
+    Beim ersten Submit wird eine neue Instanz angelegt. Bei einem Resubmit nach
+    Ablehnung (``to_initiator`` → ``current_step is None``) wird die bestehende
+    Instanz fortgeführt und die Revision hochgezählt.
+    """
+    try:
+        from workflow.engine import (
+            start_workflow, perform_action, get_instance_for, WorkflowError,
+        )
+        from workflow.models import ACTION_RESUBMIT
+        instance = get_instance_for(record)
+        if instance is None:
+            return start_workflow('training_record', target=record,
+                                   initiator=initiator)
+        # Instanz existiert — Resubmit nur wenn beim Antragsteller (current_step=None)
+        if instance.is_active and instance.current_step is None:
+            perform_action(instance, actor=initiator, action=ACTION_RESUBMIT,
+                           comment='Überarbeiteter Nachweis eingereicht.')
+        return instance
+    except WorkflowError as exc:
+        logger.warning('Training-Record-Workflow konnte nicht (re-)gestartet werden: %s', exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Training-Record-Workflow-Start: %s', exc)
+    return None
+
+
+def mirror_record_to_workflow(record, actor, action, comment=''):
+    """Spiegelt Approve/Reject-Aktionen an die Workflow-Engine."""
+    try:
+        from workflow.engine import (
+            perform_action, get_instance_for, start_workflow, WorkflowError,
+        )
+        instance = get_instance_for(record)
+        if instance is None:
+            # Legacy-Datensatz ohne Workflow-Instanz — nachträglich starten
+            initiator = record.student.user if hasattr(record.student, 'user') else None
+            instance = start_workflow('training_record', target=record,
+                                       initiator=initiator)
+        if instance and instance.is_active and instance.current_step is not None:
+            perform_action(instance, actor=actor, action=action, comment=comment)
+    except WorkflowError as exc:
+        logger.warning('Training-Record-Workflow-Mirror fehlgeschlagen (%s): %s',
+                       action, exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Training-Record-Workflow-Mirror: %s', exc)

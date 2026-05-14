@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load workflow_tags %}
+
+{% block title %}Ankündigung freigeben{% endblock %}
+
+{% block content %}
+<div class="py-3" style="max-width:800px;">
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'announcements:list' %}">Ankündigungen</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'announcements:pending_approvals' %}">Offene Freigaben</a></li>
+        <li class="breadcrumb-item active">Freigabe</li>
+    </ol>
+</nav>
+
+<h1 class="h2 mb-4"><i class="bi bi-check2-square me-1" aria-hidden="true"></i> Ankündigung freigeben</h1>
+
+{% workflow_history target=announcement %}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">{{ announcement.title }}</div>
+    <div class="card-body">
+        <dl class="row mb-3">
+            <dt class="col-sm-3">Verfasser:in</dt>
+            <dd class="col-sm-9">
+                {% if announcement.sender %}
+                    {{ announcement.sender.get_full_name|default:announcement.sender.username }}
+                {% else %}–{% endif %}
+            </dd>
+
+            <dt class="col-sm-3">Zielgruppe</dt>
+            <dd class="col-sm-9">{{ announcement.get_target_type_display }}</dd>
+
+            <dt class="col-sm-3">Bestätigung nötig</dt>
+            <dd class="col-sm-9">{% if announcement.requires_acknowledgement %}Ja{% else %}Nein{% endif %}</dd>
+
+            <dt class="col-sm-3">Per E-Mail</dt>
+            <dd class="col-sm-9">{% if announcement.send_email %}Ja{% else %}Nein{% endif %}</dd>
+        </dl>
+
+        <h2 class="h5 mb-2">Inhalt</h2>
+        <div class="border rounded p-3 bg-light">
+            {{ announcement.body|safe }}
+        </div>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="kern-form-input">
+        <label for="comment" class="kern-label">Anmerkung / Ablehnungsgrund <span class="text-muted small">(bei Ablehnung erforderlich)</span></label>
+        <textarea id="comment" name="comment" class="kern-form-input__input" rows="3"
+                  placeholder="Bei Ablehnung wird der Verfasserin / dem Verfasser eine Anmerkung mitgeteilt."></textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" name="action" value="approve" class="btn btn-success">
+            <i class="bi bi-check-lg me-1"></i> Genehmigen und veröffentlichen
+        </button>
+        <button type="submit" name="action" value="reject" class="btn btn-danger">
+            <i class="bi bi-x-lg me-1"></i> Zurück an Verfasser:in
+        </button>
+        <a href="{% url 'announcements:pending_approvals' %}" class="btn btn-outline-secondary ms-auto">
+            Abbrechen
+        </a>
+    </div>
+</form>
+
+</div>
+{% endblock %}

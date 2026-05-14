@@ -15,6 +15,7 @@ urlpatterns = [
     path('', views.assessment_list, name='list'),
     path('<uuid:public_id>/', views.assessment_detail, name='detail'),
     path('<uuid:public_id>/bestaetigen/', views.assessment_confirm, name='confirm'),
+    path('<uuid:public_id>/zur-kenntnis/', views.assessment_acknowledge, name='acknowledge'),
     path('<uuid:public_id>/signiert/', views.assessment_signed_pdf, name='signed_pdf'),
     path('<uuid:public_id>/token-senden/', views.assessment_resend_token, name='resend_token'),
     path('<uuid:public_id>/token-erneuern/', views.assessment_renew_token, name='renew_token'),

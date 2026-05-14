@@ -136,6 +136,7 @@ def vacation_create(request):
         vr.is_cancellation = is_cancellation
         vr.submitted_via_portal = False
         vr.save()
+        start_vacation_workflow(vr, initiator=request.user)
         kind = 'Stornierungsantrag' if is_cancellation else 'Urlaubsantrag'
         messages.success(request, f'{kind} für {vr.student} wurde erfasst.')
         return redirect('absence:vacation_list')
@@ -186,6 +187,7 @@ def vacation_decide(request, public_id):
             vr.approved_by = request.user
             vr.approved_at = timezone.now()
             vr.save()
+            mirror_vacation_to_workflow(vr, actor=request.user, action='approve')
             kind = 'Stornierungsantrag' if vr.is_cancellation else 'Urlaubsantrag'
             messages.success(request, f'{kind} für {vr.student} wurde genehmigt.')
             _notify_student_vacation_decision(vr, request)
@@ -198,6 +200,8 @@ def vacation_decide(request, public_id):
             vr.approved_at = timezone.now()
             vr.rejection_reason = reason
             vr.save()
+            mirror_vacation_to_workflow(vr, actor=request.user, action='reject',
+                                         comment=reason)
             kind = 'Stornierungsantrag' if vr.is_cancellation else 'Urlaubsantrag'
             messages.success(request, f'{kind} für {vr.student} wurde abgelehnt.')
             _notify_student_vacation_decision(vr, request)
@@ -243,6 +247,7 @@ def vacation_cancel_create(request, public_id):
             notes=notes,
             submitted_via_portal=False,
         )
+        start_vacation_workflow(cancel_req, initiator=request.user)
         messages.success(
             request,
             f'Stornierungsantrag für {original.student} wurde erstellt und wartet auf Genehmigung.',
@@ -392,6 +397,7 @@ def urlaubsstelle_portal(request, token):
             for err in errors:
                 messages.error(request, err)
         else:
+            processor_name = request.POST.get('processed_by_name', '').strip()
             for vr, curr, prev, days in updates:
                 vr.remaining_days_current_year  = curr
                 vr.remaining_days_previous_year = prev
@@ -407,6 +413,25 @@ def urlaubsstelle_portal(request, token):
                     'status',
                     'updated_at',
                 ])
+                # Stufe 2 (Urlaubsstelle) im Workflow als erledigt markieren.
+                # Da der Token-Portalpfad ohne Login arbeitet, übergeben wir den
+                # vom Bearbeiter eingegebenen Namen als ``actor_name`` für den
+                # Audit-Trail.
+                try:
+                    from workflow.engine import (
+                        get_instance_for, perform_action, WorkflowError,
+                    )
+                    inst = get_instance_for(vr)
+                    if inst and inst.is_active:
+                        perform_action(inst, actor=None,
+                                       actor_name=processor_name or 'Urlaubsstelle (Token)',
+                                       action='approve',
+                                       comment=f'Bearbeitet: Resturlaub {curr}/{prev}, Arbeitstage {days}.')
+                except WorkflowError as exc:
+                    logger.warning('Workflow-Mirror (Stufe 2) fehlgeschlagen: %s', exc)
+                except Exception as exc:  # noqa: BLE001
+                    logger.exception('Unerwarteter Fehler beim Stufe-2-Mirror: %s', exc)
+
                 _notify_student_vacation_processed(vr, request)
 
             batch.processed_at = timezone.now()
@@ -713,3 +738,46 @@ def _notify_student_vacation_processed(vr: VacationRequest, request=None):
             )
         except Exception:
             pass
+
+
+# ── Workflow-Integration ──────────────────────────────────────────────────────
+
+def start_vacation_workflow(vr, initiator=None):
+    """Startet den ``vacation_request``-Workflow für einen neuen Antrag.
+
+    Fehler werden geloggt, damit die klassische Pipeline auch dann weiterläuft,
+    wenn die Workflow-Definition fehlt oder das Engine-Modul nicht initialisiert ist.
+    """
+    try:
+        from workflow.engine import start_workflow, WorkflowError
+        return start_workflow('vacation_request', target=vr, initiator=initiator)
+    except WorkflowError as exc:
+        logger.warning('Vacation-Workflow konnte nicht gestartet werden: %s', exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Vacation-Workflow-Start: %s', exc)
+    return None
+
+
+def mirror_vacation_to_workflow(vr, actor, action, comment=''):
+    """Spiegelt eine Entscheidung an die Workflow-Engine.
+
+    Die Engine läuft parallel zur klassischen Status-Maschine — bei Fehlern wird
+    der klassische Pfad nicht blockiert.
+    """
+    try:
+        from workflow.engine import (
+            perform_action, get_instance_for, start_workflow, WorkflowError,
+        )
+        instance = get_instance_for(vr)
+        if instance is None:
+            # Legacy-Datensatz ohne Workflow-Instanz — nachträglich starten
+            initiator = vr.student.user if hasattr(vr.student, 'user') else None
+            instance = start_workflow('vacation_request', target=vr,
+                                       initiator=initiator)
+        if instance and instance.is_active:
+            perform_action(instance, actor=actor, action=action, comment=comment)
+    except WorkflowError as exc:
+        logger.warning('Vacation-Workflow-Mirror fehlgeschlagen (%s): %s',
+                       action, exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Vacation-Workflow-Mirror: %s', exc)

@@ -325,12 +325,17 @@ def account_management(request):
         for rp in AusbildungsreferatProfile.objects.prefetch_related('job_profiles').all()
     }
 
+    # UserProfile-Flags
+    from services.models import UserProfile
+    user_profiles = {up.user_id: up for up in UserProfile.objects.all()}
+
     users_data = []
     for user in users:
         role = _get_primary_role(user)
         hv = hv_profiles.get(user.pk)
         ps_pks = ps_by_user.get(user.pk, [])
         rp = training_office_profiles.get(user.pk)
+        up = user_profiles.get(user.pk)
         users_data.append({
             'user': user,
             'role': role,
@@ -342,6 +347,7 @@ def account_management(request):
             'ps_student_pks_json': json.dumps([str(pk) for pk in ps_pks]),
             'referat_profile': rp,
             'referat_jp_pks_json': json.dumps([str(jp.pk) for jp in rp.job_profiles.all()]) if rp else '[]',
+            'announcement_requires_approval': up.announcement_requires_approval if up else True,
         })
 
     dormitories = Dormitory.objects.order_by('name')
@@ -427,7 +433,7 @@ def account_edit(request, user_pk):
                 pass
 
     # 4. Ausbildungsreferat: Profil mit Berufsbildern und Einzelberechtigungen
-    from services.models import AusbildungsreferatProfile
+    from services.models import AusbildungsreferatProfile, UserProfile
     from course.models import JobProfile
     if new_role == 'ausbildungsreferat':
         profile, _ = AusbildungsreferatProfile.objects.get_or_create(user=user)
@@ -443,6 +449,15 @@ def account_edit(request, user_pk):
         profile.job_profiles.set(JobProfile.objects.filter(pk__in=jp_pks))
     else:
         AusbildungsreferatProfile.objects.filter(user=user).delete()
+
+    # 5. UserProfile-Flags (gilt für alle Rollen)
+    user_profile, _ = UserProfile.objects.get_or_create(user=user)
+    # Checkbox „braucht Freigabe" — wenn das Form-Feld in POST ist, ist die
+    # Checkbox gesetzt → Freigabe erforderlich.
+    user_profile.announcement_requires_approval = (
+        'announcement_requires_approval' in request.POST
+    )
+    user_profile.save(update_fields=['announcement_requires_approval'])
 
     messages.success(
         request,

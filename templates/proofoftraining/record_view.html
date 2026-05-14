@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load workflow_tags %}
 
 {% block title %}Ausbildungsnachweis KW {{ record.calendar_week }}/{{ record.week_start.year }}{% endblock %}
 
@@ -9,6 +10,8 @@
         <li class="breadcrumb-item active">KW {{ record.calendar_week }}/{{ record.week_start.year }}</li>
     </ol>
 </nav>
+
+{% workflow_history target=record %}
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>

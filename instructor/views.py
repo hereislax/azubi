@@ -172,6 +172,8 @@ def instructor_create(request):
         instructor.status = Instructor.PENDING
         instructor.save()
         form.save_m2m()
+        from instructor.workflow_helpers import start_instructor_workflow
+        start_instructor_workflow(instructor, initiator=request.user)
         from django.urls import reverse
         from services.models import notify_staff
         notify_staff(
@@ -201,6 +203,9 @@ def instructor_confirm(request, public_id):
     if request.method == 'POST':
         instructor.status = INSTRUCTOR_STATUS_CONFIRMED
         instructor.save(update_fields=['status'])
+        from instructor.workflow_helpers import mirror_instructor_action
+        mirror_instructor_action(instructor, actor=request.user, action='approve',
+                                  comment='Praxistutor bestätigt; Bestellungsschreiben gesendet.')
 
         # E-Mail im Hintergrund versenden, damit die Weiterleitung sofort erfolgt
         detail_url = request.build_absolute_uri(f'/praxistutoren/{instructor.public_id}/')
@@ -254,6 +259,12 @@ def instructor_delete(request, public_id):
     instructor = get_object_or_404(Instructor, public_id=public_id)
     if request.method == 'POST':
         name = str(instructor)
+        # Workflow vor dem Löschen abbrechen, damit der Audit-Trail intakt bleibt.
+        # (Die Instanz selbst überlebt das Löschen des Targets, behält aber den
+        #  letzten Status „cancelled".)
+        from instructor.workflow_helpers import mirror_instructor_action
+        mirror_instructor_action(instructor, actor=request.user, action='cancel',
+                                  comment=f'Praxistutor-Datensatz „{name}" gelöscht.')
         instructor.delete()
         messages.success(request, f'„{name}" wurde gelöscht.')
         return redirect('instructor:instructor_list')
@@ -648,6 +659,8 @@ def chief_instructor_approve_assignment(request, chief_public_id, assignment_pk)
         assignment.status = ASSIGNMENT_STATUS_APPROVED
         assignment.rejection_reason = ''
         assignment.save(update_fields=['status', 'rejection_reason'])
+        from course.workflow_helpers import mirror_assignment_decision
+        mirror_assignment_decision(assignment, actor=request.user, action='approve')
         from services.notifications import (
             notify_creator_of_decision,
             notify_training_office_of_assignment_decision,
@@ -674,9 +687,13 @@ def chief_instructor_reject_assignment(request, chief_public_id, assignment_pk):
     assignment = _coordination_assignment_or_403(coordination, assignment_pk)
 
     if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
         assignment.status = ASSIGNMENT_STATUS_REJECTED
-        assignment.rejection_reason = request.POST.get('reason', '').strip()
+        assignment.rejection_reason = reason
         assignment.save(update_fields=['status', 'rejection_reason'])
+        from course.workflow_helpers import mirror_assignment_decision
+        mirror_assignment_decision(assignment, actor=request.user, action='reject',
+                                    comment=reason)
         from services.notifications import (
             notify_creator_of_decision,
             notify_training_office_of_assignment_decision,
@@ -956,6 +973,10 @@ def change_request_create(request, chief_public_id, assignment_pk, change_type):
                 messages.error(request, '; '.join(_flatten_validation_error(exc)))
                 return redirect('instructor:chief_instructor_assignment_edit',
                                 chief_public_id=chief_public_id, assignment_pk=assignment_pk)
+            # Workflow startet auch hier: Pre-Condition (requires_approval=False)
+            # führt zu sofortiger Auto-Approve. Audit-Trail dokumentiert das.
+            from course.workflow_helpers import start_change_request_workflow
+            start_change_request_workflow(cr, initiator=request.user)
 
             assignment.refresh_from_db()
             if assignment.instructor_id:
@@ -966,6 +987,8 @@ def change_request_create(request, chief_public_id, assignment_pk, change_type):
                             chief_public_id=chief_public_id, assignment_pk=assignment_pk)
 
         cr.save()
+        from course.workflow_helpers import start_change_request_workflow
+        start_change_request_workflow(cr, initiator=request.user)
         from services.notifications import notify_change_request_submitted
         notify_change_request_submitted(request, cr)
         messages.success(
@@ -1087,6 +1110,8 @@ def change_request_approve(request, change_request_public_id):
         messages.error(request, 'Änderung konnte nicht angewendet werden: ' + '; '.join(_flatten_validation_error(exc)))
         return redirect('instructor:change_request_review', change_request_public_id=cr.public_id)
 
+    from course.workflow_helpers import mirror_change_request_decision
+    mirror_change_request_decision(cr, actor=request.user, action='approve')
     from services.notifications import notify_change_request_decided
     notify_change_request_decided(request, cr)
     messages.success(request, f'Änderungsantrag wurde genehmigt: {cr.summary()}.')
@@ -1107,12 +1132,16 @@ def change_request_reject(request, change_request_public_id):
     cr = get_object_or_404(
         AssignmentChangeRequest, public_id=change_request_public_id, status=CHANGE_REQUEST_STATUS_PENDING,
     )
+    reason = request.POST.get('rejection_reason', '').strip()
     cr.status = CHANGE_REQUEST_STATUS_REJECTED
     cr.decided_by = request.user
     cr.decided_at = timezone.now()
-    cr.rejection_reason = request.POST.get('rejection_reason', '').strip()
+    cr.rejection_reason = reason
     cr.save(update_fields=['status', 'decided_by', 'decided_at', 'rejection_reason'])
 
+    from course.workflow_helpers import mirror_change_request_decision
+    mirror_change_request_decision(cr, actor=request.user, action='reject',
+                                    comment=reason)
     from services.notifications import notify_change_request_decided
     notify_change_request_decided(request, cr)
     messages.info(request, f'Änderungsantrag wurde abgelehnt: {cr.summary()}.')

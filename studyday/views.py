@@ -120,6 +120,9 @@ def request_decide(request, public_id):
             study_request.approved_at = timezone.now()
             study_request.save()
 
+            _mirror_to_workflow(study_request, request.user,
+                                'approve', comment='')
+
             from services.notifications import notify_student_of_study_day_decision
             notify_student_of_study_day_decision(request, study_request)
 
@@ -137,6 +140,9 @@ def request_decide(request, public_id):
             study_request.approved_at = timezone.now()
             study_request.rejection_reason = rejection_reason
             study_request.save()
+
+            _mirror_to_workflow(study_request, request.user,
+                                'reject', comment=rejection_reason)
 
             from services.notifications import notify_student_of_study_day_decision
             notify_student_of_study_day_decision(request, study_request)
@@ -326,3 +332,26 @@ def policy_settings(request):
 def _parse_date(s):
     from datetime import date as _date
     return _date.fromisoformat(s.strip())
+
+
+def _mirror_to_workflow(study_request, actor, action, comment=''):
+    """Spiegelt eine Entscheidung an die Workflow-Engine.
+
+    Die Engine ist parallel zum klassischen Status-Feld aktiv und führt einen
+    sauberen Audit-Trail. Fehler werden geloggt aber nicht propagiert — die
+    klassische Logik bleibt damit als Fallback intakt.
+    """
+    try:
+        from workflow.engine import perform_action, get_instance_for, start_workflow, WorkflowError
+        instance = get_instance_for(study_request)
+        if instance is None:
+            # Legacy-Datensatz ohne Workflow-Instanz → nachträglich starten
+            instance = start_workflow('study_day_request', target=study_request,
+                                       initiator=study_request.student.user
+                                       if hasattr(study_request.student, 'user') else None)
+        if instance and instance.is_active:
+            perform_action(instance, actor=actor, action=action, comment=comment)
+    except WorkflowError as exc:
+        logger.warning('Workflow-Mirror fehlgeschlagen (%s): %s', action, exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception('Unerwarteter Fehler beim Workflow-Mirror: %s', exc)

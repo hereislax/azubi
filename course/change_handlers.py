@@ -52,7 +52,7 @@ def _apply_split(change_request, *, decided_by):
     a.save(update_fields=['end_date', 'status', 'rejection_reason'])
     a.bump_notification_sequence()
 
-    InternshipAssignment.objects.create(
+    second = InternshipAssignment.objects.create(
         schedule_block=a.schedule_block,
         student=a.student,
         unit=a.unit,
@@ -63,6 +63,8 @@ def _apply_split(change_request, *, decided_by):
         notes=a.notes,
         created_by=decided_by,
     )
+    from course.workflow_helpers import start_assignment_workflow
+    start_assignment_workflow(second, initiator=decided_by)
 
 
 @transaction.atomic

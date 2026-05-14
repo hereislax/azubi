@@ -275,6 +275,8 @@ def vacation_create(request):
         vr.submitted_via_portal = True
         vr.is_cancellation = False
         vr.save()
+        from absence.views import start_vacation_workflow
+        start_vacation_workflow(vr, initiator=request.user)
         try:
             from django.urls import reverse
             from services.models import notify_staff
@@ -328,7 +330,7 @@ def vacation_cancel(request, public_id):
 
     if request.method == 'POST':
         notes = request.POST.get('notes', '').strip()
-        VacationRequest.objects.create(
+        cancel_req = VacationRequest.objects.create(
             student=student,
             start_date=original.start_date,
             end_date=original.end_date,
@@ -337,6 +339,8 @@ def vacation_cancel(request, public_id):
             notes=notes,
             submitted_via_portal=True,
         )
+        from absence.views import start_vacation_workflow
+        start_vacation_workflow(cancel_req, initiator=request.user)
         try:
             from django.urls import reverse
             from services.models import notify_staff
@@ -527,7 +531,7 @@ def studyday_create(request):
                 )
                 return redirect('portal:studyday_list')
 
-        StudyDayRequest.objects.create(
+        sd_request = StudyDayRequest.objects.create(
             student=student,
             date=requested_date,
             date_end=requested_date_end,
@@ -535,6 +539,16 @@ def studyday_create(request):
             reason=reason,
             status=STATUS_PENDING,
         )
+        try:
+            from workflow.engine import start_workflow, WorkflowError
+            start_workflow('study_day_request', target=sd_request,
+                           initiator=request.user)
+        except WorkflowError as exc:
+            # Engine nicht verfügbar oder Workflow nicht konfiguriert →
+            # alter Code-Pfad (status='pending') bleibt funktional.
+            import logging
+            logging.getLogger(__name__).warning(
+                'study_day_request workflow konnte nicht gestartet werden: %s', exc)
         try:
             from django.urls import reverse
             from services.models import notify_staff

@@ -821,6 +821,21 @@ class AssignmentChangeRequest(models.Model):
     def requires_approval(self) -> bool:
         return self.change_type in CHANGE_TYPES_REQUIRING_APPROVAL
 
+    @property
+    def days_until_start(self) -> int:
+        """Tage bis zum Einsatzbeginn (für conditional Routing)."""
+        from datetime import date
+        return (self.assignment.start_date - date.today()).days
+
+    @property
+    def is_short_notice(self) -> bool:
+        """``True``, wenn der Einsatz innerhalb der nächsten 14 Tage beginnt.
+
+        Wird in der Workflow-pre_condition genutzt, um „kurzfristige" Änderungen
+        strenger zu behandeln (z. B. Genehmigungspflicht nur bei < 14 Tagen).
+        """
+        return self.days_until_start < 14
+
     def summary(self) -> str:
         """Menschenlesbare Beschreibung der beantragten Änderung."""
         from datetime import date as _date

@@ -432,3 +432,133 @@ class TestVacationRequestLocationResolution:
         )
         assert vr.resolved_location == loc
         assert vr.resolved_holiday_state == "HE"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Workflow-Engine-Integration für VacationRequest
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestVacationWorkflow:
+    """Mirror-Integration: Urlaubsantrag durchläuft den vacation_request-Workflow."""
+
+    @pytest.fixture
+    def office_user(self, db):
+        from django.contrib.auth.models import User, Group
+        user = User.objects.create_user(username='office_t', password='x',
+                                        first_name='Off', last_name='Ice')
+        group, _ = Group.objects.get_or_create(name='ausbildungsreferat')
+        user.groups.add(group)
+        from services.models import AusbildungsreferatProfile
+        AusbildungsreferatProfile.objects.create(user=user, can_approve_vacation=True)
+        return user
+
+    @pytest.fixture
+    def holiday_user(self, db):
+        from django.contrib.auth.models import User, Group
+        user = User.objects.create_user(username='holiday_t', password='x')
+        group, _ = Group.objects.get_or_create(name='urlaubsstelle')
+        user.groups.add(group)
+        return user
+
+    def test_workflow_starts_on_create(self, db, make_student, make_course, office_user):
+        from absence.views import start_vacation_workflow
+        from workflow.engine import get_instance_for
+        from workflow.models import INSTANCE_STATUS_IN_PROGRESS
+
+        student = make_student(course=make_course())
+        vr = VacationRequest.objects.create(
+            student=student,
+            start_date=date(2026, 6, 1), end_date=date(2026, 6, 5),
+        )
+        start_vacation_workflow(vr, initiator=office_user)
+        inst = get_instance_for(vr)
+        assert inst is not None
+        assert inst.status == INSTANCE_STATUS_IN_PROGRESS
+        assert inst.current_step.order == 1
+        assert inst.current_step.approver_value == 'training_office'
+
+    def test_approve_advances_to_holiday_office_stage(self, db, make_student, make_course, office_user):
+        from absence.views import start_vacation_workflow, mirror_vacation_to_workflow
+        from workflow.engine import get_instance_for
+        from workflow.models import INSTANCE_STATUS_IN_PROGRESS
+
+        student = make_student(course=make_course())
+        vr = VacationRequest.objects.create(
+            student=student,
+            start_date=date(2026, 6, 1), end_date=date(2026, 6, 5),
+        )
+        start_vacation_workflow(vr, initiator=office_user)
+        mirror_vacation_to_workflow(vr, actor=office_user, action='approve')
+
+        inst = get_instance_for(vr)
+        assert inst.status == INSTANCE_STATUS_IN_PROGRESS
+        assert inst.current_step.order == 2
+        assert inst.current_step.approver_value == 'holiday_office'
+
+    def test_stage2_approval_finalizes(self, db, make_student, make_course, office_user, holiday_user):
+        from absence.views import start_vacation_workflow, mirror_vacation_to_workflow
+        from workflow.engine import get_instance_for, perform_action
+        from workflow.models import INSTANCE_STATUS_APPROVED, ACTION_APPROVE
+
+        student = make_student(course=make_course())
+        vr = VacationRequest.objects.create(
+            student=student,
+            start_date=date(2026, 6, 1), end_date=date(2026, 6, 5),
+        )
+        start_vacation_workflow(vr, initiator=office_user)
+        mirror_vacation_to_workflow(vr, actor=office_user, action='approve')
+
+        inst = get_instance_for(vr)
+        perform_action(inst, actor=holiday_user, action=ACTION_APPROVE,
+                       comment='bearbeitet')
+        inst.refresh_from_db()
+        assert inst.status == INSTANCE_STATUS_APPROVED
+
+    def test_reject_in_stage1_finalizes_rejected(self, db, make_student, make_course, office_user):
+        from absence.views import start_vacation_workflow, mirror_vacation_to_workflow
+        from workflow.engine import get_instance_for
+        from workflow.models import INSTANCE_STATUS_REJECTED
+
+        student = make_student(course=make_course())
+        vr = VacationRequest.objects.create(
+            student=student,
+            start_date=date(2026, 6, 1), end_date=date(2026, 6, 5),
+        )
+        start_vacation_workflow(vr, initiator=office_user)
+        mirror_vacation_to_workflow(vr, actor=office_user, action='reject',
+                                     comment='Termin ungünstig')
+
+        inst = get_instance_for(vr)
+        assert inst.status == INSTANCE_STATUS_REJECTED
+
+    def test_token_portal_can_approve_stage2_without_actor(self, db, make_student, make_course, office_user):
+        """Stufe 2 darf auch ohne eingeloggten Benutzer entschieden werden
+        (Token-Portal-Pfad). Der Audit-Trail nutzt ``actor_name``.
+        """
+        from absence.views import start_vacation_workflow, mirror_vacation_to_workflow
+        from workflow.engine import get_instance_for, perform_action
+        from workflow.models import (
+            INSTANCE_STATUS_APPROVED, ACTION_APPROVE, WorkflowTransition,
+        )
+
+        student = make_student(course=make_course())
+        vr = VacationRequest.objects.create(
+            student=student,
+            start_date=date(2026, 6, 1), end_date=date(2026, 6, 5),
+        )
+        start_vacation_workflow(vr, initiator=office_user)
+        mirror_vacation_to_workflow(vr, actor=office_user, action='approve')
+
+        inst = get_instance_for(vr)
+        perform_action(inst, actor=None, actor_name='Erika Mustermann',
+                       action=ACTION_APPROVE,
+                       comment='Resturlaub 25/3, Arbeitstage 5.')
+        inst.refresh_from_db()
+        assert inst.status == INSTANCE_STATUS_APPROVED
+
+        last_approve = WorkflowTransition.objects.filter(
+            instance=inst, action=ACTION_APPROVE,
+        ).order_by('-timestamp').first()
+        assert last_approve.actor is None
+        assert last_approve.actor_name == 'Erika Mustermann'

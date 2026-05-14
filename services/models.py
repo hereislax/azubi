@@ -940,6 +940,14 @@ class UserProfile(models.Model):
         blank=True,
         verbose_name="Durchwahl",
     )
+    announcement_requires_approval = models.BooleanField(
+        default=True,
+        verbose_name="Ankündigungen benötigen Freigabe",
+        help_text="Wenn aktiviert, müssen von dieser Person verfasste Ankündigungen "
+                  "von der Ausbildungsleitung freigegeben werden. Standardmäßig "
+                  "aktiv für neue Konten; kann für vertrauenswürdige Sachbearbeiter:innen "
+                  "deaktiviert werden.",
+    )
 
     def __str__(self):
         return f"Profil von {self.user.get_full_name() or self.user.username}"

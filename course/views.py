@@ -570,6 +570,8 @@ def internship_assignment_create(request, course_pk, block_public_id):
         assignment.schedule_block = block
         assignment.created_by = request.user
         assignment.save()
+        from course.workflow_helpers import start_assignment_workflow
+        start_assignment_workflow(assignment, initiator=request.user)
         from services.notifications import notify_chiefs_of_assignment, notify_instructor_of_assignment
         notify_chiefs_of_assignment(request, assignment, is_new=True)
         notify_instructor_of_assignment(request, assignment)

@@ -13,9 +13,16 @@
     <div>
         <h1 class="h2 mb-0"><i class="bi bi-megaphone me-1" aria-hidden="true"></i> Ankündigungen</h1>
     </div>
-    <a href="{% url 'announcements:create' %}" class="btn btn-primary btn-sm">
-        <i class="bi bi-plus-lg me-1"></i> Neue Ankündigung
-    </a>
+    <div class="d-flex gap-2">
+        {% if is_training_director %}
+        <a href="{% url 'announcements:pending_approvals' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-check2-square me-1"></i> Offene Freigaben
+        </a>
+        {% endif %}
+        <a href="{% url 'announcements:create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Neue Ankündigung
+        </a>
+    </div>
 </div>
 
 <form method="get" class="card shadow-sm mb-4">

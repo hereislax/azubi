@@ -85,6 +85,7 @@
                             data-referat-study-days="{{ entry.training_office_profile.can_approve_study_days|yesno:'true,false' }}"
                             data-referat-announcements="{{ entry.training_office_profile.can_manage_announcements|yesno:'true,false' }}"
                             data-referat-interventions="{{ entry.training_office_profile.can_manage_interventions|yesno:'true,false' }}"
+                            data-announcement-approval="{{ entry.announcement_requires_approval|yesno:'true,false' }}"
                             title="Bearbeiten">
                         <i class="bi bi-pencil me-1"></i>
                     </button>
@@ -143,6 +144,20 @@
                     {% endfor %}
                 </div>
                 <div class="kern-hint mt-2 fst-italic" id="roleHint"></div>
+            </div>
+
+            {# ── Allgemeine Profil-Flags ─────────────────────────── #}
+            <div class="mb-4">
+                <label class="fw-semibold d-block mb-2"><i class="bi bi-toggles me-1"></i> Profil-Einstellungen</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                           name="announcement_requires_approval" id="profile_ann_approval">
+                    <label class="form-check-label small" for="profile_ann_approval">
+                        <i class="bi bi-megaphone me-1 text-muted"></i>
+                        Ankündigungen dieses Kontos benötigen Freigabe durch die Ausbildungsleitung
+                    </label>
+                </div>
+                <span class="kern-hint d-block mt-1">Standardmäßig aktiv. Für vertrauenswürdige Sachbearbeiter:innen deaktivierbar — dann werden Ankündigungen direkt veröffentlicht.</span>
             </div>
 
             {# ── Wohnheim (nur Hausverwaltung) ─────────────────── #}
@@ -341,6 +356,7 @@
             document.getElementById('perm_study_days').checked     = btn.dataset.referatStudyDays     === 'true';
             document.getElementById('perm_announcements').checked  = btn.dataset.referatAnnouncements === 'true';
             document.getElementById('perm_interventions').checked  = btn.dataset.referatInterventions === 'true';
+            document.getElementById('profile_ann_approval').checked = btn.dataset.announcementApproval === 'true';
 
             updateUI(role);
             updateSelectedCount();

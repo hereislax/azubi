@@ -69,6 +69,96 @@ def announcement_list(request):
 
 
 @login_required
+def announcement_pending_approvals(request):
+    """Listet alle Ankündigungen, die auf Freigabe durch die Ausbildungsleitung warten."""
+    from services.roles import is_training_director
+    if not is_training_director(request.user):
+        raise PermissionDenied
+
+    from django.contrib.contenttypes.models import ContentType
+    from workflow.models import WorkflowInstance, INSTANCE_STATUS_IN_PROGRESS
+
+    ct = ContentType.objects.get_for_model(Announcement)
+    instances = list(
+        WorkflowInstance.objects
+        .filter(target_ct=ct, status=INSTANCE_STATUS_IN_PROGRESS,
+                definition__code='announcement_publish')
+        .select_related('current_step', 'initiator', 'definition')
+        .order_by('-started_at')
+    )
+
+    # Zielobjekte vorladen
+    ann_ids = [i.target_id for i in instances]
+    anns = {
+        a.pk: a for a in
+        Announcement.objects
+        .filter(pk__in=ann_ids)
+        .select_related('sender')
+    }
+
+    rows = []
+    for inst in instances:
+        ann = anns.get(inst.target_id)
+        if ann is None:
+            continue
+        rows.append({
+            'instance':     inst,
+            'announcement': ann,
+        })
+
+    return render(request, 'announcements/pending_approvals.html', {
+        'rows': rows,
+    })
+
+
+@login_required
+def announcement_approve(request, public_id):
+    """Genehmigt oder lehnt eine zur Freigabe vorgelegte Ankündigung ab."""
+    from services.roles import is_training_director
+    from workflow.engine import (
+        get_instance_for, perform_action, can_act, WorkflowError,
+        ACTION_APPROVE, ACTION_REJECT,
+    )
+    if not is_training_director(request.user):
+        raise PermissionDenied
+
+    announcement = get_object_or_404(Announcement, public_id=public_id)
+    instance = get_instance_for(announcement)
+    if not instance or not instance.is_active:
+        messages.error(request, 'Für diese Ankündigung läuft kein Freigabe-Workflow.')
+        return redirect('announcements:detail', public_id=public_id)
+
+    if not can_act(instance, request.user):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        comment = request.POST.get('comment', '').strip()
+        try:
+            if action == 'approve':
+                perform_action(instance, actor=request.user,
+                               action=ACTION_APPROVE, comment=comment)
+                messages.success(request, 'Ankündigung freigegeben und veröffentlicht.')
+            elif action == 'reject':
+                if not comment:
+                    messages.error(request, 'Bei Ablehnung bitte eine Begründung angeben.')
+                    return redirect('announcements:approve', public_id=public_id)
+                perform_action(instance, actor=request.user,
+                               action=ACTION_REJECT, comment=comment)
+                messages.success(request, 'Ankündigung an Verfasser:in zurückgegeben.')
+            else:
+                messages.error(request, 'Unbekannte Aktion.')
+        except WorkflowError as exc:
+            messages.error(request, f'Aktion nicht möglich: {exc}')
+        return redirect('announcements:pending_approvals')
+
+    return render(request, 'announcements/approve.html', {
+        'announcement': announcement,
+        'instance':     instance,
+    })
+
+
+@login_required
 def announcement_create(request):
     _require_leitung_or_referat(request)
     return _announcement_form(request, announcement=None)
@@ -165,15 +255,11 @@ def _announcement_form(request, announcement):
 
             action = request.POST.get('action', 'save')
             if action == 'publish':
-                announcement.publish()
-                announcement.create_recipients()
-                sent = 0
-                if announcement.send_email:
-                    sent = _send_announcement_emails(announcement)
-                msg = 'Ankündigung veröffentlicht.'
-                if announcement.send_email:
-                    msg += f' E-Mail an {sent} Empfänger versendet.'
-                messages.success(request, msg)
+                published, info = _publish_or_request_approval(announcement, request.user)
+                if published:
+                    messages.success(request, info)
+                    return redirect('announcements:detail', public_id=announcement.public_id)
+                messages.info(request, info)
                 return redirect('announcements:detail', public_id=announcement.public_id)
 
             messages.success(request, 'Ankündigung gespeichert.')
@@ -230,15 +316,11 @@ def announcement_detail(request, public_id):
 def announcement_publish(request, public_id):
     _require_leitung_or_referat(request)
     announcement = get_object_or_404(Announcement, public_id=public_id, status=STATUS_DRAFT)
-    announcement.publish()
-    announcement.create_recipients()
-    sent = 0
-    if announcement.send_email:
-        sent = _send_announcement_emails(announcement)
-    msg = 'Ankündigung veröffentlicht.'
-    if announcement.send_email:
-        msg += f' E-Mail an {sent} Empfänger versendet.'
-    messages.success(request, msg)
+    published, info = _publish_or_request_approval(announcement, request.user)
+    if published:
+        messages.success(request, info)
+    else:
+        messages.info(request, info)
     return redirect('announcements:detail', public_id=public_id)
 
 
@@ -257,6 +339,70 @@ def _send_announcement_emails(announcement):
     from .tasks import send_announcement_emails
     send_announcement_emails.delay(announcement.pk)
     return len(announcement.get_target_emails())
+
+
+def _do_publish(announcement):
+    """Tatsächliche Veröffentlichung — wird direkt oder vom Workflow-Hook aufgerufen."""
+    if announcement.status == STATUS_PUBLISHED:
+        return 0
+    announcement.publish()
+    announcement.create_recipients()
+    sent = 0
+    if announcement.send_email:
+        sent = _send_announcement_emails(announcement)
+    return sent
+
+
+def _publish_or_request_approval(announcement, user):
+    """Veröffentlicht direkt, oder startet einen Freigabe-Workflow.
+
+    Liefert ``(published: bool, message: str)``. Wenn ``published`` False ist,
+    wartet die Ankündigung auf Freigabe durch die Ausbildungsleitung.
+    """
+    from services.roles import is_training_director
+    from workflow.engine import (
+        start_workflow, get_instance_for, WorkflowError,
+        INSTANCE_STATUS_APPROVED, INSTANCE_STATUS_IN_PROGRESS,
+    )
+
+    # Ausbildungsleitung darf immer ohne Workflow veröffentlichen
+    if is_training_director(user):
+        sent = _do_publish(announcement)
+        return True, _publish_success_msg(announcement, sent)
+
+    # Workflow starten — Pre-Condition entscheidet, ob Freigabe nötig
+    existing = get_instance_for(announcement)
+    if existing and existing.is_active:
+        return False, ('Diese Ankündigung wartet bereits auf Freigabe '
+                       'durch die Ausbildungsleitung.')
+
+    try:
+        instance = start_workflow('announcement_publish',
+                                   target=announcement, initiator=user)
+    except WorkflowError as exc:
+        logger.warning('Workflow „announcement_publish" nicht startbar: %s', exc)
+        # Fallback: ohne Workflow direkt veröffentlichen (Definition fehlt)
+        sent = _do_publish(announcement)
+        return True, _publish_success_msg(announcement, sent)
+
+    if instance.status == INSTANCE_STATUS_APPROVED:
+        # Pre-Condition nicht erfüllt → wurde sofort auto-approved und Hook hat publiziert
+        announcement.refresh_from_db()
+        sent_count = len(announcement.get_target_emails()) if announcement.send_email else 0
+        return True, _publish_success_msg(announcement, sent_count)
+
+    if instance.status == INSTANCE_STATUS_IN_PROGRESS:
+        return False, ('Ankündigung gespeichert und zur Freigabe an die '
+                       'Ausbildungsleitung gesendet.')
+
+    return False, 'Ankündigung gespeichert, Workflow-Status unbekannt.'
+
+
+def _publish_success_msg(announcement, sent_count):
+    msg = 'Ankündigung veröffentlicht.'
+    if announcement.send_email:
+        msg += f' E-Mail an {sent_count} Empfänger versendet.'
+    return msg
 
 
 # ── Portal-Ansichten (NK) ─────────────────────────────────────────────────────

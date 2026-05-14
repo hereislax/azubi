@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load workflow_tags %}
 
 {% block title %}{{ instructor }}{% endblock %}
 
@@ -9,6 +10,8 @@
         <li class="breadcrumb-item active">{{ instructor }}</li>
     </ol>
 </nav>
+
+{% workflow_history target=instructor %}
 
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>

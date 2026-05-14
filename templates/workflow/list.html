@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Workflows{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'services:settings_overview' %}">Einstellungen</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Genehmigungs-Workflows</li>
+    </ol>
+</nav>
+
+<h1 class="h2 mb-3"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i> Genehmigungs-Workflows</h1>
+
+<p class="text-muted">
+    Konfigurierbare Genehmigungsketten für Anträge und Vorgänge. Jeder Workflow
+    besteht aus einer geordneten Liste von Stufen. Die Codes (z.B. „vacation_request")
+    werden vom Modul-Code referenziert und können nach Anlage nicht mehr geändert werden.
+</p>
+
+{% if definitions %}
+<div class="card shadow-sm">
+<div class="table-responsive">
+<table class="table table-hover align-middle mb-0">
+    <caption class="kern-sr-only">Liste aller konfigurierten Workflows.</caption>
+    <thead class="table-light">
+        <tr>
+            <th scope="col">Bezeichnung</th>
+            <th scope="col">Code</th>
+            <th scope="col" class="text-center">Stufen</th>
+            <th scope="col" class="text-center">Aktiv</th>
+            <th scope="col"><span class="kern-sr-only">Aktionen</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in definitions %}
+        <tr>
+            <td>
+                <a href="{% url 'workflow:edit' code=d.code %}" class="text-decoration-none fw-semibold">{{ d.name }}</a>
+                {% if d.description %}<div class="text-muted small">{{ d.description|truncatechars:120 }}</div>{% endif %}
+            </td>
+            <td><code>{{ d.code }}</code></td>
+            <td class="text-center">{{ d.steps.count }}</td>
+            <td class="text-center">
+                {% if d.is_active %}
+                <span class="badge bg-success">Aktiv</span>
+                {% else %}
+                <span class="badge bg-secondary">Inaktiv</span>
+                {% endif %}
+            </td>
+            <td class="text-end">
+                <a href="{% url 'workflow:edit' code=d.code %}" class="btn btn-sm btn-outline-secondary"
+                   aria-label="Workflow „{{ d.name }}" bearbeiten">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-diagram-3" style="font-size:2.5rem;" aria-hidden="true"></i>
+    <p class="mt-2 mb-0">Noch keine Workflows angelegt.</p>
+    <p class="small mt-2">Workflows werden vom Modul-Code automatisch beim ersten Aufruf registriert.</p>
+</div>
+{% endif %}
+{% endblock %}
